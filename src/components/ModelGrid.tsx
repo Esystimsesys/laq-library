@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Model } from '../data/types'
 import { useApp } from '../store/useApp'
 import ModelCard from './ModelCard'
@@ -19,6 +19,12 @@ type Props = {
   /** 前に開いていた件数。0 なら最初の 1 ページぶんから */
   shown?: number
   onShownChange?: (shown: number) => void
+  /**
+   * false なら「もっと見る」を出さず、はじめから全部ならべる。
+   * 自分で ★ を付けた数だけの一覧に「もっと見る」があると、
+   * 自分の持ちものが隠れているように見えるため。
+   */
+  paged?: boolean
 }
 
 export default function ModelGrid({
@@ -27,8 +33,12 @@ export default function ModelGrid({
   resetKey,
   shown: initialShown = 0,
   onShownChange,
+  paged = true,
 }: Props) {
   const { state, actions } = useApp()
+  // ★ が付いているかはカードの数だけ引くので、配列を毎回なめると
+  // 件数の 2 乗になる。おきにいりは全部いちどに並べるため、ここが効く。
+  const favorites = useMemo(() => new Set(state.favorites), [state.favorites])
   const [shown, setShownState] = useState(() => Math.max(initialShown, PAGE))
   const [seenKey, setSeenKey] = useState(resetKey)
 
@@ -45,7 +55,7 @@ export default function ModelGrid({
 
   if (models.length === 0) return <>{empty}</>
 
-  const visible = models.slice(0, shown)
+  const visible = paged ? models.slice(0, shown) : models
   const rest = models.length - visible.length
 
   return (
@@ -55,7 +65,7 @@ export default function ModelGrid({
           <ModelCard
             key={model.id}
             model={model}
-            isFavorite={state.favorites.includes(model.id)}
+            isFavorite={favorites.has(model.id)}
             isMade={Boolean(state.made[model.id])}
             onToggleFavorite={actions.toggleFavorite}
           />
