@@ -1,0 +1,214 @@
+.bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-m);
+  padding: var(--gap-m);
+  background: var(--card);
+  border: var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow);
+}
+
+.searchRow {
+  display: flex;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  padding: 0 10px;
+  background: var(--paper);
+  border: var(--line-thin);
+  border-radius: 999px;
+}
+
+.search:focus-within {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(31, 127, 208, 0.25);
+}
+
+.searchIcon {
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 0;
+  /* iOS で入力欄にふれたときに画面が拡大しないよう 16px を下回らせない */
+  font-size: 16px;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+}
+
+.input:focus {
+  outline: none;
+}
+
+.input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.clear {
+  display: grid;
+  place-items: center;
+  /* 入力後に現れる操作も、ほかのボタンと同じタップ領域を確保する */
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--card);
+  background: var(--ink-faint);
+  border: none;
+  border-radius: 999px;
+}
+
+.group {
+  /* fieldset の既定の最小幅が、横長のチップ列を画面外へ押し広げるのを防ぐ */
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.legend {
+  padding: 0 0 6px;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--ink-soft);
+}
+
+/*
+  チップは指で押せる高さ（44px）にしてあるので、折り返すと絞り込みだけで
+  画面が埋まり、肝心の作品が下に押し出される。ふだんは横スクロールの 1 行にして、
+  作品カードが最初の画面に入るようにする。
+*/
+.chips {
+  min-width: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* 影が切れないように、はみ出しぶんの余白をとる */
+  padding: 2px 2px 4px;
+  margin: -2px -2px -4px;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+/* 「ぜんぶ見る」を押したときは、折り返して一望できるようにする */
+.chipsOpen {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+
+.chip,
+.moreChip {
+  flex: none;
+}
+
+.chip {
+  /* 子どもの指で押せるように、見た目より高さを確保する */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 7px 15px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--paper);
+  border: var(--line-thin);
+  border-radius: 999px;
+}
+
+.chip:active {
+  transform: translate(1px, 1px);
+}
+
+/* えらんでいるものは、色をつけて影を出す */
+.on {
+  color: var(--card);
+  background: var(--ink);
+  box-shadow: 2px 2px 0 var(--ink-faint);
+}
+
+.beginner.on {
+  background: var(--level-beginner);
+}
+.intermediate.on {
+  background: var(--level-intermediate);
+}
+.advanced.on {
+  background: var(--level-advanced);
+}
+
+.moreChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 7px 15px;
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--blue);
+  background: transparent;
+  border: 2px dashed var(--ink-faint);
+  border-radius: 999px;
+}
+
+.resultRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-s);
+  padding-top: 2px;
+  border-top: 2px dotted var(--ink-faint);
+}
+
+.count {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.count strong {
+  font-size: 20px;
+  color: var(--ink);
+}
+
+.reset {
+  min-height: 44px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--paper-deep);
+  border: var(--line-thin);
+  border-radius: 999px;
+}
+
+.categoryRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.categoryRow > .chips {
+  flex: 1;
+}
+
+.hint {
+  margin-left: 12px;
+}
+
+.categoryRowOpen {
+  flex-direction: column;
+}
+
+.categoryRowOpen > .chips {
+  width: 100%;
+}

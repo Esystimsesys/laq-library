@@ -1,0 +1,19 @@
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 4px 0 2px;
+}
+
+.title {
+  font-size: 24px;
+  /* 見出しの下に太い下線を引いて、マーカーで引いたように見せる */
+  background: linear-gradient(transparent 68%, var(--yellow) 68% 92%, transparent 92%);
+}
+
+.sub {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}

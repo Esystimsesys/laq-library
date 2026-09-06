@@ -1,0 +1,55 @@
+/*
+  見た目の決めごと。
+  LaQ は 7 種類の小さなパーツを組む玩具なので、画面も「紙のずかんに
+  カラフルなパーツのシールを貼った」感じにする。
+  ぼかした影やグラデーションは使わず、輪郭線とずらした影だけで立体を出す。
+*/
+:root {
+  /* 紙 */
+  --paper: #fff6e5;
+  --paper-deep: #ffedcd;
+  --card: #ffffff;
+
+  /* 文字（真っ黒より、こげ茶のほうが紙になじむ） */
+  --ink: #3a2a22;
+  /* 補足文の色。--paper の上で 4.5:1 を満たすところまで濃くしてある
+     （#8a7a70 では 3.84:1 しかなく、小さい文字が読みにくかった） */
+  --ink-soft: #7d6f65;
+  --ink-faint: #c9b9ad;
+
+  /* LaQ の基本パーツの色から取ったアクセント。
+     レベルバッジやスタンプは「白文字 on この色」で出すので、
+     白との比が 4.5:1 を超えるところまで濃くしてある（--yellow だけは
+     黒文字で使うので鮮やかなまま）。 */
+  --red: #da3c27;
+  --blue: #1d79c7;
+  --yellow: #ffc61e;
+  --green: #2a8643;
+  --pink: #ff85ab;
+  --purple: #8a63d2;
+
+  /* レベル（公式の初級=みどり に合わせる） */
+  --level-beginner: var(--green);
+  --level-intermediate: var(--blue);
+  --level-advanced: var(--red);
+
+  /* かたち */
+  --radius-s: 10px;
+  --radius-m: 16px;
+  --radius-l: 24px;
+  --line: 2.5px solid var(--ink);
+  --line-thin: 2px solid var(--ink);
+  --shadow: 4px 4px 0 var(--ink);
+  --shadow-s: 3px 3px 0 var(--ink);
+  --shadow-press: 1px 1px 0 var(--ink);
+
+  /* 余白 */
+  --gap-s: 8px;
+  --gap-m: 14px;
+  --gap-l: 22px;
+
+  /* 画面の骨組み */
+  --header-h: 58px;
+  --nav-h: 66px;
+  --content-max: 720px;
+}

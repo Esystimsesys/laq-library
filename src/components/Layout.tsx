@@ -1,0 +1,58 @@
+import { NavLink, Outlet, useLocation } from 'react-router'
+import { useApp } from '../store/useApp'
+import RouteChange from './RouteChange'
+import { BookIcon, GearIcon, StampIcon, StarIcon } from './icons'
+import styles from './Layout.module.css'
+
+const TABS = [
+  { to: '/', label: 'さがす', Icon: BookIcon },
+  { to: '/favorites', label: 'おきにいり', Icon: StarIcon },
+  { to: '/made', label: 'つくった', Icon: StampIcon },
+  { to: '/settings', label: 'せってい', Icon: GearIcon },
+]
+
+export default function Layout() {
+  const { pathname } = useLocation()
+  const { saveFailed } = useApp()
+  // 作品の詳細はタブの外側にある画面なので、下のナビは出さない
+  const isDetail = pathname.startsWith('/model/')
+
+  return (
+    <div className="app">
+      <RouteChange />
+      {/* 保存できていないのに画面だけ増えていくと、あとで消えて驚くことになる */}
+      {saveFailed && (
+        <p className={styles.saveWarning} role="alert">
+          きろくを この たんまつに ほぞんできていません。
+          「せってい」から ファイルに ほぞんして ください。
+        </p>
+      )}
+      <main className={styles.main}>
+        <Outlet />
+      </main>
+      {!isDetail && (
+        <nav className={styles.nav} aria-label="メインメニュー">
+          {TABS.map(({ to, label, Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === '/'}
+              className={({ isActive }) =>
+                isActive ? `${styles.tab} ${styles.active}` : styles.tab
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <span className={styles.tabIcon}>
+                    <Icon size={26} filled={isActive} />
+                  </span>
+                  <span className={styles.tabLabel}>{label}</span>
+                </>
+              )}
+            </NavLink>
+          ))}
+        </nav>
+      )}
+    </div>
+  )
+}

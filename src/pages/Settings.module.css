@@ -1,0 +1,106 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--gap-m);
+  background: var(--card);
+  border: var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow);
+}
+
+.h2 {
+  font-size: 17px;
+}
+
+.stats {
+  display: flex;
+  gap: var(--gap-l);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.stats strong {
+  display: block;
+  font-size: 28px;
+  color: var(--ink);
+}
+
+.note {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--ink-soft);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-s);
+}
+
+.button {
+  min-height: 44px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 900;
+  background: var(--paper-deep);
+  border: var(--line-thin);
+  border-radius: 999px;
+  box-shadow: var(--shadow-s);
+}
+
+.button:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.message {
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--paper);
+  border: 2px dashed var(--ink-faint);
+  border-radius: var(--radius-s);
+}
+
+.sources {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.source {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.danger {
+  border-color: var(--red);
+}
+
+.danger .h2 {
+  color: var(--red);
+}
+
+.dangerButton {
+  color: var(--card);
+  background: var(--red);
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--gap-m);
+  background: var(--paper);
+  border: 2.5px solid var(--red);
+  border-radius: var(--radius-m);
+}
+
+.confirmText {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.8;
+}

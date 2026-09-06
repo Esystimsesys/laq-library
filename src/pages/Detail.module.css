@@ -1,0 +1,328 @@
+.wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: calc(8px + env(safe-area-inset-top)) var(--gap-m) 8px;
+  background: var(--paper);
+  border-bottom: var(--line-thin);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 9px 18px 9px 13px;
+  font-size: 14px;
+  font-weight: 900;
+  background: var(--card);
+  border: var(--line-thin);
+  border-radius: 999px;
+  box-shadow: var(--shadow-s);
+}
+
+.back:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: 26px;
+}
+
+.level {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 5px 13px;
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--card);
+  border: var(--line-thin);
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+/* 「初級」などの補助表記。opacity で薄めるとコントラストが 4.5:1 を切るので、
+   不透明のまま字だけ小さくする */
+.levelSub {
+  font-size: 11px;
+}
+
+.beginner {
+  background: var(--level-beginner);
+}
+.intermediate {
+  background: var(--level-intermediate);
+}
+.advanced {
+  background: var(--level-advanced);
+}
+
+.main {
+  width: 100%;
+  background: var(--card);
+  border: var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--paper-deep);
+  border: var(--line-thin);
+  border-radius: 999px;
+}
+
+.desc {
+  font-size: 15px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--gap-s);
+}
+
+@media (min-width: 480px) {
+  .actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.big {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 12px;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--ink-soft);
+  background: var(--card);
+  border: var(--line);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow);
+}
+
+.big:active {
+  transform: translate(3px, 3px);
+  box-shadow: var(--shadow-press);
+}
+
+.favOn {
+  color: var(--ink);
+  background: var(--yellow);
+}
+
+.madeOn {
+  color: var(--card);
+  background: var(--red);
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--gap-m);
+  background: var(--card);
+  border: 2.5px solid var(--red);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow);
+}
+
+.confirmText {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.confirmRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-s);
+}
+
+.confirmBtn {
+  min-height: 44px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 900;
+  background: var(--paper-deep);
+  border: var(--line-thin);
+  border-radius: 999px;
+  box-shadow: var(--shadow-s);
+}
+
+.confirmDanger {
+  color: var(--card);
+  background: var(--red);
+}
+
+.record {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-m);
+  padding: var(--gap-m);
+  background: var(--card);
+  border: var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--ink-soft);
+}
+
+.input,
+.textarea {
+  padding: 11px 12px;
+  font-size: 16px;
+  font-weight: 700;
+  background: var(--paper);
+  border: var(--line-thin);
+  border-radius: var(--radius-s);
+}
+
+.textarea {
+  resize: vertical;
+  font-weight: 500;
+}
+
+.howto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-m);
+  margin-top: var(--gap-s);
+}
+
+.h2 {
+  font-size: 20px;
+  background: linear-gradient(transparent 68%, var(--blue) 68% 92%, transparent 92%);
+  align-self: flex-start;
+  padding-right: 4px;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-m);
+}
+
+.step {
+  position: relative;
+  padding: 12px;
+  background: var(--card);
+  border: var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow);
+}
+
+/* 何枚目かがひと目でわかるように、左上に番号の丸をつける */
+.stepNo {
+  position: absolute;
+  left: -8px;
+  top: -8px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--card);
+  background: var(--blue);
+  border: var(--line-thin);
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.stepImage {
+  width: 100%;
+  border-radius: var(--radius-s);
+}
+
+.zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  min-height: 44px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 900;
+  background: var(--paper-deep);
+  border: var(--line-thin);
+  border-radius: 999px;
+}
+
+.zoom:active {
+  transform: translate(1px, 1px);
+}
+
+.note {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-s);
+}
+
+.linkBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 13px 18px;
+  font-size: 14px;
+  font-weight: 900;
+  text-decoration: none;
+  background: var(--card);
+  border: var(--line);
+  border-radius: 999px;
+  box-shadow: var(--shadow-s);
+}
+
+.linkBtn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.credit {
+  margin-top: var(--gap-s);
+  padding-top: var(--gap-m);
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--ink-soft);
+  border-top: 2px dotted var(--ink-faint);
+}

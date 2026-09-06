@@ -1,0 +1,29 @@
+.box {
+  padding: 40px 20px;
+  text-align: center;
+  background: var(--card);
+  border: var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow);
+}
+
+.parts {
+  width: 120px;
+  height: 44px;
+  margin: 0 auto 16px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.hint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.action {
+  margin-top: 18px;
+}

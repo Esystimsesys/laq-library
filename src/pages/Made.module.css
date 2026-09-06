@@ -1,0 +1,36 @@
+.meter {
+  padding: var(--gap-m);
+  background: var(--card);
+  border: var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow);
+}
+
+.meterBar {
+  height: 20px;
+  background: var(--paper-deep);
+  border: var(--line-thin);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.meterFill {
+  height: 100%;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--green) 0 9px,
+    #47bd67 9px 18px
+  );
+  border-right: var(--line-thin);
+}
+
+.meterText {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.meterText strong {
+  font-size: 18px;
+  color: var(--ink);
+}

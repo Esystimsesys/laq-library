@@ -1,0 +1,72 @@
+.saveWarning {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding: 10px var(--gap-m);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--card);
+  background: var(--red);
+  border-bottom: var(--line-thin);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.nav {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: var(--line);
+  margin-top: auto;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 2px;
+  min-height: 54px;
+  border-radius: var(--radius-m);
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.tabIcon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 32px;
+  border-radius: 999px;
+}
+
+.tabLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.active {
+  color: var(--ink);
+}
+
+/* 選んでいるタブは、アイコンの後ろに色の丸をつけて一目でわかるようにする */
+.active .tabIcon {
+  background: var(--yellow);
+  border: var(--line-thin);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.tab:active .tabIcon {
+  transform: translate(1px, 1px);
+}

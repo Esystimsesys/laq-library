@@ -1,0 +1,36 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--gap-m);
+}
+
+/* 画面が広いときは 3 列・4 列に増やす（横向きのタブレットなど） */
+@media (min-width: 520px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 760px) {
+  .grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.more {
+  display: block;
+  width: 100%;
+  margin: var(--gap-l) 0 0;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 900;
+  background: var(--card);
+  border: var(--line);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow);
+}
+
+.more:active {
+  transform: translate(3px, 3px);
+  box-shadow: var(--shadow-press);
+}

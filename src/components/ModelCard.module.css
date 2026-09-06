@@ -1,0 +1,125 @@
+.item {
+  position: relative;
+}
+
+.card {
+  display: block;
+  height: 100%;
+  background: var(--card);
+  border: var(--line);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+}
+
+.card:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--shadow-press);
+}
+
+.thumbWrap {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: var(--paper-deep);
+  border-bottom: var(--line-thin);
+}
+
+.thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 画像がまだ届いていないとき（オフラインの初回など）の place holder。
+   斜めのしましまで「ここに写真が入る」ことだけ伝える。 */
+.noThumb {
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--paper-deep) 0 10px,
+    var(--paper) 10px 20px
+  );
+}
+
+.level {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--card);
+  border: var(--line-thin);
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.beginner {
+  background: var(--level-beginner);
+}
+.intermediate {
+  background: var(--level-intermediate);
+}
+.advanced {
+  background: var(--level-advanced);
+}
+
+/* 作ったものには、ななめのスタンプを押す */
+.madeStamp {
+  position: absolute;
+  right: -14px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 22px 3px 10px;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--card);
+  background: var(--red);
+  border: var(--line-thin);
+  box-shadow: 2px 2px 0 var(--ink);
+  transform: rotate(-6deg);
+}
+
+.title {
+  padding: 8px 10px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  /* 名前が長い作品があるので 2 行で打ち切って、カードの高さをそろえる */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.fav {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--ink-soft);
+  background: var(--card);
+  border: var(--line-thin);
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.favOn {
+  color: var(--ink);
+  background: var(--yellow);
+}
+
+.fav:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}

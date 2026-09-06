@@ -1,0 +1,23 @@
+/* 画像が読めなかった場所。斜めのしましまで「ここに絵が入る」ことだけ伝える */
+.fallback {
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+  padding: 16px;
+  text-align: center;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--paper-deep) 0 10px,
+    var(--paper) 10px 20px
+  );
+}
+
+.text {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  background: var(--card);
+  border: var(--line-thin);
+  border-radius: 999px;
+}

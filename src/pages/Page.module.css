@@ -1,0 +1,30 @@
+/* タブの中身に共通の外枠。下のナビにかぶらないよう余白をとる */
+.page {
+  flex: 1;
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: calc(14px + env(safe-area-inset-top)) var(--gap-m) var(--gap-l);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-m);
+}
+
+/* 空っぽの画面などから押す、目立たせすぎないボタン */
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 900;
+  background: var(--yellow);
+  border: var(--line);
+  border-radius: 999px;
+  box-shadow: var(--shadow-s);
+}
+
+.linkButton:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}

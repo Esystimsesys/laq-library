@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="LaQずかん">
+  <rect width="64" height="64" rx="14" fill="#fff6e5"/>
+  <g stroke="#3a2a22" stroke-width="3.2" stroke-linejoin="round">
+    <rect x="8" y="8" width="22" height="22" rx="4" fill="#1f7fd0"/>
+    <rect x="34" y="34" width="22" height="22" rx="4" fill="#e8402a"/>
+    <path d="M45 8 56 29 34 29Z" fill="#ffc61e"/>
+    <path d="M19 56 8 35 30 35Z" fill="#35a854"/>
+  </g>
+</svg>

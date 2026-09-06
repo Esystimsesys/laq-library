@@ -1,0 +1,101 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'ヒラギノ丸ゴ ProN',
+    system-ui, sans-serif;
+  font-weight: 500;
+  color: var(--ink);
+  background-color: var(--paper);
+  /* うすい方眼。ノートに描いた図鑑らしさを出す（模様なので読み上げには影響しない） */
+  background-image:
+    linear-gradient(rgba(58, 42, 34, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(58, 42, 34, 0.05) 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  color: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* 画面の骨組み。下のナビの分だけ本文に余白をつくる */
+.app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 読み上げ専用の見出しなど */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

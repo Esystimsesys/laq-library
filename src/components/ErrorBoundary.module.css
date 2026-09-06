@@ -1,0 +1,40 @@
+.box {
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 24px;
+  background: var(--card);
+  border: var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow);
+}
+
+.title {
+  font-size: 19px;
+}
+
+.text {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.button {
+  margin-top: 18px;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 900;
+  background: var(--yellow);
+  border: var(--line);
+  border-radius: 999px;
+  box-shadow: var(--shadow-s);
+}
+
+.detail {
+  margin-top: 18px;
+  padding: 10px;
+  font-size: 11px;
+  color: var(--ink-soft);
+  background: var(--paper);
+  border-radius: var(--radius-s);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
