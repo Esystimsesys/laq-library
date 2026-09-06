@@ -1,0 +1,165 @@
+.back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 9px 18px 9px 13px;
+  font-size: 14px;
+  font-weight: 900;
+  background: var(--card);
+  border: var(--line-thin);
+  border-radius: 999px;
+  box-shadow: var(--shadow-s);
+}
+
+.lead {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: var(--gap-m);
+  background: var(--card);
+  border: var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  padding: 0;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--ink-soft);
+}
+
+.input,
+.textarea {
+  padding: 11px 12px;
+  /* iOS で入力欄にふれたときに画面が拡大しないよう 16px を下回らせない */
+  font-size: 16px;
+  font-weight: 700;
+  background: var(--paper);
+  border: var(--line-thin);
+  border-radius: var(--radius-s);
+}
+
+.textarea {
+  font-weight: 500;
+  resize: vertical;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 7px 15px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--paper);
+  border: var(--line-thin);
+  border-radius: 999px;
+}
+
+.on {
+  color: var(--card);
+  background: var(--ink);
+}
+
+.danger {
+  color: var(--card);
+  background: var(--red);
+}
+
+.photo {
+  width: 100%;
+  border: var(--line-thin);
+  border-radius: var(--radius-m);
+}
+
+.photoButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 900;
+  background: var(--paper-deep);
+  border: var(--line-thin);
+  border-radius: 999px;
+  box-shadow: var(--shadow-s);
+  cursor: pointer;
+}
+
+.note {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.error {
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--card);
+  background: var(--red);
+  border-radius: var(--radius-s);
+}
+
+.save {
+  min-height: 56px;
+  padding: 16px;
+  font-size: 17px;
+  font-weight: 900;
+  background: var(--yellow);
+  border: var(--line);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow);
+}
+
+.save:active {
+  transform: translate(3px, 3px);
+  box-shadow: var(--shadow-press);
+}
+
+.delete {
+  min-height: 44px;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--red);
+  background: transparent;
+  border: 2px dashed var(--red);
+  border-radius: 999px;
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--gap-m);
+  background: var(--card);
+  border: 2.5px solid var(--red);
+  border-radius: var(--radius-l);
+}
+
+.confirmText {
+  font-size: 14px;
+  font-weight: 700;
+}

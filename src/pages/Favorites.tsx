@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router'
-import { modelById } from '../data'
 import type { Model } from '../data/types'
+import { useLookup } from '../lib/lookup'
 import { useApp } from '../store/useApp'
 import EmptyState from '../components/EmptyState'
 import ModelGrid from '../components/ModelGrid'
@@ -10,15 +10,16 @@ import page from './Page.module.css'
 
 export default function Favorites() {
   const { state } = useApp()
+  const lookup = useLookup()
 
   // 保存してあるのは id だけなので、作品データに引き当てる。
   // 取り込み直しで消えた作品が混ざっていても落ちないよう、見つからないものは捨てる。
   const list = useMemo(
     () =>
       state.favorites
-        .map((id) => modelById.get(id))
+        .map((id) => lookup(id))
         .filter((m): m is Model => Boolean(m)),
-    [state.favorites],
+    [state.favorites, lookup],
   )
 
   return (

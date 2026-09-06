@@ -95,6 +95,32 @@
   border-radius: 999px;
 }
 
+/* どの冊子の何ページか。手元の本を open くための手がかり */
+.bookletInfo {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+  margin: 0;
+  padding: var(--gap-m);
+  font-size: 15px;
+  background: var(--card);
+  border: var(--line);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+}
+
+.bookletInfo dt {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--ink-soft);
+  align-self: center;
+}
+
+.bookletInfo dd {
+  margin: 0;
+  font-weight: 700;
+}
+
 .desc {
   font-size: 15px;
 }

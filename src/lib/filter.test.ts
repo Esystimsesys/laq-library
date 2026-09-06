@@ -54,6 +54,7 @@ const user: UserState = {
   version: 1,
   favorites: ['test:2'],
   made: { 'test:1': { madeAt: '2026-01-02', note: '' } },
+  booklets: [],
 }
 
 describe('filterModels', () => {

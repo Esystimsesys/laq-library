@@ -18,12 +18,22 @@ export const sources = SOURCE_FILES.map(
   ({ models: list, ...info }) => ({ ...info, count: list.length }),
 )
 
+/** 自分で登録した作品ぶん。取り込みではないので、出典も権利者も自分になる。 */
+export const MY_BOOKLET_SOURCE: SourceInfo = {
+  source: 'my-booklet',
+  sourceLabel: 'じぶんで とうろく',
+  rightsHolder: '手元の LaQ の冊子',
+  sourceLinkLabel: '',
+  sourceUrl: '',
+}
+
 const sourceInfoById = new Map<SourceId, SourceInfo>(
   SOURCE_FILES.map(({ source, sourceLabel, rightsHolder, sourceLinkLabel, sourceUrl }) => [
     source,
     { source, sourceLabel, rightsHolder, sourceLinkLabel, sourceUrl },
   ]),
 )
+sourceInfoById.set(MY_BOOKLET_SOURCE.source, MY_BOOKLET_SOURCE)
 
 /** その作品がどこから来たか。出典表記とリンクの文言はここから取る。 */
 export function sourceOf(model: Model): SourceInfo {

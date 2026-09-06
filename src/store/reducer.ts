@@ -1,5 +1,5 @@
 import { emptyState } from './storage'
-import type { UserState } from './types'
+import type { BookletEntry, UserState } from './types'
 
 /** きょうの日付を YYYY-MM-DD で返す（端末のタイムゾーンで数える）。 */
 export function today(now: Date = new Date()): string {
@@ -12,6 +12,9 @@ export type Action =
   | { type: 'made/toggle'; id: string }
   | { type: 'made/setDate'; id: string; madeAt: string }
   | { type: 'made/setNote'; id: string; note: string }
+  | { type: 'booklet/add'; entry: BookletEntry }
+  | { type: 'booklet/update'; entry: BookletEntry }
+  | { type: 'booklet/delete'; id: string }
   | { type: 'data/import'; state: UserState }
   /** 別のタブが保存した内容を取り込む。import と違い、こちらは保存し直さない */
   | { type: 'data/external'; state: UserState }
@@ -51,6 +54,26 @@ export function reducer(state: UserState, action: Action): UserState {
         made: { ...state.made, [action.id]: { ...current, note: action.note } },
       }
     }
+    case 'booklet/add':
+      return { ...state, booklets: [action.entry, ...state.booklets] }
+    case 'booklet/update':
+      return {
+        ...state,
+        booklets: state.booklets.map((b) =>
+          b.id === action.entry.id ? action.entry : b,
+        ),
+      }
+    case 'booklet/delete':
+      return {
+        ...state,
+        booklets: state.booklets.filter((b) => b.id !== action.id),
+        // 記録もいっしょに片づける。作品が無いのに記録だけ残ると、
+        // おきにいり・つくった の件数が実物と合わなくなる
+        favorites: state.favorites.filter((id) => id !== action.id),
+        made: Object.fromEntries(
+          Object.entries(state.made).filter(([id]) => id !== action.id),
+        ),
+      }
     case 'data/import':
     case 'data/external':
       return action.state

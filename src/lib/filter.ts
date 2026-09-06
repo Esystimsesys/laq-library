@@ -1,13 +1,24 @@
 import { models } from '../data'
 import type { Model } from '../data/types'
 import type { UserState } from '../store/types'
+import { toModel } from './myModels'
 import { queryTerms, searchIndexOf, type Filters } from './search'
 
 /**
  * 検索用の文字列は作品ごとに一度だけ作って使い回す。
- * 245 件ぶんを一文字打つたびに作り直すと、入力がもたつく。
+ * 1400 件ぶんを一文字打つたびに作り直すと、入力がもたつく。
+ * 自分で登録した作品は数が少なく、書き換えも起きるのでその場で作る。
  */
 const searchIndex = new Map(models.map((m) => [m.id, searchIndexOf(m)]))
+
+/**
+ * 取り込んだ作品と、自分で登録した冊子の作品をあわせた一覧。
+ * 自分のものを先に置いて、探しやすくする。
+ */
+export function allModels(user: UserState): Model[] {
+  if (user.booklets.length === 0) return models
+  return [...user.booklets.map(toModel), ...models]
+}
 
 export function filterModels(
   list: Model[],

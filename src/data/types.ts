@@ -9,7 +9,11 @@
  * だけで済み、画面側にはソースごとの分岐を書かない。
  * （レベルが無いソースがあり得るので、level は最初から null を許している）
  */
-export type SourceId = 'laq-official' | 'purimatu'
+/**
+ * 'my-booklet' だけは取り込みではなく、使う人が自分で登録したもの。
+ * 端末の中にしかなく、リポジトリには入らない。
+ */
+export type SourceId = 'laq-official' | 'purimatu' | 'my-booklet'
 
 export type Level = 'beginner' | 'intermediate' | 'advanced'
 

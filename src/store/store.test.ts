@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { reducer, today } from './reducer'
 import { emptyState, hasAnyRecord, parseState, saveState } from './storage'
-import type { UserState } from './types'
+import type { BookletEntry, UserState } from './types'
 
 describe('parseState', () => {
   it('配列をつくった記録として扱わない', () => {
@@ -82,6 +82,66 @@ describe('saveState', () => {
   })
 })
 
+describe('冊子から自分で登録した作品', () => {
+  const entry: BookletEntry = {
+    id: 'my-booklet:1',
+    title: 'きょうりゅうロボ',
+    booklet: 'ベーシック401',
+    page: '12',
+    level: 'intermediate',
+    categories: ['きょうりゅう'],
+    note: '',
+    hasPhoto: false,
+    createdAt: '2026-09-07T00:00:00.000Z',
+  }
+
+  it('足したものが先頭に来る', () => {
+    const one = reducer(emptyState, { type: 'booklet/add', entry })
+    const two = reducer(one, {
+      type: 'booklet/add',
+      entry: { ...entry, id: 'my-booklet:2', title: 'ねこ' },
+    })
+    expect(two.booklets.map((b) => b.title)).toEqual(['ねこ', 'きょうりゅうロボ'])
+  })
+
+  it('けすと、その作品のおきにいり・つくった記録もいっしょに片づく', () => {
+    // 作品が無いのに記録だけ残ると、件数が実物と合わなくなる
+    const withEntry: UserState = {
+      version: 1,
+      favorites: ['my-booklet:1', 'laq-official:005171'],
+      made: {
+        'my-booklet:1': { madeAt: '2026-09-01', note: '' },
+        'laq-official:005171': { madeAt: '2026-09-02', note: '' },
+      },
+      booklets: [entry],
+    }
+    const next = reducer(withEntry, { type: 'booklet/delete', id: 'my-booklet:1' })
+    expect(next.booklets).toEqual([])
+    expect(next.favorites).toEqual(['laq-official:005171'])
+    expect(Object.keys(next.made)).toEqual(['laq-official:005171'])
+  })
+
+  it('保存してあるものが壊れていても、形をそろえて受け入れる', () => {
+    const parsed = parseState({
+      version: 1,
+      favorites: [],
+      made: {},
+      booklets: [
+        { id: 'my-booklet:1', title: 'ねこ', level: 'まちがい', categories: ['どうぶつ', 1] },
+        'これは記録ではない',
+      ],
+    })
+    expect(parsed.booklets).toHaveLength(1)
+    expect(parsed.booklets[0].level).toBeNull()
+    expect(parsed.booklets[0].categories).toEqual(['どうぶつ'])
+    expect(parsed.booklets[0].booklet).toBe('')
+  })
+
+  it('とうろくがあれば「記録あり」とみなす（空ファイルで消さないため）', () => {
+    expect(hasAnyRecord({ ...emptyState, booklets: [entry] })).toBe(true)
+  })
+})
+
 describe('today', () => {
   it('端末のタイムゾーンで YYYY-MM-DD を作る', () => {
     expect(today(new Date(2026, 0, 5))).toBe('2026-01-05')
@@ -94,6 +154,7 @@ describe('reducer', () => {
     version: 1,
     favorites: ['a'],
     made: { a: { madeAt: '2026-01-02', note: 'メモ' } },
+    booklets: [],
   }
 
   it('おきにいりは付け外しでき、新しいものが先頭に来る', () => {
@@ -149,6 +210,7 @@ describe('reducer', () => {
       version: 1,
       favorites: ['a'],
       made: { b: { madeAt: '2026-09-01', note: '' } },
+      booklets: [],
     }
     const next = reducer(base, { type: 'data/external', state: fromOtherTab })
     expect(next).toBe(fromOtherTab)
@@ -161,6 +223,7 @@ describe('reducer', () => {
       version: 1,
       favorites: ['x'],
       made: { x: { madeAt: '2026-02-03', note: 'よみこんだ' } },
+      booklets: [],
     }
     expect(reducer(base, { type: 'data/import', state: incoming })).toBe(incoming)
   })

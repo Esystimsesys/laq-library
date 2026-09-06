@@ -40,6 +40,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toggleMade: (id) => dispatch({ type: 'made/toggle', id }),
       setMadeAt: (id, madeAt) => dispatch({ type: 'made/setDate', id, madeAt }),
       setMadeNote: (id, note) => dispatch({ type: 'made/setNote', id, note }),
+      addBooklet: (entry) => dispatch({ type: 'booklet/add', entry }),
+      updateBooklet: (entry) => dispatch({ type: 'booklet/update', entry }),
+      deleteBooklet: (id) => dispatch({ type: 'booklet/delete', id }),
       importState: (next) => dispatch({ type: 'data/import', state: next }),
       resetAll: () => {
         clearState()

@@ -2,6 +2,8 @@ import { memo } from 'react'
 import { Link } from 'react-router'
 import type { Model } from '../data/types'
 import { LEVEL_KANA } from '../data'
+import { isMyBooklet } from '../lib/myModels'
+import PhotoImage from './PhotoImage'
 import RemoteImage from './RemoteImage'
 import { CheckIcon, StarIcon } from './icons'
 import styles from './ModelCard.module.css'
@@ -22,7 +24,13 @@ function ModelCard({ model, isFavorite, isMade, onToggleFavorite }: Props) {
     <li className={styles.item}>
       <Link to={`/model/${encodeURIComponent(model.id)}`} className={styles.card}>
         <div className={styles.thumbWrap}>
-          {model.thumbnail ? (
+          {isMyBooklet(model) ? (
+            <PhotoImage
+              className={styles.thumb}
+              id={model.id}
+              alt={`${model.title} のしゃしん`}
+            />
+          ) : model.thumbnail ? (
             <RemoteImage
               className={styles.thumb}
               src={model.thumbnail}
@@ -31,6 +39,7 @@ function ModelCard({ model, isFavorite, isMade, onToggleFavorite }: Props) {
           ) : (
             <div className={styles.noThumb} aria-hidden="true" />
           )}
+          {isMyBooklet(model) && <span className={styles.mine}>じぶんの</span>}
           {model.level && (
             <span className={`${styles.level} ${styles[model.level]}`}>
               {LEVEL_KANA[model.level]}

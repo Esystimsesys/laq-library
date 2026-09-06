@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { LEVEL_KANA, LEVEL_LABELS, modelById, sourceOf } from '../data'
+import { LEVEL_KANA, LEVEL_LABELS, sourceOf } from '../data'
+import { useLookup } from '../lib/lookup'
+import { isMyBooklet } from '../lib/myModels'
 import { today } from '../store/reducer'
 import { useApp } from '../store/useApp'
 import ImageViewer from '../components/ImageViewer'
+import PhotoImage from '../components/PhotoImage'
 import RemoteImage from '../components/RemoteImage'
 import {
   BackIcon,
@@ -25,12 +28,13 @@ export default function Detail() {
 function DetailContent({ modelId }: { modelId: string }) {
   const navigate = useNavigate()
   const { state, actions } = useApp()
+  const lookup = useLookup()
   const [zoomIndex, setZoomIndex] = useState<number | null>(null)
   const [confirmingUnmake, setConfirmingUnmake] = useState(false)
 
   // react-router が URL をデコードしてから params に入れるので、ここでは戻さない
   // （もう一度 decodeURIComponent すると、% を含む id で URIError になる）
-  const model = modelById.get(modelId)
+  const model = lookup(modelId)
 
   if (!model) {
     return (
@@ -46,6 +50,10 @@ function DetailContent({ modelId }: { modelId: string }) {
   }
 
   const source = sourceOf(model)
+  const mine = isMyBooklet(model)
+  const bookletEntry = mine
+    ? state.booklets.find((b) => b.id === model.id)
+    : undefined
   const isFavorite = state.favorites.includes(model.id)
   const made = state.made[model.id]
 
@@ -77,14 +85,40 @@ function DetailContent({ modelId }: { modelId: string }) {
           <h1 className={styles.title}>{model.title}</h1>
         </div>
 
-        {model.mainImage && (
-          <RemoteImage
-            className={styles.main}
-            src={model.mainImage}
-            alt={`${model.title} の かんせいひん`}
-            loading="eager"
-            fallbackText="しゃしんは インターネットに つながると 出ます"
-          />
+        {mine
+          ? bookletEntry?.hasPhoto && (
+              <PhotoImage
+                className={styles.main}
+                id={model.id}
+                alt={`${model.title} の しゃしん`}
+                fallbackText="しゃしんが 見つかりません"
+              />
+            )
+          : model.mainImage && (
+              <RemoteImage
+                className={styles.main}
+                src={model.mainImage}
+                alt={`${model.title} の かんせいひん`}
+                loading="eager"
+                fallbackText="しゃしんは インターネットに つながると 出ます"
+              />
+            )}
+
+        {bookletEntry && (
+          <dl className={styles.bookletInfo}>
+            {bookletEntry.booklet && (
+              <>
+                <dt>さっし</dt>
+                <dd>{bookletEntry.booklet}</dd>
+              </>
+            )}
+            {bookletEntry.page && (
+              <>
+                <dt>ページ</dt>
+                <dd>{bookletEntry.page}</dd>
+              </>
+            )}
+          </dl>
         )}
 
         {model.categories.length > 0 && (
@@ -97,7 +131,11 @@ function DetailContent({ modelId }: { modelId: string }) {
           </ul>
         )}
 
-        {model.description && <p className={styles.desc}>{model.description}</p>}
+        {/* 自分の作品は、冊子名とページを上の枠で出しているので、メモだけを見せる
+            （説明文には検索のために冊子名も混ぜてあり、そのまま出すと重複する） */}
+        {mine
+          ? bookletEntry?.note && <p className={styles.desc}>{bookletEntry.note}</p>
+          : model.description && <p className={styles.desc}>{model.description}</p>}
 
         {/* 記録のボタンは、図より先に押せる位置に置く */}
         <div className={styles.actions}>
@@ -180,6 +218,25 @@ function DetailContent({ modelId }: { modelId: string }) {
           </div>
         )}
 
+        {mine ? (
+          <section className={styles.howto}>
+            <h2 className={styles.h2}>つくりかた</h2>
+            <p className={styles.note}>
+              つくり方は、手元の
+              {bookletEntry?.booklet ? `「${bookletEntry.booklet}」` : 'さっし'}
+              {bookletEntry?.page ? ` の ${bookletEntry.page}ページ` : ''}を 見てね。
+              さっしの 図は この アプリには 入れていません。
+            </p>
+            <div className={styles.links}>
+              <Link
+                className={styles.linkBtn}
+                to={`/booklet/${encodeURIComponent(model.id)}`}
+              >
+                とうろくを なおす
+              </Link>
+            </div>
+          </section>
+        ) : (
         <section className={styles.howto}>
           <h2 className={styles.h2}>つくりかた</h2>
 
@@ -240,11 +297,21 @@ function DetailContent({ modelId }: { modelId: string }) {
             </a>
           </div>
         </section>
+        )}
 
         <p className={styles.credit}>
-          出典: {source.sourceLabel}（{source.rightsHolder}）。
-          写真・つくり方の図・PDF の 著作権は 権利者に あります。
-          このアプリは 出典の ページを 見つけやすくするための ものです。
+          {mine ? (
+            <>
+              これは じぶんで とうろくした さくひんです。
+              しゃしんも きろくも この たんまつの なかだけに あります。
+            </>
+          ) : (
+            <>
+              出典: {source.sourceLabel}（{source.rightsHolder}）。
+              写真・つくり方の図・PDF の 著作権は 権利者に あります。
+              このアプリは 出典の ページを 見つけやすくするための ものです。
+            </>
+          )}
         </p>
       </div>
 

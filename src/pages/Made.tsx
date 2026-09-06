@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router'
-import { models, modelById } from '../data'
+import { models } from '../data'
 import type { Model } from '../data/types'
+import { useLookup } from '../lib/lookup'
 import { useApp } from '../store/useApp'
 import EmptyState from '../components/EmptyState'
 import ModelGrid from '../components/ModelGrid'
@@ -11,11 +12,12 @@ import page from './Page.module.css'
 
 export default function Made() {
   const { state } = useApp()
+  const lookup = useLookup()
 
   // 作った日の新しい順。同じ日なら名前順にして、並びが毎回変わらないようにする
   const list = useMemo(() => {
     return Object.entries(state.made)
-      .map(([id, record]) => ({ model: modelById.get(id), record }))
+      .map(([id, record]) => ({ model: lookup(id), record }))
       .filter((x): x is { model: Model; record: (typeof x)['record'] } =>
         Boolean(x.model),
       )
@@ -26,9 +28,10 @@ export default function Made() {
         return a.model.title.localeCompare(b.model.title, 'ja')
       })
       .map((x) => x.model)
-  }, [state.made])
+  }, [state.made, lookup])
 
-  const percent = Math.round((list.length / models.length) * 100)
+  const total = models.length + state.booklets.length
+  const percent = Math.round((list.length / total) * 100)
 
   return (
     <div className={page.page}>
@@ -43,7 +46,7 @@ export default function Made() {
             />
           </div>
           <p className={styles.meterText}>
-            ずかん {models.length} この うち <strong>{list.length}</strong> こ
+            ぜんぶで {total} この うち <strong>{list.length}</strong> こ
             （{percent}%）
           </p>
         </div>

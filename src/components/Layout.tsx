@@ -14,8 +14,9 @@ const TABS = [
 export default function Layout() {
   const { pathname } = useLocation()
   const { saveFailed } = useApp()
-  // 作品の詳細はタブの外側にある画面なので、下のナビは出さない
-  const isDetail = pathname.startsWith('/model/')
+  // 作品の詳細と、自分で登録する画面はタブの外側なので、下のナビは出さない
+  const isDetail =
+    pathname.startsWith('/model/') || pathname.startsWith('/booklet/')
 
   return (
     <div className="app">

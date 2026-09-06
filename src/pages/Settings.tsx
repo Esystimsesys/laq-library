@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { UserState } from '../store/types'
 import { models, sources } from '../data'
+import { exportPhotos, importPhotos } from '../lib/photos'
 import { hasAnyRecord, parseState } from '../store/storage'
 import { useApp } from '../store/useApp'
 import PageHeader from '../components/PageHeader'
@@ -21,11 +22,17 @@ export default function Settings() {
   const [confirmingReset, setConfirmingReset] = useState(false)
   // 読み込みは今の記録をまるごと置きかえるので、中身を見せてから確かめる
   const [pendingImport, setPendingImport] = useState<UserState | null>(null)
+  const [pendingPhotos, setPendingPhotos] = useState<Record<string, string>>({})
 
   const madeCount = Object.keys(state.made).length
 
-  const handleExport = () => {
-    const blob = new Blob([JSON.stringify(state, null, 2)], {
+  const handleExport = async () => {
+    // 写真は IndexedDB にあるので、書き出しのときだけ JSON に混ぜる。
+    // これをしないと、端末を替えたときに写真だけ置き去りになる。
+    const photos = await exportPhotos(
+      state.booklets.filter((b) => b.hasPhoto).map((b) => b.id),
+    )
+    const blob = new Blob([JSON.stringify({ ...state, photos }, null, 2)], {
       type: 'application/json',
     })
     const url = URL.createObjectURL(blob)
@@ -73,6 +80,9 @@ export default function Settings() {
           <li>
             <strong>{madeCount}</strong> つくった
           </li>
+          <li>
+            <strong>{state.booklets.length}</strong> じぶんで とうろく
+          </li>
         </ul>
         <p className={styles.note}>
           きろくは この たんまつの なかだけに ほぞんされます。
@@ -86,7 +96,11 @@ export default function Settings() {
           べつの たんまつに うつしたいとき や、けす まえの ひかえに つかいます。
         </p>
         <div className={styles.row}>
-          <button type="button" className={styles.button} onClick={handleExport}>
+          <button
+            type="button"
+            className={styles.button}
+            onClick={() => void handleExport()}
+          >
             ファイルに ほぞん
           </button>
           <button
@@ -112,18 +126,20 @@ export default function Settings() {
           <div className={styles.confirm}>
             <p className={styles.confirmText}>
               いまの きろく（おきにいり {state.favorites.length} こ / つくった{' '}
-              {madeCount} こ）は きえて、ファイルの きろく（おきにいり{' '}
-              {pendingImport.favorites.length} こ / つくった{' '}
-              {Object.keys(pendingImport.made).length} こ）に なります。
-              よみこみますか？
+              {madeCount} こ / とうろく {state.booklets.length} こ）は きえて、
+              ファイルの きろく（おきにいり {pendingImport.favorites.length} こ /
+              つくった {Object.keys(pendingImport.made).length} こ / とうろく{' '}
+              {pendingImport.booklets.length} こ）に なります。よみこみますか？
             </p>
             <div className={styles.row}>
               <button
                 type="button"
                 className={`${styles.button} ${styles.dangerButton}`}
                 onClick={() => {
+                  void importPhotos(pendingPhotos)
                   actions.importState(pendingImport)
                   setPendingImport(null)
+                  setPendingPhotos({})
                   setMessage('よみこみました。')
                 }}
               >

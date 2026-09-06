@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { UserState } from './types'
+import type { BookletEntry, UserState } from './types'
 
 export type Actions = {
   toggleFavorite: (modelId: string) => void
@@ -7,6 +7,9 @@ export type Actions = {
   toggleMade: (modelId: string) => void
   setMadeAt: (modelId: string, madeAt: string) => void
   setMadeNote: (modelId: string, note: string) => void
+  addBooklet: (entry: BookletEntry) => void
+  updateBooklet: (entry: BookletEntry) => void
+  deleteBooklet: (id: string) => void
   importState: (state: UserState) => void
   resetAll: () => void
 }

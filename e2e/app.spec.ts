@@ -60,3 +60,32 @@ test('存在しないURLから図鑑に戻れる', async ({ page }) => {
   await page.getByRole('link', { name: 'ずかんに もどる' }).click()
   await expect(page.locator('a[href*="/model/"]').first()).toBeVisible()
 })
+
+test('手元の冊子から自分で登録し、一覧と検索に出る', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('link', { name: /じぶんで とうろく/ }).click()
+
+  await page.getByLabel('なまえ（かならず）').fill('きょうりゅうロボ')
+  await page.getByLabel('どの さっし？').fill('ベーシック401')
+  await page.getByLabel('なんページ？').fill('12')
+  await page.getByRole('radio', { name: 'ふつう' }).click()
+  await page.getByRole('button', { name: 'きょうりゅう', exact: true }).click()
+  await page.getByRole('button', { name: 'とうろくする' }).click()
+
+  // 登録すると、その作品のページへ移る
+  await expect(page.getByRole('heading', { name: 'きょうりゅうロボ' })).toBeVisible()
+  await expect(page.getByText('ベーシック401', { exact: true })).toBeVisible()
+  await expect(page.getByText(/12ページを 見てね/)).toBeVisible()
+
+  // 冊子名でも引ける
+  await page.goto('./')
+  await page.getByRole('searchbox').fill('ベーシック401')
+  const card = page.locator('a[href*="/model/my-booklet"]').first()
+  await expect(card).toBeVisible()
+  await expect(card).toContainText('きょうりゅうロボ')
+
+  // 名前を入れずには登録できない
+  await page.getByRole('link', { name: /じぶんで とうろく/ }).click()
+  await page.getByRole('button', { name: 'とうろくする' }).click()
+  await expect(page.getByRole('alert')).toContainText('なまえを 入れてください')
+})

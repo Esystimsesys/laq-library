@@ -1,4 +1,4 @@
-import type { UserState } from './types'
+import type { BookletEntry, UserState } from './types'
 
 const KEY = 'laq-library:v1'
 
@@ -6,6 +6,7 @@ export const emptyState: UserState = {
   version: 1,
   favorites: [],
   made: {},
+  booklets: [],
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -34,12 +35,39 @@ export function parseState(raw: unknown): UserState {
     }
   }
 
-  return { version: 1, favorites, made }
+  const booklets = Array.isArray(raw.booklets)
+    ? raw.booklets.filter(isRecord).map(toBookletEntry)
+    : []
+
+  return { version: 1, favorites, made, booklets }
+}
+
+const LEVELS = ['beginner', 'intermediate', 'advanced'] as const
+
+function toBookletEntry(raw: Record<string, unknown>): BookletEntry {
+  const level = LEVELS.find((l) => l === raw.level) ?? null
+  return {
+    id: typeof raw.id === 'string' ? raw.id : `my-booklet:${crypto.randomUUID()}`,
+    title: typeof raw.title === 'string' ? raw.title : '',
+    booklet: typeof raw.booklet === 'string' ? raw.booklet : '',
+    page: typeof raw.page === 'string' ? raw.page : '',
+    level,
+    categories: Array.isArray(raw.categories)
+      ? raw.categories.filter((c): c is string => typeof c === 'string')
+      : [],
+    note: typeof raw.note === 'string' ? raw.note : '',
+    hasPhoto: raw.hasPhoto === true,
+    createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : '',
+  }
 }
 
 /** 記録が 1 件でも入っているか。空のファイルで今の記録を消さないための判定。 */
 export function hasAnyRecord(state: UserState): boolean {
-  return state.favorites.length > 0 || Object.keys(state.made).length > 0
+  return (
+    state.favorites.length > 0 ||
+    Object.keys(state.made).length > 0 ||
+    state.booklets.length > 0
+  )
 }
 
 export function loadState(): UserState {

@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router'
 import { models } from '../data'
+import { allModels } from '../lib/filter'
 import { getBrowseState, setBrowseState } from '../lib/browseState'
 import { filterModels } from '../lib/filter'
 import { emptyFilters, isFiltering, type Filters } from '../lib/search'
@@ -8,6 +10,7 @@ import EmptyState from '../components/EmptyState'
 import FilterBar from '../components/FilterBar'
 import ModelGrid from '../components/ModelGrid'
 import PageHeader from '../components/PageHeader'
+import styles from './Browse.module.css'
 import page from './Page.module.css'
 
 export default function Browse() {
@@ -24,7 +27,7 @@ export default function Browse() {
   }
 
   const hits = useMemo(
-    () => filterModels(models, filters, state),
+    () => filterModels(allModels(state), filters, state),
     [filters, state],
   )
 
@@ -44,9 +47,16 @@ export default function Browse() {
 
   return (
     <div className={page.page}>
-      <PageHeader title="LaQライブラリ" sub={`ぜんぶで ${models.length} こ`} />
+      <PageHeader
+        title="LaQライブラリ"
+        sub={`ぜんぶで ${models.length + state.booklets.length} こ`}
+      />
 
       <FilterBar filters={filters} onChange={setFilters} hitCount={hits.length} />
+
+      <Link to="/booklet/new" className={styles.addButton}>
+        ＋ 手元の さっしから じぶんで とうろく
+      </Link>
 
       <ModelGrid
         models={hits}
