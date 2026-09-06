@@ -10,9 +10,6 @@ const sample: Model[] = [
   {
     id: 'test:1',
     source: 'laq-official',
-    sourceLabel: 'テスト',
-    rightsHolder: 'テスト権利者',
-    sourceLinkLabel: 'テストのページ',
     sourceUrl: 'https://example.com/1',
     title: 'ティラノサウルス',
     description: 'おおきな きょうりゅう',
@@ -26,9 +23,6 @@ const sample: Model[] = [
   {
     id: 'test:2',
     source: 'laq-official',
-    sourceLabel: 'テスト',
-    rightsHolder: 'テスト権利者',
-    sourceLinkLabel: 'テストのページ',
     sourceUrl: 'https://example.com/2',
     title: 'パトカー',
     description: '',
@@ -42,9 +36,6 @@ const sample: Model[] = [
   {
     id: 'test:3',
     source: 'laq-official',
-    sourceLabel: 'テスト',
-    rightsHolder: 'テスト権利者',
-    sourceLinkLabel: 'テストのページ',
     sourceUrl: 'https://example.com/3',
     title: 'ねこ',
     description: '',

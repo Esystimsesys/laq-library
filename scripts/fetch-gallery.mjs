@@ -155,9 +155,6 @@ export async function main({
     models.push({
       id: `${SOURCE_ID}:${paddedId}`,
       source: SOURCE_ID,
-      sourceLabel: SOURCE_LABEL,
-      rightsHolder: RIGHTS_HOLDER,
-      sourceLinkLabel: SOURCE_LINK_LABEL,
       sourceUrl: entry.permalink,
       title,
       description,

@@ -11,7 +11,7 @@ codex exec --sandbox workspace-write -C . "$(sed -n '/^---8<---$/,$p' docs/01-co
 ```
 
 ---8<---
-あなたは `laq-library`（アプリ名「LaQずかん」）というリポジトリの開発を引き継ぎます。
+あなたは `laq-library`（アプリ名「LaQライブラリ」）というリポジトリの開発を引き継ぎます。
 まず `README.md` と `docs/00-worklog.md` を読んでください。これまでの経緯と「なぜそうしたか」が
 そこに書いてあります。以下はそれを前提にした作業指示です。
 

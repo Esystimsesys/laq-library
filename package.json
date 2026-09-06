@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "build:pages": "GITHUB_PAGES=true npm run build && cp dist/index.html dist/404.html",
     "preview:pages": "GITHUB_PAGES=true vite preview",
-    "fetch:gallery": "node scripts/fetch-gallery.mjs"
+    "fetch:gallery": "node scripts/fetch-gallery.mjs",
+    "fetch:purimatu": "node scripts/fetch-purimatu.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

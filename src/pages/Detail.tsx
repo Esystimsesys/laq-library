@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { LEVEL_KANA, LEVEL_LABELS, modelById } from '../data'
+import { LEVEL_KANA, LEVEL_LABELS, modelById, sourceOf } from '../data'
 import { today } from '../store/reducer'
 import { useApp } from '../store/useApp'
 import ImageViewer from '../components/ImageViewer'
@@ -45,6 +45,7 @@ function DetailContent({ modelId }: { modelId: string }) {
     )
   }
 
+  const source = sourceOf(model)
   const isFavorite = state.favorites.includes(model.id)
   const made = state.made[model.id]
 
@@ -207,12 +208,12 @@ function DetailContent({ modelId }: { modelId: string }) {
           ) : (
             <p className={styles.note}>
               この さくひんの つくり方の 図は とりこめていません。
-              下の「{model.sourceLinkLabel}」で 見てください。
+              下の「{source.sourceLinkLabel}」で 見てください。
             </p>
           )}
 
           <p className={styles.note}>
-            つくり方の 図は LaQ公式サイトから よみこんでいます。
+            しゃしんと 図は {source.sourceLabel} から よみこんでいます。
             インターネットに つながっていないと 出ないことがあります。
           </p>
 
@@ -235,13 +236,13 @@ function DetailContent({ modelId }: { modelId: string }) {
               rel="noreferrer"
             >
               <LinkIcon size={22} />
-              {model.sourceLinkLabel}
+              {source.sourceLinkLabel}
             </a>
           </div>
         </section>
 
         <p className={styles.credit}>
-          出典: {model.sourceLabel}（{model.rightsHolder}）。
+          出典: {source.sourceLabel}（{source.rightsHolder}）。
           写真・つくり方の図・PDF の 著作権は 権利者に あります。
           このアプリは 出典の ページを 見つけやすくするための ものです。
         </p>

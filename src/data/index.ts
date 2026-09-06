@@ -1,8 +1,12 @@
 import laqOfficial from './sources/laq-official.json'
-import type { Model, SourceFile } from './types'
+import purimatu from './sources/purimatu.json'
+import type { Model, SourceFile, SourceId, SourceInfo } from './types'
 
 // ソースを足すときはここに import と配列への追加を書く
-const SOURCE_FILES: SourceFile[] = [laqOfficial as SourceFile]
+const SOURCE_FILES: SourceFile[] = [
+  laqOfficial as SourceFile,
+  purimatu as SourceFile,
+]
 
 export const models: Model[] = SOURCE_FILES.flatMap((f) => f.models)
 
@@ -11,15 +15,22 @@ export const modelById: ReadonlyMap<string, Model> = new Map(
 )
 
 export const sources = SOURCE_FILES.map(
-  ({ source, sourceLabel, rightsHolder, sourceUrl, fetchedAt, models: list }) => ({
-    source,
-    sourceLabel,
-    rightsHolder,
-    sourceUrl,
-    fetchedAt,
-    count: list.length,
-  }),
+  ({ models: list, ...info }) => ({ ...info, count: list.length }),
 )
+
+const sourceInfoById = new Map<SourceId, SourceInfo>(
+  SOURCE_FILES.map(({ source, sourceLabel, rightsHolder, sourceLinkLabel, sourceUrl }) => [
+    source,
+    { source, sourceLabel, rightsHolder, sourceLinkLabel, sourceUrl },
+  ]),
+)
+
+/** その作品がどこから来たか。出典表記とリンクの文言はここから取る。 */
+export function sourceOf(model: Model): SourceInfo {
+  const info = sourceInfoById.get(model.source)
+  if (!info) throw new Error(`知らないソースです: ${model.source}`)
+  return info
+}
 
 /**
  * チップに出すカテゴリ。ソースが決めた並び順を尊重しつつ、

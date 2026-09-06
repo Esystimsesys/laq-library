@@ -44,7 +44,7 @@ export default function Browse() {
 
   return (
     <div className={page.page}>
-      <PageHeader title="LaQずかん" sub={`ぜんぶで ${models.length} こ`} />
+      <PageHeader title="LaQライブラリ" sub={`ぜんぶで ${models.length} こ`} />
 
       <FilterBar filters={filters} onChange={setFilters} hitCount={hits.length} />
 

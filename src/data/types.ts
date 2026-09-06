@@ -9,7 +9,7 @@
  * だけで済み、画面側にはソースごとの分岐を書かない。
  * （レベルが無いソースがあり得るので、level は最初から null を許している）
  */
-export type SourceId = 'laq-official'
+export type SourceId = 'laq-official' | 'purimatu'
 
 export type Level = 'beginner' | 'intermediate' | 'advanced'
 
@@ -17,11 +17,6 @@ export type Model = {
   /** '<source>:<そのソースでの id>'。取り込み直しても変わらない */
   id: string
   source: SourceId
-  sourceLabel: string
-  /** 画像・図・PDF の権利者。詳細画面の出典表記に出す */
-  rightsHolder: string
-  /** 出典ページへ飛ぶボタンの文言 */
-  sourceLinkLabel: string
   /** 出典ページ。詳細画面から必ずここへリンクする */
   sourceUrl: string
   title: string
@@ -35,12 +30,22 @@ export type Model = {
   pdfUrl: string | null
 }
 
-export type SourceFile = {
+/**
+ * ソースごとに 1 度だけ持つ情報。作品 1 件ずつに同じ文字列を持たせると、
+ * 1000 件を超えたときに同梱するデータが目に見えて重くなる。
+ */
+export type SourceInfo = {
   source: SourceId
   sourceLabel: string
+  /** 画像・図・PDF の権利者。詳細画面の出典表記に出す */
   rightsHolder: string
+  /** 出典ページへ飛ぶボタンの文言 */
   sourceLinkLabel: string
+  /** そのソースのトップページ */
   sourceUrl: string
+}
+
+export type SourceFile = SourceInfo & {
   fetchedAt: string
   /** そのソースが決めたカテゴリの並び順（画面のチップの順番） */
   categoryOrder: string[]

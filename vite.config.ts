@@ -14,8 +14,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'LaQずかん',
-        short_name: 'LaQずかん',
+        name: 'LaQライブラリ',
+        short_name: 'LaQライブラリ',
         description:
           'LaQ公式つくり方ギャラリーの作品をさがして、おきにいりと つくったきろく をのこせるずかん。',
         lang: 'ja',
