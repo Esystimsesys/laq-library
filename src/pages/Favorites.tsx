@@ -27,6 +27,8 @@ export default function Favorites() {
       <PageHeader title="おきにいり" sub={`${list.length} こ`} />
       <ModelGrid
         models={list}
+        // 自分で選んだぶんだけなので、区切らずに全部見せる
+        paged={false}
         empty={
           <EmptyState
             title="まだ おきにいりが ありません"

@@ -43,12 +43,20 @@ export function sourceOf(model: Model): SourceInfo {
 }
 
 /**
- * チップに出すカテゴリ。ソースが決めた並び順を尊重しつつ、
- * 実際に 1 件も付いていないカテゴリは出さない。
+ * チップの先頭に固定するカテゴリ。
+ * ソースの並び順どおりだと、あとから足したソースのカテゴリが最後に回り、
+ * 横スクロールの奥に隠れてしまう。いちばんよく押すものはここに書く。
+ */
+const PINNED_CATEGORIES = ['ポケモン']
+
+/**
+ * チップに出すカテゴリ。先頭の固定ぶんのあとは、ソースが決めた並び順を
+ * 尊重しつつ、実際に 1 件も付いていないカテゴリは出さない。
  */
 export const categories: string[] = (() => {
   const used = new Set(models.flatMap((m) => m.categories))
   const ordered: string[] = []
+  for (const c of PINNED_CATEGORIES) if (used.has(c)) ordered.push(c)
   for (const file of SOURCE_FILES) {
     for (const c of file.categoryOrder) {
       if (used.has(c) && !ordered.includes(c)) ordered.push(c)

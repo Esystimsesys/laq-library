@@ -6,6 +6,10 @@
 // REST API を使う。per_page=100 なら 13 リクエストで全記事の本文まで取れる。
 // 個人ブログなので、この差は大きい。
 //
+// 完成写真は記事のアイキャッチ（featured_media）を使う。本文の 1 枚目は
+// 「つくるパーツ」＝バラしたパーツを並べた写真なので、完成形にならない。
+// アイキャッチの URL は media API でまとめて引く（100 件ずつ）。
+//
 // 画像は公式ソースと同じく URL を控えるだけで、ファイルは複製しない。
 //
 //   node scripts/fetch-purimatu.mjs           キャッシュ（30日以内）を使って再生成
@@ -21,6 +25,7 @@ const CACHE_DIR = path.join(ROOT, '.cache/purimatu')
 const OUT_FILE = path.join(ROOT, 'src/data/sources/purimatu.json')
 
 const API = 'https://purimatu.com/wp-json/wp/v2/posts'
+const MEDIA_API = 'https://purimatu.com/wp-json/wp/v2/media'
 const PER_PAGE = 100
 const SOURCE_ID = 'purimatu'
 const SOURCE_LABEL = 'ぷりまつラボ'
@@ -65,9 +70,18 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/** REST API の 1 ページぶん。取得済みで古くなっていなければキャッシュを使う。 */
-async function loadPage(page) {
-  const file = path.join(CACHE_DIR, `posts-${page}.json`)
+/** REST API を 1 回叩く。次を叩くまで DELAY_MS 待つ。 */
+async function fetchJson(url) {
+  const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } })
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`)
+  const total = Number(res.headers.get('x-wp-totalpages') ?? 0)
+  const body = await res.json()
+  await sleep(DELAY_MS)
+  return { total, body }
+}
+
+/** 取得済みで古くなっていなければキャッシュを使う。 */
+async function loadCached(file, url) {
   if (!refresh) {
     try {
       const { mtimeMs } = await stat(file)
@@ -77,14 +91,72 @@ async function loadPage(page) {
       // キャッシュが無い
     }
   }
-  const url = `${API}?per_page=${PER_PAGE}&page=${page}&_fields=id,slug,link,title,excerpt,content`
-  const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } })
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`)
-  const total = Number(res.headers.get('x-wp-totalpages') ?? 0)
-  const body = await res.json()
-  await writeFile(file, JSON.stringify({ total, body }))
-  await sleep(DELAY_MS)
-  return { total, body }
+  const result = await fetchJson(url)
+  await writeFile(file, JSON.stringify(result))
+  return result
+}
+
+/**
+ * 記事一覧の 1 ページぶん。
+ * キャッシュのファイル名を `posts-p<n>` にしてあるのは、取ってくる項目
+ * （_fields）を増やしたときに、項目の足りない古いキャッシュを読まないため。
+ */
+function loadPage(page) {
+  const fields = 'id,slug,link,title,excerpt,content,featured_media'
+  return loadCached(
+    path.join(CACHE_DIR, `posts-p${page}.json`),
+    `${API}?per_page=${PER_PAGE}&page=${page}&_fields=${fields}`,
+  )
+}
+
+/**
+ * media.json を読む。項目ごとの取得時刻を見て、古いものは無かったことにする。
+ *
+ * ファイルの更新時刻で期限を見ると、新しい ID を 1 つ足して書き直すたびに
+ * 全体の期限が延びてしまい、古い URL や「引けなかった（null）」がいつまでも
+ * 残りつづける。だからキャッシュの単位ごとに時刻を持たせる。
+ */
+async function readMediaCache(file) {
+  let saved
+  try {
+    saved = JSON.parse(await readFile(file, 'utf8'))
+  } catch {
+    return {}
+  }
+  const limit = Date.now() - CACHE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000
+  const fresh = {}
+  for (const [id, entry] of Object.entries(saved)) {
+    // 取得時刻を持たない古い形式は、いつのものか分からないので捨てる
+    if (entry && typeof entry === 'object' && entry.at > limit) fresh[id] = entry
+  }
+  return fresh
+}
+
+/**
+ * アイキャッチ画像の URL を、添付 ID から引けるようにする。
+ * 1 件ずつ引くと 1200 回になるので、100 件ずつまとめて取る（13 リクエスト）。
+ * 原寸は 1 枚 200KB 前後あるので、一覧にも詳細にも十分な large（長辺 1024）を選ぶ。
+ */
+async function loadFeaturedImages(ids) {
+  const file = path.join(CACHE_DIR, 'media.json')
+  const cache = refresh ? {} : await readMediaCache(file)
+  const missing = [...new Set(ids)].filter((id) => !(id in cache))
+  for (let i = 0; i < missing.length; i += PER_PAGE) {
+    const batch = missing.slice(i, i + PER_PAGE)
+    process.stdout.write(`\r  アイキャッチ ${i + batch.length}/${missing.length} 件`)
+    const url = `${MEDIA_API}?include=${batch.join(',')}&per_page=${PER_PAGE}&_fields=id,source_url,media_details`
+    const { body } = await fetchJson(url)
+    const at = Date.now()
+    for (const m of body) {
+      const source = m.media_details?.sizes?.large?.source_url ?? m.source_url ?? null
+      cache[m.id] = { url: source, at }
+    }
+    // 引けなかった ID も覚えておく。覚えないと毎回引きにいくことになる
+    for (const id of batch) if (!(id in cache)) cache[id] = { url: null, at }
+    await writeFile(file, JSON.stringify(cache))
+  }
+  if (missing.length) process.stdout.write('\n')
+  return Object.fromEntries(Object.entries(cache).map(([id, e]) => [id, e.url]))
 }
 
 function stripTags(html) {
@@ -118,19 +190,6 @@ function modelName(title) {
   return null
 }
 
-/**
- * 本文の画像。遅延読み込みのため src には base64 のダミーが入っていて、
- * 本当の URL は data-src にある。1 枚目が完成写真。
- */
-function contentImages(html) {
-  const $ = cheerio.load(html ?? '')
-  const urls = $('img')
-    .map((_, el) => $(el).attr('data-src') || $(el).attr('src'))
-    .get()
-    .filter((u) => u && u.startsWith('https://purimatu.com/'))
-  return [...new Set(urls)]
-}
-
 async function readPrevious() {
   try {
     return JSON.parse(await readFile(OUT_FILE, 'utf8'))
@@ -155,9 +214,15 @@ async function main() {
   }
   process.stdout.write(`\r  ${posts.length} 記事                \n`)
 
+  const works = posts.filter((post) => {
+    const name = modelName(stripTags(post.title?.rendered))
+    return name && !EXCLUDE_TITLE.test(name)
+  })
+  const featured = await loadFeaturedImages(works.map((p) => p.featured_media).filter(Boolean))
+
   const models = []
   const skipped = []
-  // 「作り方の記事として拾ったが、画像が取れなかった」件数。
+  // 「作り方の記事として拾ったが、完成写真が取れなかった」件数。
   // これを models に入れずに skipped へ混ぜてしまうと、抽出が全滅しても
   // 「作り方でない記事」と見分けがつかず、欠損に気づけない。
   let matchedButNoImage = 0
@@ -171,12 +236,10 @@ async function main() {
     }
 
     const contentText = stripTags(post.content?.rendered)
-    const images = contentImages(post.content?.rendered)
-    if (images.length === 0) {
-      matchedButNoImage += 1
-      skipped.push(`${title}（画像なし）`)
-      continue
-    }
+    // 完成写真はアイキャッチ。本文の 1 枚目は「つくるパーツ」＝バラした
+    // パーツを並べた写真で、その作品がどんな形になるのかは分からない。
+    const photo = featured[post.featured_media] ?? null
+    if (!photo) matchedButNoImage += 1
 
     models.push({
       id: `${SOURCE_ID}:${post.slug}`,
@@ -186,8 +249,8 @@ async function main() {
       description: shortDescription(stripTags(post.excerpt?.rendered)),
       level: levelOf(contentText),
       categories: [CATEGORY],
-      thumbnail: images[0],
-      mainImage: images[0],
+      thumbnail: photo,
+      mainImage: photo,
       // 手順の写真は取り込まない。理由は 2 つある。
       // 1. このブログの手順は写真のあいだの日本語の説明とセットで意味を持つ。
       //    写真だけ 25 枚並べても読めないし、本文を持ってくるのは複製にあたる。
@@ -220,15 +283,17 @@ function report(models, skipped, previous, matchedButNoImage) {
   console.log(`作品として取り込んだ: ${models.length}`)
   console.log(`作り方でないとして外した: ${skipped.length}`)
   const problems = []
-  // 作り方の記事として拾えたもののうち、何割で画像が取れなかったか
-  const matched = models.length + matchedButNoImage
-  console.log(`うち 完成写真が取れなかった: ${matchedButNoImage}`)
-  if (matched === 0) {
+  // 作り方の記事として拾えたもののうち、何割で完成写真が取れなかったか。
+  // 写真が無くても作品としては出す（本家の記事へは飛べる）ので、models には入っている。
+  // この 2 割というしきい値は src/data/data.test.ts の
+  // 「完成写真は、ほとんどの作品にある」と同じ値。片方だけ変えない。
+  console.log(`うち 完成写真（アイキャッチ）が無い: ${matchedButNoImage}`)
+  if (models.length === 0) {
     problems.push('作り方の記事を 1 件も拾えていない（TITLE_PATTERNS を確認）')
-  } else if (matchedButNoImage > matched * 0.2) {
+  } else if (matchedButNoImage > models.length * 0.2) {
     problems.push(
-      `完成写真が ${matchedButNoImage}/${matched} 件で取れていない。` +
-        'ブログの作りが変わった可能性がある（contentImages を確認）',
+      `完成写真が ${matchedButNoImage}/${models.length} 件で取れていない。` +
+        'ブログの作りが変わった可能性がある（loadFeaturedImages を確認）',
     )
   }
   if (models.length > 0 && models.length < 1000) {
