@@ -32,10 +32,10 @@ jobs:
       - run: npm run test:e2e
       # GITHUB_PAGES=true でサブディレクトリ配信用のパスに切り替え、404.html も作る
       - run: npm run build:pages
-      # リポジトリで Pages をまだ有効にしていなくても、ここで有効化する
+      # Pages の有効化はここではできない（GITHUB_TOKEN に権限が無く
+      # enablement: true は Resource not accessible by integration で落ちる）。
+      # リポジトリ設定側で Source を GitHub Actions にしておくこと。
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
