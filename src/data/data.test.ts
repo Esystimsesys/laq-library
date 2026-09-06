@@ -101,6 +101,12 @@ describe('取り込んだ作品データ', () => {
     expect(categories.length).toBe(used.size)
   })
 
+  it('なかまのチップは ポケモンが先頭', () => {
+    // いちばん件数が多く、いちばんよく押す。ソースの並び順にまかせると
+    // あとから足したソースぶんが最後に回り、横スクロールの奥に隠れる
+    expect(categories[0]).toBe('ポケモン')
+  })
+
   it('分類できずに「その他」へ落ちた作品はない', () => {
     const other = models.filter((m) => m.categories.includes('その他'))
     expect(other.map((m) => m.title)).toEqual([])
