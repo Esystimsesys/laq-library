@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 
 // 公式画像を取得せず、通信失敗からの復帰を含めて再現可能にする。
@@ -88,4 +89,90 @@ test('手元の冊子から自分で登録し、一覧と検索に出る', async
   await page.getByRole('link', { name: /じぶんで とうろく/ }).click()
   await page.getByRole('button', { name: 'とうろくする' }).click()
   await expect(page.getByRole('alert')).toContainText('なまえを 入れてください')
+})
+
+test('写真つきの登録が、書き出し→ぜんぶ消す→よみこみ で戻る', async ({ page }) => {
+  // 1x1 の PNG。実際の写真である必要はなく、往復できることを見たい
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    'base64',
+  )
+
+  await page.goto('./booklet/new')
+  await page.getByLabel('なまえ（かならず）').fill('しゃしんつき')
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'photo.png',
+    mimeType: 'image/png',
+    buffer: png,
+  })
+  await page.getByRole('button', { name: 'とうろくする' }).click()
+  await expect(page.getByRole('heading', { name: 'しゃしんつき' })).toBeVisible()
+  // 保存した写真が詳細で描けている
+  await expect
+    .poll(() =>
+      page.locator('main img').first().evaluate((i: HTMLImageElement) => i.naturalWidth),
+    )
+    .toBeGreaterThan(0)
+
+  // 書き出す
+  await page.goto('./settings')
+  const download = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'ファイルに ほぞん' }).click(),
+  ]).then(([d]) => d)
+  const saved = JSON.parse((await readFile(await download.path())).toString())
+  // 写真が書き出しに載っていること（載せないと端末を替えたとき置き去りになる）
+  expect(Object.keys(saved.photos ?? {})).toHaveLength(1)
+
+  // ぜんぶ消す
+  await page.getByRole('button', { name: 'きろくを けす' }).click()
+  await page.getByRole('button', { name: 'ほんとうに けす' }).click()
+  await expect(page.getByText('きろくを けしました。')).toBeVisible()
+
+  // 読み込むと、登録も写真も戻る
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'backup.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(saved)),
+  })
+  await page.getByRole('button', { name: 'よみこむ', exact: true }).click()
+  await expect(page.getByText('よみこみました。')).toBeVisible()
+
+  await page.goto('./')
+  await page.getByRole('searchbox').fill('しゃしんつき')
+  const card = page.locator('a[href*="/model/my-booklet"]').first()
+  await expect(card).toBeVisible()
+  await expect
+    .poll(() => card.locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth))
+    .toBeGreaterThan(0)
+})
+
+test('登録をやめたら、選んだ写真は端末に残らない', async ({ page }) => {
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    'base64',
+  )
+  await page.goto('./booklet/new')
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'photo.png',
+    mimeType: 'image/png',
+    buffer: png,
+  })
+  await expect(page.getByText(/ボタンを おすまで ほぞんされません/)).toBeVisible()
+
+  // 確定せずに離れる
+  await page.goto('./settings')
+  const count = await page.evaluate(async () => {
+    const db: IDBDatabase = await new Promise((resolve, reject) => {
+      const r = indexedDB.open('laq-library-photos', 1)
+      r.onupgradeneeded = () => r.result.createObjectStore('photos')
+      r.onsuccess = () => resolve(r.result)
+      r.onerror = () => reject(r.error)
+    })
+    return new Promise<number>((resolve) => {
+      const req = db.transaction('photos', 'readonly').objectStore('photos').count()
+      req.onsuccess = () => resolve(req.result)
+    })
+  })
+  expect(count).toBe(0)
 })

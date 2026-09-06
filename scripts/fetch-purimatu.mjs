@@ -157,6 +157,10 @@ async function main() {
 
   const models = []
   const skipped = []
+  // 「作り方の記事として拾ったが、画像が取れなかった」件数。
+  // これを models に入れずに skipped へ混ぜてしまうと、抽出が全滅しても
+  // 「作り方でない記事」と見分けがつかず、欠損に気づけない。
+  let matchedButNoImage = 0
 
   for (const post of posts) {
     const title = stripTags(post.title?.rendered)
@@ -169,6 +173,7 @@ async function main() {
     const contentText = stripTags(post.content?.rendered)
     const images = contentImages(post.content?.rendered)
     if (images.length === 0) {
+      matchedButNoImage += 1
       skipped.push(`${title}（画像なし）`)
       continue
     }
@@ -207,22 +212,31 @@ async function main() {
   await writeFile(OUT_FILE, `${JSON.stringify(payload, null, 2)}\n`)
   console.log(`書き出し: ${path.relative(ROOT, OUT_FILE)}`)
 
-  report(models, skipped, previous)
+  report(models, skipped, previous, matchedButNoImage)
 }
 
-function report(models, skipped, previous) {
+function report(models, skipped, previous, matchedButNoImage) {
   console.log(`\n── 集計 ─────────────────────────`)
   console.log(`作品として取り込んだ: ${models.length}`)
   console.log(`作り方でないとして外した: ${skipped.length}`)
   const problems = []
-  const noPhoto = models.filter((m) => !m.thumbnail)
-  if (noPhoto.length > models.length * 0.2) {
+  // 作り方の記事として拾えたもののうち、何割で画像が取れなかったか
+  const matched = models.length + matchedButNoImage
+  console.log(`うち 完成写真が取れなかった: ${matchedButNoImage}`)
+  if (matched === 0) {
+    problems.push('作り方の記事を 1 件も拾えていない（TITLE_PATTERNS を確認）')
+  } else if (matchedButNoImage > matched * 0.2) {
     problems.push(
-      `完成写真が ${noPhoto.length}/${models.length} 件で取れていない。` +
+      `完成写真が ${matchedButNoImage}/${matched} 件で取れていない。` +
         'ブログの作りが変わった可能性がある（contentImages を確認）',
     )
   }
-  console.log(`完成写真なし: ${noPhoto.length}`)
+  if (models.length > 0 && models.length < 1000) {
+    problems.push(
+      `取り込めたのが ${models.length} 件しかない（前は 1227 件）。` +
+        'タイトルの取り出しが外れていないか確認',
+    )
+  }
 
   // 作品名に飾りが残っていたら、タイトルの取り出しが外れている
   const dirty = models.filter((m) => /ラキュー|^[（(]/.test(m.title))

@@ -11,13 +11,25 @@ import { queryTerms, searchIndexOf, type Filters } from './search'
  */
 const searchIndex = new Map(models.map((m) => [m.id, searchIndexOf(m)]))
 
+/*
+  冊子の Model 変換は、同じ booklets からは同じ配列を返す。
+  毎回作り直すとカードに渡すオブジェクトの参照が変わり、
+  ★を 1 つ押しただけで表示中の冊子カードが全部描き直される。
+*/
+let cachedBooklets: UserState['booklets'] | null = null
+let cachedAll: Model[] = models
+
 /**
  * 取り込んだ作品と、自分で登録した冊子の作品をあわせた一覧。
  * 自分のものを先に置いて、探しやすくする。
  */
 export function allModels(user: UserState): Model[] {
   if (user.booklets.length === 0) return models
-  return [...user.booklets.map(toModel), ...models]
+  if (user.booklets !== cachedBooklets) {
+    cachedBooklets = user.booklets
+    cachedAll = [...user.booklets.map(toModel), ...models]
+  }
+  return cachedAll
 }
 
 export function filterModels(

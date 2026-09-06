@@ -1,8 +1,8 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { categories as ALL_CATEGORIES, LEVEL_KANA } from '../data'
 import type { Level } from '../data/types'
-import { deletePhoto, putPhoto } from '../lib/photos'
+import { deletePhoto, putPhoto, shrink } from '../lib/photos'
 import { useApp } from '../store/useApp'
 import type { BookletEntry } from '../store/types'
 import PageHeader from '../components/PageHeader'
@@ -40,9 +40,20 @@ export default function BookletForm() {
   const isEdit = Boolean(existing)
 
   const [entry, setEntry] = useState<BookletEntry>(() => existing ?? newEntry())
-  const [photoVersion, setPhotoVersion] = useState(0)
+  /*
+    選んだ写真は、登録を確定するまで保存しない。
+    選んだ時点で書き込むと、「もどる」でやめたのに写真だけ端末に残ったり、
+    直しかけの写真が元の写真を上書きしてしまう。
+  */
+  const [draft, setDraft] = useState<{ blob: Blob; url: string } | null>(null)
+  const [busy, setBusy] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [error, setError] = useState('')
+
+  // 下書きのプレビュー用に作った URL は、画面を離れるときに片づける
+  useEffect(() => () => {
+    if (draft) URL.revokeObjectURL(draft.url)
+  }, [draft])
 
   if (entryId && !existing) {
     return (
@@ -67,23 +78,40 @@ export default function BookletForm() {
     )
 
   const handlePhoto = async (file: File) => {
+    setBusy(true)
     try {
-      await putPhoto(entry.id, file)
-      set('hasPhoto', true)
-      // 同じ id のまま中身だけ変わるので、明示的に読み直させる
-      setPhotoVersion((v) => v + 1)
+      const blob = await shrink(file)
+      setDraft((old) => {
+        if (old) URL.revokeObjectURL(old.url)
+        return { blob, url: URL.createObjectURL(blob) }
+      })
       setError('')
     } catch {
-      setError('しゃしんを ほぞんできませんでした。')
+      setError('しゃしんを よみこめませんでした。')
+    } finally {
+      setBusy(false)
     }
   }
 
-  const save = () => {
+  const save = async () => {
     if (entry.title.trim() === '') {
       setError('なまえを 入れてください。')
       return
     }
-    const saved = { ...entry, title: entry.title.trim() }
+    setBusy(true)
+    let hasPhoto = entry.hasPhoto
+    if (draft) {
+      try {
+        // 写真は確定のここで初めて書き込む。書けなければ登録も止める
+        await putPhoto(entry.id, draft.blob)
+        hasPhoto = true
+      } catch {
+        setError('しゃしんを ほぞんできませんでした。もういちど おしてください。')
+        setBusy(false)
+        return
+      }
+    }
+    const saved = { ...entry, title: entry.title.trim(), hasPhoto }
     if (isEdit) actions.updateBooklet(saved)
     else actions.addBooklet(saved)
     navigate(`/model/${encodeURIComponent(saved.id)}`)
@@ -176,17 +204,24 @@ export default function BookletForm() {
 
       <div className={styles.card}>
         <span className={styles.label}>しゃしん</span>
-        {entry.hasPhoto && (
-          <PhotoImage
-            key={photoVersion}
-            id={entry.id}
-            alt={`${entry.title || 'とうろくした さくひん'} のしゃしん`}
+        {draft ? (
+          <img
             className={styles.photo}
-            fallbackText="しゃしんが 見つかりません"
+            src={draft.url}
+            alt={`${entry.title || 'とうろくした さくひん'} のしゃしん`}
           />
+        ) : (
+          entry.hasPhoto && (
+            <PhotoImage
+              id={entry.id}
+              alt={`${entry.title || 'とうろくした さくひん'} のしゃしん`}
+              className={styles.photo}
+              fallbackText="しゃしんが 見つかりません"
+            />
+          )
         )}
         <label className={styles.photoButton}>
-          {entry.hasPhoto ? 'しゃしんを とりなおす' : 'しゃしんを えらぶ'}
+          {draft || entry.hasPhoto ? 'しゃしんを とりなおす' : 'しゃしんを えらぶ'}
           <input
             type="file"
             accept="image/*"
@@ -201,6 +236,7 @@ export default function BookletForm() {
         <p className={styles.note}>
           しゃしんは 小さくしてから この たんまつに ほぞんします。
           どこにも おくられません。
+          {draft && ' したの ボタンを おすまで ほぞんされません。'}
         </p>
       </div>
 
@@ -222,8 +258,13 @@ export default function BookletForm() {
         </p>
       )}
 
-      <button type="button" className={styles.save} onClick={save}>
-        {isEdit ? 'なおす' : 'とうろくする'}
+      <button
+        type="button"
+        className={styles.save}
+        disabled={busy}
+        onClick={() => void save()}
+      >
+        {busy ? 'ほぞんちゅう…' : isEdit ? 'なおす' : 'とうろくする'}
       </button>
 
       {isEdit &&
@@ -236,6 +277,7 @@ export default function BookletForm() {
               <button
                 type="button"
                 className={`${styles.chip} ${styles.danger}`}
+                disabled={busy}
                 onClick={() => {
                   void deletePhoto(entry.id)
                   actions.deleteBooklet(entry.id)
@@ -257,6 +299,7 @@ export default function BookletForm() {
           <button
             type="button"
             className={styles.delete}
+            disabled={busy}
             onClick={() => setConfirmingDelete(true)}
           >
             この とうろくを けす

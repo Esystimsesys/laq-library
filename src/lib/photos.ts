@@ -23,6 +23,11 @@ function openDb(): Promise<IDBDatabase> {
   })
 }
 
+/**
+ * リクエストが成功しても、トランザクションが確定するまで書き込みは確定しない。
+ * request.onsuccess で解決すると「保存できた」と言った直後に abort されうるので、
+ * 必ず tx.oncomplete まで待つ。
+ */
 function withStore<T>(
   mode: IDBTransactionMode,
   run: (store: IDBObjectStore) => IDBRequest<T>,
@@ -30,11 +35,25 @@ function withStore<T>(
   return openDb().then(
     (db) =>
       new Promise<T>((resolve, reject) => {
+        let result: T
         const tx = db.transaction(STORE, mode)
         const request = run(tx.objectStore(STORE))
-        request.onsuccess = () => resolve(request.result)
+        request.onsuccess = () => {
+          result = request.result
+        }
         request.onerror = () => reject(request.error)
-        tx.oncomplete = () => db.close()
+        tx.oncomplete = () => {
+          db.close()
+          resolve(result)
+        }
+        tx.onabort = () => {
+          db.close()
+          reject(tx.error ?? new Error('写真の保存が中断されました'))
+        }
+        tx.onerror = () => {
+          db.close()
+          reject(tx.error ?? new Error('写真の保存に失敗しました'))
+        }
       }),
   )
 }
@@ -85,25 +104,50 @@ export async function deletePhoto(id: string): Promise<void> {
   }
 }
 
-/** 記録の書き出しに載せるため、写真を data URL にして取り出す。 */
-export async function exportPhotos(ids: string[]): Promise<Record<string, string>> {
-  const out: Record<string, string> = {}
+/**
+ * 記録の書き出しに載せるため、写真を data URL にして取り出す。
+ * 取り出せなかったものは missing に入れて返す。黙って落とすと、
+ * 写真の無いファイルを「ほぞんしました」と言ってしまう。
+ */
+export async function exportPhotos(
+  ids: string[],
+): Promise<{ photos: Record<string, string>; missing: string[] }> {
+  const photos: Record<string, string> = {}
+  const missing: string[] = []
   for (const id of ids) {
     const blob = await getPhoto(id)
-    if (blob) out[id] = await blobToDataUrl(blob)
+    if (blob) photos[id] = await blobToDataUrl(blob)
+    else missing.push(id)
   }
-  return out
+  return { photos, missing }
 }
 
-/** 書き出したファイルから写真を戻す。 */
-export async function importPhotos(photos: Record<string, string>): Promise<void> {
+/** 書き出したファイルから写真を戻す。入らなかった id を返す。 */
+export async function importPhotos(
+  photos: Record<string, string>,
+): Promise<string[]> {
+  const failed: string[] = []
   for (const [id, dataUrl] of Object.entries(photos)) {
     try {
       const blob = await (await fetch(dataUrl)).blob()
       await withStore('readwrite', (store) => store.put(blob, id))
     } catch {
       // 1 枚読めなくても、他の写真と記録は入れる
+      failed.push(id)
     }
+  }
+  return failed
+}
+
+/**
+ * 写真をすべて捨てる。記録を全部消すときと、読み込みで入れ替えるときに使う。
+ * これをしないと、参照する登録が無い写真だけが端末に残り続ける。
+ */
+export async function clearPhotos(): Promise<void> {
+  try {
+    await withStore('readwrite', (store) => store.clear())
+  } catch {
+    // 触れない環境では何もしない
   }
 }
 

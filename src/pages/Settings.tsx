@@ -1,12 +1,24 @@
 import { useRef, useState } from 'react'
 import type { UserState } from '../store/types'
 import { models, sources } from '../data'
-import { exportPhotos, importPhotos } from '../lib/photos'
+import { clearPhotos, exportPhotos, importPhotos } from '../lib/photos'
 import { hasAnyRecord, parseState } from '../store/storage'
 import { useApp } from '../store/useApp'
 import PageHeader from '../components/PageHeader'
 import styles from './Settings.module.css'
 import page from './Page.module.css'
+
+/** 書き出したファイルの photos を、文字列の組だけ受け入れて取り出す。 */
+function readPhotos(raw: unknown): Record<string, string> {
+  if (typeof raw !== 'object' || raw === null) return {}
+  const photos = (raw as { photos?: unknown }).photos
+  if (typeof photos !== 'object' || photos === null) return {}
+  const out: Record<string, string> = {}
+  for (const [id, value] of Object.entries(photos)) {
+    if (typeof value === 'string' && value.startsWith('data:image/')) out[id] = value
+  }
+  return out
+}
 
 function formatDate(iso: string): string {
   const d = new Date(iso)
@@ -29,7 +41,7 @@ export default function Settings() {
   const handleExport = async () => {
     // 写真は IndexedDB にあるので、書き出しのときだけ JSON に混ぜる。
     // これをしないと、端末を替えたときに写真だけ置き去りになる。
-    const photos = await exportPhotos(
+    const { photos, missing } = await exportPhotos(
       state.booklets.filter((b) => b.hasPhoto).map((b) => b.id),
     )
     const blob = new Blob([JSON.stringify({ ...state, photos }, null, 2)], {
@@ -41,7 +53,28 @@ export default function Settings() {
     a.download = `laq-library-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
-    setMessage('きろくを ファイルに ほぞんしました。')
+    setMessage(
+      missing.length > 0
+        ? `きろくを ファイルに ほぞんしました。ただし しゃしん ${missing.length} まいは とりだせませんでした。`
+        : 'きろくを ファイルに ほぞんしました。',
+    )
+  }
+
+  /** ファイルの写真を確定して入れる。前の写真は、参照が消えるので先に捨てる。 */
+  const applyImport = async () => {
+    if (!pendingImport) return
+    const incoming = pendingImport
+    const photos = pendingPhotos
+    setPendingImport(null)
+    setPendingPhotos({})
+    await clearPhotos()
+    const failed = await importPhotos(photos)
+    actions.importState(incoming)
+    setMessage(
+      failed.length > 0
+        ? `よみこみました。ただし しゃしん ${failed.length} まいは よみこめませんでした。`
+        : 'よみこみました。',
+    )
   }
 
   const handleImport = async (file: File) => {
@@ -52,7 +85,9 @@ export default function Settings() {
     try {
       const text = await file.text()
       if (request !== importRequest.current) return
-      const parsed = parseState(JSON.parse(text))
+      const raw: unknown = JSON.parse(text)
+      const parsed = parseState(raw)
+      setPendingPhotos(readPhotos(raw))
       // parseState は形が違うものを空の記録に変える。空を読み込んで
       // 今の記録を消してしまわないよう、中身があるときだけ受けつける
       if (!hasAnyRecord(parsed)) {
@@ -135,13 +170,7 @@ export default function Settings() {
               <button
                 type="button"
                 className={`${styles.button} ${styles.dangerButton}`}
-                onClick={() => {
-                  void importPhotos(pendingPhotos)
-                  actions.importState(pendingImport)
-                  setPendingImport(null)
-                  setPendingPhotos({})
-                  setMessage('よみこみました。')
-                }}
+                onClick={() => void applyImport()}
               >
                 よみこむ
               </button>
@@ -183,7 +212,9 @@ export default function Settings() {
       <section className={`${styles.card} ${styles.danger}`}>
         <h2 className={styles.h2}>きろくを ぜんぶ けす</h2>
         <p className={styles.note}>
-          おきにいりと つくったきろく が すべて きえます。もとに もどせません。
+          おきにいり（{state.favorites.length}）、つくったきろく（{madeCount}）、
+          じぶんで とうろくした さくひん（{state.booklets.length}）と その しゃしんが
+          すべて きえます。もとに もどせません。
         </p>
         {confirmingReset ? (
           <div className={styles.row}>
