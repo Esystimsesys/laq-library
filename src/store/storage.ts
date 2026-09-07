@@ -30,7 +30,6 @@ export function parseState(raw: unknown): UserState {
       if (!isRecord(value)) continue
       made[id] = {
         madeAt: typeof value.madeAt === 'string' ? value.madeAt : '',
-        note: typeof value.note === 'string' ? value.note : '',
       }
     }
   }

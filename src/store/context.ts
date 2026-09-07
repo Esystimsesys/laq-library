@@ -6,7 +6,6 @@ export type Actions = {
   /** 作成済みにする（すでに作成済みなら取り消す） */
   toggleMade: (modelId: string) => void
   setMadeAt: (modelId: string, madeAt: string) => void
-  setMadeNote: (modelId: string, note: string) => void
   addBooklet: (entry: BookletEntry) => void
   updateBooklet: (entry: BookletEntry) => void
   deleteBooklet: (id: string) => void
