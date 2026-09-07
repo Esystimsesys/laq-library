@@ -23,7 +23,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 2px;
-  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+  padding: 4px 6px calc(4px + env(safe-area-inset-bottom));
   background: var(--card);
   border-top: var(--line);
   margin-top: auto;
@@ -35,8 +35,9 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding: 6px 2px;
-  min-height: 54px;
+  /* 指で押せる高さ（44px）は割らない。ここを削ると押しそこねが増える */
+  padding: 3px 2px;
+  min-height: 48px;
   border-radius: var(--radius-m);
   color: var(--ink-soft);
   text-decoration: none;
@@ -46,7 +47,7 @@
   display: grid;
   place-items: center;
   width: 40px;
-  height: 32px;
+  height: 28px;
   border-radius: 999px;
 }
 
