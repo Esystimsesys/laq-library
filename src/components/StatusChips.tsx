@@ -8,6 +8,12 @@ type Props<T extends string> = {
   options: StatusOption<T>[]
   value: T
   onChange: (next: T) => void
+  /**
+   * 1 行に収まらないとき、横スクロールではなく折り返す。
+   * スクロールできることに気づけないまま、右端の選択肢を
+   * 見落とす画面（チップが 4 つある「さがす」）で使う。
+   */
+  wrap?: boolean
 }
 
 /**
@@ -22,9 +28,14 @@ export default function StatusChips<T extends string>({
   options,
   value,
   onChange,
+  wrap = false,
 }: Props<T>) {
   return (
-    <div className={styles.chips} role="radiogroup" aria-label={label}>
+    <div
+      className={wrap ? `${styles.chips} ${styles.wrap}` : styles.chips}
+      role="radiogroup"
+      aria-label={label}
+    >
       {options.map((option, index) => (
         <button
           key={option.value}

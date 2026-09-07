@@ -11,10 +11,10 @@ import page from './Page.module.css'
 
 type Status = 'all' | 'notMade' | 'made'
 
-/** 言い方は「さがす」の しぼりこみ とそろえる（「まだ」＝まだ つくっていない） */
+/** 言い方は「さがす」の しぼりこみ とそろえる */
 const STATUSES: StatusOption<Status>[] = [
   { value: 'all', label: 'ぜんぶ' },
-  { value: 'notMade', label: 'まだ' },
+  { value: 'notMade', label: 'つくってない' },
   { value: 'made', label: 'つくった' },
 ]
 
