@@ -9,14 +9,17 @@ export type Actions = {
   addBooklet: (entry: BookletEntry) => void
   updateBooklet: (entry: BookletEntry) => void
   deleteBooklet: (id: string) => void
-  importState: (state: UserState) => void
-  resetAll: () => void
+  /** 写真も置き換える。処理中に重ねて呼ばれた場合は null。 */
+  importState: (state: UserState, photos: Record<string, string>) => Promise<string[] | null>
+  resetAll: () => Promise<boolean | null>
 }
 
 export type ContextValue = {
   state: UserState
   /** 端末に保存できていない（容量超過・プライベートブラウジングなど） */
   saveFailed: boolean
+  /** 写真と記録の復元・全削除が進行中。画面をまたいで操作を止める。 */
+  dataBusy: boolean
   actions: Actions
 }
 

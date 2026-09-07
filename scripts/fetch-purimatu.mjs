@@ -15,7 +15,7 @@
 //   node scripts/fetch-purimatu.mjs           キャッシュ（30日以内）を使って再生成
 //   node scripts/fetch-purimatu.mjs --refresh キャッシュを無視して取り直す
 
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, stat, writeFile, rename, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import * as cheerio from 'cheerio'
@@ -264,6 +264,9 @@ async function main() {
     })
   }
 
+  // 欠損や抽出失敗を検出したら、正常だった既存データを保持して止める。
+  report(models, skipped, previous, matchedButNoImage)
+
   const payload = {
     source: SOURCE_ID,
     sourceLabel: SOURCE_LABEL,
@@ -275,10 +278,14 @@ async function main() {
     categoryOrder: [CATEGORY],
     models,
   }
-  await writeFile(OUT_FILE, `${JSON.stringify(payload, null, 2)}\n`)
+  const temporaryFile = `${OUT_FILE}.${process.pid}.tmp`
+  try {
+    await writeFile(temporaryFile, `${JSON.stringify(payload, null, 2)}\n`)
+    await rename(temporaryFile, OUT_FILE)
+  } finally {
+    await rm(temporaryFile, { force: true })
+  }
   console.log(`書き出し: ${path.relative(ROOT, OUT_FILE)}`)
-
-  report(models, skipped, previous, matchedButNoImage)
 }
 
 function report(models, skipped, previous, matchedButNoImage) {
@@ -342,7 +349,7 @@ function report(models, skipped, previous, matchedButNoImage) {
   if (problems.length) {
     console.log(`\n── 問題 ─────────────────────────`)
     for (const p of problems) console.log(`  ! ${p}`)
-    process.exitCode = 1
+    throw new Error('取得・検証に失敗したため既存データを保持しました。')
   }
 }
 

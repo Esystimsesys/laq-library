@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router'
 import type { UserState } from '../store/types'
 import { models, sources } from '../data'
-import { clearPhotos, exportPhotos, importPhotos } from '../lib/photos'
+import { exportPhotos } from '../lib/photos'
 import { hasAnyRecord, parseState } from '../store/storage'
 import { useApp } from '../store/useApp'
 import PageHeader from '../components/PageHeader'
@@ -28,7 +28,7 @@ function formatDate(iso: string): string {
 }
 
 export default function Settings() {
-  const { state, actions } = useApp()
+  const { state, actions, dataBusy } = useApp()
   const fileRef = useRef<HTMLInputElement>(null)
   const importRequest = useRef(0)
   const [message, setMessage] = useState('')
@@ -63,22 +63,42 @@ export default function Settings() {
 
   /** ファイルの写真を確定して入れる。前の写真は、参照が消えるので先に捨てる。 */
   const applyImport = async () => {
-    if (!pendingImport) return
+    if (!pendingImport || dataBusy) return
     const incoming = pendingImport
     const photos = pendingPhotos
     setPendingImport(null)
     setPendingPhotos({})
-    await clearPhotos()
-    const failed = await importPhotos(photos)
-    actions.importState(incoming)
-    setMessage(
-      failed.length > 0
-        ? `よみこみました。ただし しゃしん ${failed.length} まいは よみこめませんでした。`
-        : 'よみこみました。',
-    )
+    setConfirmingReset(false)
+    setMessage('')
+    try {
+      const failed = await actions.importState(incoming, photos)
+      if (failed === null) return
+      setMessage(
+        failed.length > 0
+          ? `よみこみました。ただし しゃしん ${failed.length} まいは よみこめませんでした。`
+          : 'よみこみました。',
+      )
+    } catch {
+      setMessage('よみこめませんでした。もういちど ためしてください。')
+    }
+  }
+
+  const handleReset = async () => {
+    if (dataBusy) return
+    importRequest.current += 1
+    setPendingImport(null)
+    setPendingPhotos({})
+    setConfirmingReset(false)
+    setMessage('')
+    try {
+      if (await actions.resetAll()) setMessage('きろくを けしました。')
+    } catch {
+      setMessage('すべての きろくと しゃしんを けせませんでした。もういちど ためしてください。')
+    }
   }
 
   const handleImport = async (file: File) => {
+    if (dataBusy) return
     const request = ++importRequest.current
     setPendingImport(null)
     setConfirmingReset(false)
@@ -240,13 +260,7 @@ export default function Settings() {
             <button
               type="button"
               className={`${styles.button} ${styles.dangerButton}`}
-              onClick={() => {
-                importRequest.current += 1
-                setPendingImport(null)
-                actions.resetAll()
-                setConfirmingReset(false)
-                setMessage('きろくを けしました。')
-              }}
+              onClick={() => void handleReset()}
             >
               ほんとうに けす
             </button>
