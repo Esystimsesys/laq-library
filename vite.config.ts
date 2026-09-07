@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
@@ -6,10 +6,30 @@ import { VitePWA } from 'vite-plugin-pwa'
 // 配信されるため、ビルド時のパスをそのサブディレクトリに合わせる。
 const base = process.env.GITHUB_PAGES === 'true' ? '/laq-library/' : '/'
 
+// canonical・OGP・サイトマップに要る絶対URL。**このアプリのURLを決めるのはここだけ**。
+// index.html の %SITE_URL% はこの値に置きかわり、scripts/build-sitemap.mjs は
+// できあがった index.html の canonical を読んで同じ値を使う。
+// 配信先を移すときは SITE_URL を渡すか、この既定値を書きかえる。
+const siteUrl =
+  process.env.SITE_URL ??
+  (process.env.GITHUB_PAGES === 'true'
+    ? 'https://esystimsesys.github.io/laq-library/'
+    : 'http://localhost:5173/')
+
+/** index.html の %SITE_URL% を配信先の絶対URLにする。末尾スラッシュ付きで渡す。 */
+function siteUrlPlugin(url: string): Plugin {
+  const withSlash = url.endsWith('/') ? url : `${url}/`
+  return {
+    name: 'laq-site-url',
+    transformIndexHtml: (html) => html.split('%SITE_URL%').join(withSlash),
+  }
+}
+
 export default defineConfig({
   base,
   plugins: [
     react(),
+    siteUrlPlugin(siteUrl),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
@@ -38,6 +58,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // 検索エンジンの所有権確認ファイルは端末に置く意味がない
+        globIgnores: ['**/google*.html', '**/og.png'],
         // 作品データは 1MB を超えるので、既定の上限（2MiB）だと将来こぼれる
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         // 画面遷移はすべてクライアント側で行うので、オフラインでは index.html を返す

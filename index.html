@@ -9,11 +9,52 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="LaQライブラリ" />
+
+    <title>LaQライブラリ｜LaQのつくり方をさがして、つくったきろくをのこす</title>
     <meta
       name="description"
-      content="LaQ公式つくり方ギャラリーの作品をさがして、おきにいりと つくったきろく をのこせるずかん。"
+      content="LaQ（ラキュー）のつくり方を、むずかしさ（かんたん・ふつう・むずかしい）と なかま（きょうりゅう・のりもの など）でしぼりこんで さがせるずかん。★おきにいりと ✓つくった を端末に記録でき、手もちの冊子の作品も自分で登録できます。"
     />
-    <title>LaQライブラリ</title>
+
+    <!--
+      canonical と OGP は相対パスが使えないので、絶対URLが要る。
+      %SITE_URL% は vite.config.ts が配信先に合わせて置きかえる（末尾スラッシュ付き）。
+      URLを決めている場所は vite.config.ts の siteUrl ひとつだけ。
+    -->
+    <link rel="canonical" href="%SITE_URL%" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="LaQライブラリ" />
+    <meta property="og:title" content="LaQライブラリ｜LaQのつくり方をさがす" />
+    <meta
+      property="og:description"
+      content="LaQのつくり方を、むずかしさと なかま でしぼりこんで さがせるずかん。おきにいりと つくったきろく をのこせます。"
+    />
+    <meta property="og:url" content="%SITE_URL%" />
+    <!-- 共有カードの絵。scripts/make_og_image.py が作る 1200x630 -->
+    <meta property="og:image" content="%SITE_URL%og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="LaQライブラリ — つくり方をさがす" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- 指名検索（「LaQライブラリ」）で何のサイトか伝わるようにする -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "LaQライブラリ",
+        "url": "%SITE_URL%",
+        "applicationCategory": "ReferenceApplication",
+        "operatingSystem": "Web",
+        "browserRequirements": "JavaScript が動くブラウザ",
+        "inLanguage": "ja",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" },
+        "description": "LaQのつくり方を、むずかしさと なかま でしぼりこんで さがせるずかん。"
+      }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

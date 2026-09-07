@@ -1,0 +1,11 @@
+# robots.txt は「ホストのルート」に置かないと Google が読まない。
+# いまは https://esystimsesys.github.io/laq-library/ というサブディレクトリ配信なので、
+# このファイルは /laq-library/robots.txt に置かれ、**読まれない**。
+# （読まれなくても困らない。robots.txt が無い＝全許可なので、クロールは妨げられていない）
+#
+# ルート配信に移したときにそのまま効くよう、置いてある。
+# サイトマップはこのファイル経由ではなく Search Console から直接送ること。
+User-agent: *
+Allow: /
+
+Sitemap: https://esystimsesys.github.io/laq-library/sitemap.xml
