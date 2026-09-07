@@ -176,3 +176,39 @@ test('登録をやめたら、選んだ写真は端末に残らない', async ({
   })
   expect(count).toBe(0)
 })
+
+test('おきにいりを「まだ」「つくった」でしぼれる', async ({ page }) => {
+  await page.goto('./')
+  const titles = page.locator('a[href*="/model/"] p')
+  await expect(titles.first()).toBeVisible()
+  const made = (await titles.nth(0).textContent())!.trim()
+  const notMade = (await titles.nth(1).textContent())!.trim()
+
+  // 一覧のカードから ★ を 2 つ付ける
+  await page.getByRole('button', { name: `${made} をおきにいりに いれる` }).click()
+  await page.getByRole('button', { name: `${notMade} をおきにいりに いれる` }).click()
+
+  // 片方だけ「つくった」にする
+  await page.getByRole('link', { name: new RegExp(made) }).first().click()
+  await page.getByRole('button', { name: 'つくった！を きろく' }).click()
+
+  await page.goto('./favorites')
+  const cards = page.locator('a[href*="/model/"]')
+  await expect(cards).toHaveCount(2)
+
+  await page.getByRole('radio', { name: 'まだ', exact: true }).click()
+  await expect(cards).toHaveCount(1)
+  await expect(cards.first()).toContainText(notMade)
+
+  await page.getByRole('radio', { name: 'つくった', exact: true }).click()
+  await expect(cards).toHaveCount(1)
+  await expect(cards.first()).toContainText(made)
+
+  // ぜんぶ つくった状態で「まだ」を見ると、から の知らせから戻れる
+  await page.getByRole('radio', { name: 'ぜんぶ', exact: true }).click()
+  await page.getByRole('button', { name: `${notMade} をおきにいりから はずす` }).click()
+  await page.getByRole('radio', { name: 'まだ', exact: true }).click()
+  await expect(page.getByText('おきにいりは ぜんぶ つくったね！')).toBeVisible()
+  await page.getByRole('button', { name: 'おきにいりを ぜんぶ みる' }).click()
+  await expect(cards).toHaveCount(1)
+})

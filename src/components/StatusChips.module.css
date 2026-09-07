@@ -1,0 +1,45 @@
+/*
+  見た目は「さがす」のしぼりこみのチップと同じ（FilterBar.module.css）。
+  そちらはむずかしさ・なかまの色ちがいまで持っていて丸ごとは共有できないので、
+  1 つだけ選ぶチップに要るぶんだけをここに置く。
+*/
+.chips {
+  min-width: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* 影が切れないように、はみ出しぶんの余白をとる */
+  padding: 2px 2px 4px;
+  margin: -2px -2px -4px;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  /* 子どもの指で押せるように、見た目より高さを確保する */
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 7px 15px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--paper);
+  border: var(--line-thin);
+  border-radius: 999px;
+}
+
+.chip:active {
+  transform: translate(1px, 1px);
+}
+
+/* えらんでいるものは、色をつけて影を出す */
+.on {
+  color: var(--card);
+  background: var(--ink);
+  box-shadow: 2px 2px 0 var(--ink-faint);
+}
