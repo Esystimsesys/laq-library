@@ -2,8 +2,6 @@
 export type MadeRecord = {
   /** 作った日（YYYY-MM-DD） */
   madeAt: string
-  /** ひとことメモ。空文字なら未記入 */
-  note: string
 }
 
 /**

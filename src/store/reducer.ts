@@ -11,7 +11,6 @@ export type Action =
   | { type: 'favorite/toggle'; id: string }
   | { type: 'made/toggle'; id: string }
   | { type: 'made/setDate'; id: string; madeAt: string }
-  | { type: 'made/setNote'; id: string; note: string }
   | { type: 'booklet/add'; entry: BookletEntry }
   | { type: 'booklet/update'; entry: BookletEntry }
   | { type: 'booklet/delete'; id: string }
@@ -35,7 +34,7 @@ export function reducer(state: UserState, action: Action): UserState {
     case 'made/toggle': {
       const made = { ...state.made }
       if (made[action.id]) delete made[action.id]
-      else made[action.id] = { madeAt: today(), note: '' }
+      else made[action.id] = { madeAt: today() }
       return { ...state, made }
     }
     case 'made/setDate': {
@@ -44,14 +43,6 @@ export function reducer(state: UserState, action: Action): UserState {
       return {
         ...state,
         made: { ...state.made, [action.id]: { ...current, madeAt: action.madeAt } },
-      }
-    }
-    case 'made/setNote': {
-      const current = state.made[action.id]
-      if (!current) return state
-      return {
-        ...state,
-        made: { ...state.made, [action.id]: { ...current, note: action.note } },
       }
     }
     case 'booklet/add':

@@ -153,10 +153,9 @@ function DetailContent({ modelId }: { modelId: string }) {
             className={made ? `${styles.big} ${styles.madeOn}` : styles.big}
             aria-pressed={Boolean(made)}
             onClick={() => {
-              // 一押しで記録を消さない。メモだけでなく「前に作った日」も守る。
-              // もう一度押し直しても今日の日付になるだけで、元の日には戻せないため。
-              const hasSomethingToLose =
-                made && (made.note.trim() !== '' || made.madeAt !== today())
+              // 一押しで「前に作った日」を消さない。もう一度押し直しても
+              // 今日の日付になるだけで、元の日には戻せないため。
+              const hasSomethingToLose = made && made.madeAt !== today()
               if (hasSomethingToLose) setConfirmingUnmake(true)
               else actions.toggleMade(model.id)
             }}
@@ -169,8 +168,8 @@ function DetailContent({ modelId }: { modelId: string }) {
         {confirmingUnmake && made && (
           <div className={styles.confirm}>
             <p className={styles.confirmText}>
-              「つくった」を とりけすと、{made.madeAt} に つくった きろく
-              {made.note.trim() !== '' && 'と メモ'}が きえます。とりけしますか？
+              「つくった」を とりけすと、{made.madeAt} に つくった きろくが
+              きえます。とりけしますか？
             </p>
             <div className={styles.confirmRow}>
               <button
@@ -195,27 +194,15 @@ function DetailContent({ modelId }: { modelId: string }) {
         )}
 
         {made && (
-          <div className={styles.record}>
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>つくった日</span>
-              <input
-                type="date"
-                className={styles.input}
-                value={made.madeAt}
-                onChange={(e) => actions.setMadeAt(model.id, e.target.value)}
-              />
-            </label>
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>ひとこと メモ</span>
-              <textarea
-                className={styles.textarea}
-                rows={2}
-                placeholder="むずかしかったところ、くふうしたところ など"
-                value={made.note}
-                onChange={(e) => actions.setMadeNote(model.id, e.target.value)}
-              />
-            </label>
-          </div>
+          <label className={styles.record}>
+            <span className={styles.recordLabel}>つくった日</span>
+            <input
+              type="date"
+              className={styles.recordDate}
+              value={made.madeAt}
+              onChange={(e) => actions.setMadeAt(model.id, e.target.value)}
+            />
+          </label>
         )}
 
         {mine ? (

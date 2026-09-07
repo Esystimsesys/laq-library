@@ -30,14 +30,15 @@ describe('parseState', () => {
       version: 1,
       favorites: [],
       made: {
-        ok: { madeAt: '2026-01-02', note: 'メモ' },
-        noteMissing: { madeAt: '2026-01-03' },
+        ok: { madeAt: '2026-01-02' },
+        // 前の版が書いた ひとことメモ。いまは持たない項目なので落とす
+        oldNote: { madeAt: '2026-01-03', note: 'メモ' },
         broken: 'これは記録ではない',
       },
     })
     expect(parsed.made).toEqual({
-      ok: { madeAt: '2026-01-02', note: 'メモ' },
-      noteMissing: { madeAt: '2026-01-03', note: '' },
+      ok: { madeAt: '2026-01-02' },
+      oldNote: { madeAt: '2026-01-03' },
     })
   })
 })
@@ -47,7 +48,7 @@ describe('hasAnyRecord', () => {
     expect(hasAnyRecord(emptyState)).toBe(false)
     expect(hasAnyRecord({ ...emptyState, favorites: ['a'] })).toBe(true)
     expect(
-      hasAnyRecord({ ...emptyState, made: { a: { madeAt: '2026-01-02', note: '' } } }),
+      hasAnyRecord({ ...emptyState, made: { a: { madeAt: '2026-01-02' } } }),
     ).toBe(true)
   })
 })
@@ -110,8 +111,8 @@ describe('冊子から自分で登録した作品', () => {
       version: 1,
       favorites: ['my-booklet:1', 'laq-official:005171'],
       made: {
-        'my-booklet:1': { madeAt: '2026-09-01', note: '' },
-        'laq-official:005171': { madeAt: '2026-09-02', note: '' },
+        'my-booklet:1': { madeAt: '2026-09-01' },
+        'laq-official:005171': { madeAt: '2026-09-02' },
       },
       booklets: [entry],
     }
@@ -153,7 +154,7 @@ describe('reducer', () => {
   const base: UserState = {
     version: 1,
     favorites: ['a'],
-    made: { a: { madeAt: '2026-01-02', note: 'メモ' } },
+    made: { a: { madeAt: '2026-01-02' } },
     booklets: [],
   }
 
@@ -167,29 +168,25 @@ describe('reducer', () => {
 
   it('つくったを付けると今日の日付が入り、外すと記録ごと消える', () => {
     const added = reducer(base, { type: 'made/toggle', id: 'b' })
-    expect(added.made.b).toEqual({ madeAt: today(), note: '' })
+    expect(added.made.b).toEqual({ madeAt: today() })
 
     const removed = reducer(added, { type: 'made/toggle', id: 'b' })
     expect(removed.made.b).toBeUndefined()
   })
 
-  it('つくった記録が無いものに日付やメモを書いても、記録は生まれない', () => {
-    const next = reducer(base, { type: 'made/setNote', id: 'z', note: 'あ' })
+  it('つくった記録が無いものに日付を書いても、記録は生まれない', () => {
+    const next = reducer(base, { type: 'made/setDate', id: 'z', madeAt: '2026-03-04' })
     expect(next).toBe(base)
     expect(next.made.z).toBeUndefined()
   })
 
-  it('日付とメモを書き換えられる', () => {
+  it('日付を書き換えられる', () => {
     const dated = reducer(base, {
       type: 'made/setDate',
       id: 'a',
       madeAt: '2026-03-04',
     })
     expect(dated.made.a.madeAt).toBe('2026-03-04')
-    expect(dated.made.a.note).toBe('メモ')
-
-    const noted = reducer(dated, { type: 'made/setNote', id: 'a', note: 'あたらしい' })
-    expect(noted.made.a.note).toBe('あたらしい')
   })
 
   it('もとの状態を書き換えない', () => {
@@ -209,7 +206,7 @@ describe('reducer', () => {
     const fromOtherTab: UserState = {
       version: 1,
       favorites: ['a'],
-      made: { b: { madeAt: '2026-09-01', note: '' } },
+      made: { b: { madeAt: '2026-09-01' } },
       booklets: [],
     }
     const next = reducer(base, { type: 'data/external', state: fromOtherTab })
@@ -222,7 +219,7 @@ describe('reducer', () => {
     const incoming: UserState = {
       version: 1,
       favorites: ['x'],
-      made: { x: { madeAt: '2026-02-03', note: 'よみこんだ' } },
+      made: { x: { madeAt: '2026-02-03' } },
       booklets: [],
     }
     expect(reducer(base, { type: 'data/import', state: incoming })).toBe(incoming)

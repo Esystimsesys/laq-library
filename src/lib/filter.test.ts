@@ -53,7 +53,7 @@ const ids = (list: Model[]) => list.map((m) => m.id)
 const user: UserState = {
   version: 1,
   favorites: ['test:2'],
-  made: { 'test:1': { madeAt: '2026-01-02', note: '' } },
+  made: { 'test:1': { madeAt: '2026-01-02' } },
   booklets: [],
 }
 
