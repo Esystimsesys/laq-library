@@ -63,7 +63,7 @@ test('存在しないURLから図鑑に戻れる', async ({ page }) => {
 })
 
 test('手元の冊子から自分で登録し、一覧と検索に出る', async ({ page }) => {
-  await page.goto('./')
+  await page.goto('./settings')
   await page.getByRole('link', { name: /じぶんで とうろく/ }).click()
 
   await page.getByLabel('なまえ（かならず）').fill('きょうりゅうロボ')
@@ -86,6 +86,7 @@ test('手元の冊子から自分で登録し、一覧と検索に出る', async
   await expect(card).toContainText('きょうりゅうロボ')
 
   // 名前を入れずには登録できない
+  await page.goto('./settings')
   await page.getByRole('link', { name: /じぶんで とうろく/ }).click()
   await page.getByRole('button', { name: 'とうろくする' }).click()
   await expect(page.getByRole('alert')).toContainText('なまえを 入れてください')

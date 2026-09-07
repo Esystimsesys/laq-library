@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { Link } from 'react-router'
 import type { UserState } from '../store/types'
 import { models, sources } from '../data'
 import { clearPhotos, exportPhotos, importPhotos } from '../lib/photos'
@@ -123,6 +124,24 @@ export default function Settings() {
           きろくは この たんまつの なかだけに ほぞんされます。
           サーバーには おくられません。
         </p>
+      </section>
+
+      {/*
+        めったに使わない入口なので、一覧のじゃまにならない「せってい」に置く。
+        とうろくした数のすぐ下だと、いまいくつあるかを見てから足せる。
+      */}
+      <section className={styles.card}>
+        <h2 className={styles.h2}>手元の さっしから とうろく</h2>
+        <p className={styles.note}>
+          しょうひんに ついてくる さっしの さくひんを、なまえ・さっし・ページ・
+          しゃしん つきで じぶんで ふやせます。ふやした さくひんは、
+          とりこんだ さくひんと おなじように さがせます。
+        </p>
+        <div className={styles.row}>
+          <Link to="/booklet/new" className={page.linkButton}>
+            ＋ じぶんで とうろく
+          </Link>
+        </div>
       </section>
 
       <section className={styles.card}>
