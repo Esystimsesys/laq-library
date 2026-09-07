@@ -2,12 +2,13 @@ import { useId, useState } from 'react'
 import { categories as ALL_CATEGORIES, LEVEL_KANA } from '../data'
 import type { Level } from '../data/types'
 import { emptyFilters, isFiltering, type Filters } from '../lib/search'
+import StatusChips, { type StatusOption } from './StatusChips'
 import { CloseIcon, SearchIcon } from './icons'
 import styles from './FilterBar.module.css'
 
 const LEVELS: Level[] = ['beginner', 'intermediate', 'advanced']
 
-const STATUSES: { value: Filters['status']; label: string }[] = [
+const STATUSES: StatusOption<Filters['status']>[] = [
   { value: 'all', label: 'ぜんぶ' },
   { value: 'favorite', label: 'おきにいり' },
   { value: 'made', label: 'つくった' },
@@ -131,34 +132,12 @@ export default function FilterBar({ filters, onChange, hitCount }: Props) {
       <fieldset className={styles.group}>
         <legend className={styles.legend}>じぶんの きろく</legend>
         {/* ここだけは 1 つしか選べないので、押しボタンではなくラジオとして伝える */}
-        <div className={styles.chips} role="radiogroup" aria-label="じぶんの きろく">
-          {STATUSES.map(({ value, label }, index) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={filters.status === value}
-              tabIndex={filters.status === value ? 0 : -1}
-              className={`${styles.chip} ${
-                filters.status === value ? styles.on : ''
-              }`}
-              onClick={() => onChange({ ...filters, status: value })}
-              onKeyDown={(event) => {
-                const direction =
-                  event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 :
-                  event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0
-                if (!direction) return
-                event.preventDefault()
-                const next = (index + direction + STATUSES.length) % STATUSES.length
-                onChange({ ...filters, status: STATUSES[next].value })
-                event.currentTarget.parentElement
-                  ?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus()
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <StatusChips
+          label="じぶんの きろく"
+          options={STATUSES}
+          value={filters.status}
+          onChange={(status) => onChange({ ...filters, status })}
+        />
       </fieldset>
 
       <div className={styles.resultRow}>
