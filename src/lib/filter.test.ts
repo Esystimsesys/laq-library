@@ -93,7 +93,7 @@ describe('filterModels', () => {
     expect(ids(hits)).toEqual(['test:2', 'test:3'])
   })
 
-  it('おきにいり・つくった・まだ で絞る', () => {
+  it('おきにいり・つくった・つくってない で絞る', () => {
     expect(
       ids(filterModels(sample, { ...emptyFilters, status: 'favorite' }, user)),
     ).toEqual(['test:2'])

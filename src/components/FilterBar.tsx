@@ -8,11 +8,12 @@ import styles from './FilterBar.module.css'
 
 const LEVELS: Level[] = ['beginner', 'intermediate', 'advanced']
 
+/** 言い方は「おきにいり」の しぼりこみ とそろえる */
 const STATUSES: StatusOption<Filters['status']>[] = [
   { value: 'all', label: 'ぜんぶ' },
   { value: 'favorite', label: 'おきにいり' },
   { value: 'made', label: 'つくった' },
-  { value: 'notMade', label: 'まだ' },
+  { value: 'notMade', label: 'つくってない' },
 ]
 
 type Props = {
@@ -146,6 +147,7 @@ export default function FilterBar({ filters, onChange, hitCount }: Props) {
           options={STATUSES}
           value={filters.status}
           onChange={(status) => onChange({ ...filters, status })}
+          wrap
         />
       </div>
 

@@ -19,6 +19,13 @@
   display: none;
 }
 
+/* 折り返すときは、はみ出さないのでスクロールも要らない */
+.wrap {
+  flex-wrap: wrap;
+  row-gap: 7px;
+  overflow-x: visible;
+}
+
 .chip {
   /* 子どもの指で押せるように、見た目より高さを確保する */
   flex: none;

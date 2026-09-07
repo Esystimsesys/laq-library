@@ -177,7 +177,7 @@ test('登録をやめたら、選んだ写真は端末に残らない', async ({
   expect(count).toBe(0)
 })
 
-test('おきにいりを「まだ」「つくった」でしぼれる', async ({ page }) => {
+test('おきにいりを「つくってない」「つくった」でしぼれる', async ({ page }) => {
   await page.goto('./')
   const titles = page.locator('a[href*="/model/"] p')
   await expect(titles.first()).toBeVisible()
@@ -196,7 +196,7 @@ test('おきにいりを「まだ」「つくった」でしぼれる', async ({
   const cards = page.locator('a[href*="/model/"]')
   await expect(cards).toHaveCount(2)
 
-  await page.getByRole('radio', { name: 'まだ', exact: true }).click()
+  await page.getByRole('radio', { name: 'つくってない', exact: true }).click()
   await expect(cards).toHaveCount(1)
   await expect(cards.first()).toContainText(notMade)
 
@@ -204,10 +204,10 @@ test('おきにいりを「まだ」「つくった」でしぼれる', async ({
   await expect(cards).toHaveCount(1)
   await expect(cards.first()).toContainText(made)
 
-  // ぜんぶ つくった状態で「まだ」を見ると、から の知らせから戻れる
+  // ぜんぶ つくった状態で「つくってない」を見ると、から の知らせから戻れる
   await page.getByRole('radio', { name: 'ぜんぶ', exact: true }).click()
   await page.getByRole('button', { name: `${notMade} をおきにいりから はずす` }).click()
-  await page.getByRole('radio', { name: 'まだ', exact: true }).click()
+  await page.getByRole('radio', { name: 'つくってない', exact: true }).click()
   await expect(page.getByText('おきにいりは ぜんぶ つくったね！')).toBeVisible()
   await page.getByRole('button', { name: 'おきにいりを ぜんぶ みる' }).click()
   await expect(cards).toHaveCount(1)
