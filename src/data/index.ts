@@ -22,16 +22,19 @@ export const sources = SOURCE_FILES.map(
 export const MY_BOOKLET_SOURCE: SourceInfo = {
   source: 'my-booklet',
   sourceLabel: 'じぶんで とうろく',
+  shortLabel: 'じぶんの',
   rightsHolder: '手元の LaQ の冊子',
   sourceLinkLabel: '',
   sourceUrl: '',
 }
 
 const sourceInfoById = new Map<SourceId, SourceInfo>(
-  SOURCE_FILES.map(({ source, sourceLabel, rightsHolder, sourceLinkLabel, sourceUrl }) => [
-    source,
-    { source, sourceLabel, rightsHolder, sourceLinkLabel, sourceUrl },
-  ]),
+  SOURCE_FILES.map(
+    ({ source, sourceLabel, shortLabel, rightsHolder, sourceLinkLabel, sourceUrl }) => [
+      source,
+      { source, sourceLabel, shortLabel, rightsHolder, sourceLinkLabel, sourceUrl },
+    ],
+  ),
 )
 sourceInfoById.set(MY_BOOKLET_SOURCE.source, MY_BOOKLET_SOURCE)
 

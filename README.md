@@ -126,6 +126,10 @@ thumbnail なし: 0
 画面は `sourceOf(model)` で引く。1,000 件を超えると、同じ文字列を全件に持たせるだけで
 同梱データが目に見えて重くなるため。
 
+一覧のカードには `shortLabel`（「こうしき」「ぷりまつ」「じぶんの」）を出して、
+開かなくてもどこから来た作品か分かるようにしている。正式な呼び方（`sourceLabel`）は
+カードに入らないので別に持つ。
+
 ## アイコン
 
 `node scripts/make-icons.mjs`（内部で `scripts/make_icons.py` / Pillow を使う）で

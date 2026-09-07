@@ -31,6 +31,9 @@ describe('取り込んだ作品データ', () => {
     for (const s of sources) {
       expect(s.rightsHolder, s.source).not.toBe('')
       expect(s.sourceLinkLabel, s.source).not.toBe('')
+      // 一覧のカードに出す短い名前。長いとカードからはみ出す
+      expect(s.shortLabel, s.source).not.toBe('')
+      expect(s.shortLabel.length, s.source).toBeLessThanOrEqual(6)
     }
     for (const m of models) expect(() => sourceOf(m)).not.toThrow()
   })

@@ -41,6 +41,11 @@ export type Model = {
 export type SourceInfo = {
   source: SourceId
   sourceLabel: string
+  /**
+   * 一覧のカードに出す短い出典名。カードは指で押せる大きさに収めたいので、
+   * 「LaQ公式 つくり方ギャラリー」のような正式な呼び方だと入らない。
+   */
+  shortLabel: string
   /** 画像・図・PDF の権利者。詳細画面の出典表記に出す */
   rightsHolder: string
   /** 出典ページへ飛ぶボタンの文言 */

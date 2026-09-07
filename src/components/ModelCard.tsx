@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import { Link } from 'react-router'
 import type { Model } from '../data/types'
-import { LEVEL_KANA } from '../data'
+import { LEVEL_KANA, sourceOf } from '../data'
 import { isMyBooklet } from '../lib/myModels'
 import PhotoImage from './PhotoImage'
 import RemoteImage from './RemoteImage'
@@ -39,7 +39,12 @@ function ModelCard({ model, isFavorite, isMade, onToggleFavorite }: Props) {
           ) : (
             <div className={styles.noThumb} aria-hidden="true" />
           )}
-          {isMyBooklet(model) && <span className={styles.mine}>じぶんの</span>}
+          {/* どこから来た作品かは、開かなくても分かるようにする */}
+          <span
+            className={`${styles.source} ${isMyBooklet(model) ? styles.sourceMine : ''}`}
+          >
+            {sourceOf(model).shortLabel}
+          </span>
           {model.level && (
             <span className={`${styles.level} ${styles[model.level]}`}>
               {LEVEL_KANA[model.level]}

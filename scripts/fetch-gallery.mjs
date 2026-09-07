@@ -22,6 +22,8 @@ const OUT_FILE = path.join(ROOT, 'src/data/sources/laq-official.json')
 const INDEX_URL = 'https://www.laq.co.jp/assets/json/gallery.json'
 const SOURCE_ID = 'laq-official'
 const SOURCE_LABEL = 'LaQ公式 つくり方ギャラリー'
+/** 一覧のカードに出す短い呼び方。正式な呼び方はカードに入らない */
+const SHORT_LABEL = 'こうしき'
 /** 画像・図・PDF の権利者。画面の出典表記に出す */
 const RIGHTS_HOLDER = 'ヨシリツ株式会社'
 /** 作品ページへ飛ぶボタンの文言 */
@@ -178,6 +180,7 @@ export async function main({
   const payload = {
     source: SOURCE_ID,
     sourceLabel: SOURCE_LABEL,
+    shortLabel: SHORT_LABEL,
     rightsHolder: RIGHTS_HOLDER,
     sourceLinkLabel: SOURCE_LINK_LABEL,
     sourceUrl: 'https://www.laq.co.jp/gallery/',

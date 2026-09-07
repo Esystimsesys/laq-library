@@ -29,6 +29,8 @@ const MEDIA_API = 'https://purimatu.com/wp-json/wp/v2/media'
 const PER_PAGE = 100
 const SOURCE_ID = 'purimatu'
 const SOURCE_LABEL = 'ぷりまつラボ'
+/** 一覧のカードに出す短い呼び方 */
+const SHORT_LABEL = 'ぷりまつ'
 const RIGHTS_HOLDER = 'ぷりまつラボ'
 const SOURCE_LINK_LABEL = 'ぷりまつラボの ページ'
 const SITE_URL = 'https://purimatu.com/'
@@ -265,6 +267,7 @@ async function main() {
   const payload = {
     source: SOURCE_ID,
     sourceLabel: SOURCE_LABEL,
+    shortLabel: SHORT_LABEL,
     rightsHolder: RIGHTS_HOLDER,
     sourceLinkLabel: SOURCE_LINK_LABEL,
     sourceUrl: SITE_URL,
