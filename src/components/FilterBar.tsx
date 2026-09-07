@@ -32,6 +32,9 @@ export default function FilterBar({ filters, onChange, hitCount }: Props) {
   const [openCategories, setOpenCategories] = useState(false)
   const searchId = useId()
   const categoriesId = useId()
+  const levelLabelId = useId()
+  const categoryLabelId = useId()
+  const recordLabelId = useId()
 
   return (
     <div className={styles.bar}>
@@ -65,8 +68,14 @@ export default function FilterBar({ filters, onChange, hitCount }: Props) {
         </label>
       </div>
 
-      <fieldset className={styles.group}>
-        <legend className={styles.legend}>むずかしさ</legend>
+      {/*
+        しぼりこみのまとまりは fieldset ではなく div + role="group" にしている。
+        読み上げでの伝わり方は同じだが、legend は行の高さの決まり方が
+        ブラウザごとに違い、iPad の Safari で 2 つめ以降の見出しだけが
+        24px 下がる（＝グループの間だけ広く見える）ことがあった。
+      */}
+      <div className={styles.group} role="group" aria-labelledby={levelLabelId}>
+        <p className={styles.legend} id={levelLabelId}>むずかしさ</p>
         <div className={styles.chips}>
           {LEVELS.map((level) => (
             <button
@@ -84,12 +93,12 @@ export default function FilterBar({ filters, onChange, hitCount }: Props) {
             </button>
           ))}
         </div>
-      </fieldset>
+      </div>
 
-      <fieldset className={styles.group}>
-        <legend className={styles.legend}>
+      <div className={styles.group} role="group" aria-labelledby={categoryLabelId}>
+        <p className={styles.legend} id={categoryLabelId}>
           なかま{!openCategories && <span className={styles.hint}>よこに うごかせるよ →</span>}
-        </legend>
+        </p>
         {/* 展開ボタンが画面外に隠れると見つけられないので、スクロールする列の外に置く */}
         <div className={`${styles.categoryRow} ${openCategories ? styles.categoryRowOpen : ''}`}>
           <div
@@ -127,10 +136,10 @@ export default function FilterBar({ filters, onChange, hitCount }: Props) {
             {openCategories ? '1れつに する' : 'ぜんぶ見る'}
           </button>
         </div>
-      </fieldset>
+      </div>
 
-      <fieldset className={styles.group}>
-        <legend className={styles.legend}>じぶんの きろく</legend>
+      <div className={styles.group} role="group" aria-labelledby={recordLabelId}>
+        <p className={styles.legend} id={recordLabelId}>じぶんの きろく</p>
         {/* ここだけは 1 つしか選べないので、押しボタンではなくラジオとして伝える */}
         <StatusChips
           label="じぶんの きろく"
@@ -138,7 +147,7 @@ export default function FilterBar({ filters, onChange, hitCount }: Props) {
           value={filters.status}
           onChange={(status) => onChange({ ...filters, status })}
         />
-      </fieldset>
+      </div>
 
       <div className={styles.resultRow}>
         <p className={styles.count}>
