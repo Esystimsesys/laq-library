@@ -1,7 +1,12 @@
+/*
+  たての間隔は、チップが折り返したときの行間（7px）に近いほうへそろえる。
+  検索・むずかしさ・なかま・きろく はどれも「しぼりこみ」の一部で、
+  ここだけ大きく空けると、展開して行が増えたときに間隔が二種類あるように見える。
+*/
 .bar {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-m);
+  gap: var(--gap-s);
   padding: var(--gap-m);
   background: var(--card);
   border: var(--line);
