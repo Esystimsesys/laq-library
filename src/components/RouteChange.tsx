@@ -7,8 +7,9 @@ import { useLocation } from 'react-router'
  * - 先頭から見せる。一覧を下までスクロールしてから作品を開くと、
  *   詳細も同じ位置から始まってしまうため。
  * - 見出しにフォーカスを移す。読み上げを使っていると、タブを切り替えても
- *   「いま何の画面か」が伝わらないため。マウスやタップでは輪郭線は出ない
- *   （:focus-visible のみ光らせているので、プログラムからの focus では出ない）。
+ *   「いま何の画面か」が伝わらないため。輪郭線は global.css で消してある
+ *   （まだ指で触っていない画面では、プログラムからの focus でも
+ *   :focus-visible が成り立ち、題に青い枠がついて見えるため）。
  */
 export default function RouteChange() {
   const { pathname } = useLocation()
