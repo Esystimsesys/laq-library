@@ -13,7 +13,7 @@ const TABS = [
 
 export default function Layout() {
   const { pathname } = useLocation()
-  const { saveFailed } = useApp()
+  const { saveFailed, dataBusy } = useApp()
   // 作品の詳細と、自分で登録する画面はタブの外側なので、下のナビは出さない
   const isDetail =
     pathname.startsWith('/model/') || pathname.startsWith('/booklet/')
@@ -28,11 +28,16 @@ export default function Layout() {
           「せってい」から ファイルに ほぞんして ください。
         </p>
       )}
-      <main className={styles.main}>
+      {dataBusy && (
+        <p className={styles.saveWarning} role="status">
+          きろくを せいりしています。すこし まってね。
+        </p>
+      )}
+      <main className={styles.main} inert={dataBusy}>
         <Outlet />
       </main>
       {!isDetail && (
-        <nav className={styles.nav} aria-label="メインメニュー">
+        <nav className={styles.nav} aria-label="メインメニュー" inert={dataBusy}>
           {TABS.map(({ to, label, Icon }) => (
             <NavLink
               key={to}

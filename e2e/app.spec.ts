@@ -1,6 +1,25 @@
 import { readFile } from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 
+async function countStoredPhotos(page: import('@playwright/test').Page) {
+  return page.evaluate(
+    () =>
+      new Promise<number>((resolve, reject) => {
+        const request = indexedDB.open('laq-library-photos', 1)
+        request.onerror = () => reject(request.error)
+        request.onsuccess = () => {
+          const db = request.result
+          const count = db.transaction('photos', 'readonly').objectStore('photos').count()
+          count.onsuccess = () => {
+            resolve(count.result)
+            db.close()
+          }
+          count.onerror = () => reject(count.error)
+        }
+      }),
+  )
+}
+
 // 公式画像を取得せず、通信失敗からの復帰を含めて再現可能にする。
 test.beforeEach(async ({ page }) => {
   await page.route('https://fonts.**/*', route => route.abort())
@@ -129,6 +148,7 @@ test('写真つきの登録が、書き出し→ぜんぶ消す→よみこみ �
   await page.getByRole('button', { name: 'きろくを けす' }).click()
   await page.getByRole('button', { name: 'ほんとうに けす' }).click()
   await expect(page.getByText('きろくを けしました。')).toBeVisible()
+  await expect.poll(() => countStoredPhotos(page)).toBe(0)
 
   // 読み込むと、登録も写真も戻る
   await page.locator('input[type=file]').setInputFiles({
@@ -146,6 +166,96 @@ test('写真つきの登録が、書き出し→ぜんぶ消す→よみこみ �
   await expect
     .poll(() => card.locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth))
     .toBeGreaterThan(0)
+})
+
+test('写真の復元中は画面を操作できず、完了後の全削除で写真も消える', async ({ page }) => {
+  const backup = {
+    version: 1,
+    favorites: [],
+    made: {},
+    booklets: [{
+      id: 'my-booklet:busy', title: '復元中', booklet: '', page: '', level: null,
+      categories: [], note: '', hasPhoto: true, createdAt: '',
+    }],
+    photos: {
+      'my-booklet:busy': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    },
+  }
+  await page.goto('./')
+  await page.getByRole('link', { name: 'せってい', exact: true }).click()
+  await page.evaluate(() => {
+    const originalFetch = window.fetch
+    ;(window as Window & { photoImportStarted?: boolean; releasePhotoImport?: () => void }).fetch = async (...args) => {
+      if (String(args[0]).startsWith('data:image/')) {
+        const state = window as Window & { photoImportStarted?: boolean; releasePhotoImport?: () => void }
+        state.photoImportStarted = true
+        await new Promise<void>((resolve) => { state.releasePhotoImport = resolve })
+      }
+      return originalFetch(...args)
+    }
+  })
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)),
+  })
+  await page.getByRole('button', { name: 'よみこむ', exact: true }).click()
+  await expect.poll(() => page.evaluate(() => (window as Window & { photoImportStarted?: boolean }).photoImportStarted)).toBe(true)
+  await expect(page.getByRole('status')).toContainText('せいりしています')
+  await expect(page.locator('main')).toHaveAttribute('inert', '')
+  await expect(page.locator('nav')).toHaveAttribute('inert', '')
+  // ブラウザ履歴で設定を再マウントしても、進行中のロックは残る。
+  await page.goBack()
+  await expect(page).toHaveURL(/\/laq-library\/$/)
+  await page.goForward()
+  await expect(page).toHaveURL(/\/settings$/)
+  await expect(page.locator('main')).toHaveAttribute('inert', '')
+  await page.evaluate(() => (window as Window & { releasePhotoImport?: () => void }).releasePhotoImport?.())
+  await expect(page.getByRole('status')).toHaveCount(0)
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('laq-library:v1') || '{}').booklets?.length)).toBe(1)
+  await page.getByRole('button', { name: 'きろくを けす' }).click()
+  await page.getByRole('button', { name: 'ほんとうに けす' }).click()
+  await expect(page.getByText('きろくを けしました。', { exact: true })).toBeVisible()
+  await expect.poll(() => countStoredPhotos(page)).toBe(0)
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('laq-library:v1') || '{}').booklets?.length)).toBe(0)
+})
+
+test('写真の削除・復元に失敗したら成功表示せず既存データを残す', async ({ page }) => {
+  const backup = {
+    version: 1, favorites: [], made: {},
+    booklets: [{ id: 'my-booklet:failure', title: '失敗確認', booklet: '', page: '', level: null, categories: [], note: '', hasPhoto: true, createdAt: '' }],
+    photos: {
+      'my-booklet:failure': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    },
+  }
+  await page.goto('./settings')
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)),
+  })
+  await page.getByRole('button', { name: 'よみこむ', exact: true }).click()
+  await expect(page.getByText('よみこみました。', { exact: true })).toBeVisible()
+  await page.evaluate(() => {
+    const originalClear = IDBObjectStore.prototype.clear
+    IDBObjectStore.prototype.clear = function () { throw new Error('forced clear failure') }
+    ;(window as Window & { restoreOriginalClear?: () => void }).restoreOriginalClear = () => {
+      IDBObjectStore.prototype.clear = originalClear
+    }
+  })
+  await page.getByRole('button', { name: 'きろくを けす' }).click()
+  await page.getByRole('button', { name: 'ほんとうに けす' }).click()
+  await expect(page.getByText(/すべての きろくと しゃしんを けせませんでした/)).toBeVisible()
+  await expect(page.getByText('きろくを けしました。', { exact: true })).toHaveCount(0)
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('laq-library:v1') || '{}').booklets?.length)).toBe(1)
+  await expect.poll(() => countStoredPhotos(page)).toBe(1)
+
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'backup-again.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)),
+  })
+  await page.getByRole('button', { name: 'よみこむ', exact: true }).click()
+  await expect(page.getByText(/よみこめませんでした。もういちど/)).toBeVisible()
+  await expect(page.getByText('よみこみました。', { exact: true })).toHaveCount(0)
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('laq-library:v1') || '{}').booklets?.length)).toBe(1)
+  await expect.poll(() => countStoredPhotos(page)).toBe(1)
+
+  await page.evaluate(() => (window as Window & { restoreOriginalClear?: () => void }).restoreOriginalClear?.())
 })
 
 test('登録をやめたら、選んだ写真は端末に残らない', async ({ page }) => {

@@ -144,11 +144,8 @@ export async function importPhotos(
  * これをしないと、参照する登録が無い写真だけが端末に残り続ける。
  */
 export async function clearPhotos(): Promise<void> {
-  try {
-    await withStore('readwrite', (store) => store.clear())
-  } catch {
-    // 触れない環境では何もしない
-  }
+  // 呼び出し元が、削除できていないのに完了と案内しないよう失敗を伝える。
+  await withStore('readwrite', (store) => store.clear())
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
