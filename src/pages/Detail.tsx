@@ -51,6 +51,8 @@ function DetailContent({ modelId }: { modelId: string }) {
 
   const source = sourceOf(model)
   const mine = isMyBooklet(model)
+  // つくり方の図を持っているのは公式ぶんだけ。ぷりまつラボは本家の記事へ送る
+  const hasSteps = model.stepImages.length > 0
   const bookletEntry = mine
     ? state.booklets.find((b) => b.id === model.id)
     : undefined
@@ -227,7 +229,7 @@ function DetailContent({ modelId }: { modelId: string }) {
         <section className={styles.howto}>
           <h2 className={styles.h2}>つくりかた</h2>
 
-          {model.stepImages.length > 0 ? (
+          {hasSteps ? (
             <ol className={styles.steps}>
               {model.stepImages.map((src, i) => (
                 <li key={src} className={styles.step}>
@@ -251,15 +253,9 @@ function DetailContent({ modelId }: { modelId: string }) {
             </ol>
           ) : (
             <p className={styles.note}>
-              この さくひんの つくり方の 図は とりこめていません。
-              下の「{source.sourceLinkLabel}」で 見てください。
+              つくり方は 下の「{source.sourceLinkLabel}」で 見てね。
             </p>
           )}
-
-          <p className={styles.note}>
-            しゃしんと 図は {source.sourceLabel} から よみこんでいます。
-            インターネットに つながっていないと 出ないことがあります。
-          </p>
 
           <div className={styles.links}>
             {model.pdfUrl && (
@@ -283,6 +279,13 @@ function DetailContent({ modelId }: { modelId: string }) {
               {source.sourceLinkLabel}
             </a>
           </div>
+
+          {/* 出しどころの断りは、まずリンクへ行けるようにしてから最後に置く */}
+          <p className={styles.note}>
+            {hasSteps ? 'しゃしんと 図は' : 'しゃしんは'} {source.sourceLabel} から
+            よみこんでいます。インターネットに つながっていないと
+            出ないことがあります。
+          </p>
         </section>
         )}
 
