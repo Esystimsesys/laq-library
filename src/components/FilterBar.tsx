@@ -52,7 +52,7 @@ export default function FilterBar({ filters, onChange, hitCount }: Props) {
             type="search"
             inputMode="search"
             enterKeyHint="search"
-            placeholder="なにを つくる？（きょうりゅう、くるま…）"
+            placeholder="なにを つくる？"
             value={filters.query}
             onChange={(e) => onChange({ ...filters, query: e.target.value })}
           />
