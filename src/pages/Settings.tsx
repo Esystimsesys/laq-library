@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router'
 import type { UserState } from '../store/types'
 import { models, sources } from '../data'
-import { exportPhotos } from '../lib/photos'
+import { exportPhotos, photoKeys } from '../lib/photos'
 import { hasAnyRecord, parseState } from '../store/storage'
 import { useApp } from '../store/useApp'
 import PageHeader from '../components/PageHeader'
@@ -43,7 +43,7 @@ export default function Settings() {
     // 写真は IndexedDB にあるので、書き出しのときだけ JSON に混ぜる。
     // これをしないと、端末を替えたときに写真だけ置き去りになる。
     const { photos, missing } = await exportPhotos(
-      state.booklets.filter((b) => b.hasPhoto).map((b) => b.id),
+      state.booklets.flatMap((b) => photoKeys(b.id, b.photoCount)),
     )
     const blob = new Blob([JSON.stringify({ ...state, photos }, null, 2)], {
       type: 'application/json',

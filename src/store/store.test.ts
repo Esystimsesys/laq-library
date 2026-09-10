@@ -92,7 +92,7 @@ describe('冊子から自分で登録した作品', () => {
     level: 'intermediate',
     categories: ['きょうりゅう'],
     note: '',
-    hasPhoto: false,
+    photoCount: 0,
     createdAt: '2026-09-07T00:00:00.000Z',
   }
 
@@ -136,6 +136,21 @@ describe('冊子から自分で登録した作品', () => {
     expect(parsed.booklets[0].level).toBeNull()
     expect(parsed.booklets[0].categories).toEqual(['どうぶつ'])
     expect(parsed.booklets[0].booklet).toBe('')
+  })
+
+  it('写真が 1 枚だけだったころの記録も、写真 1 枚として読む', () => {
+    // 前の形（hasPhoto）で書き出したファイルを読み込んでも、写真を見失わない
+    const parsed = parseState({
+      version: 1,
+      favorites: [],
+      made: {},
+      booklets: [
+        { id: 'my-booklet:old', title: 'まえの かたち', hasPhoto: true },
+        { id: 'my-booklet:new', title: 'いまの かたち', photoCount: 3 },
+        { id: 'my-booklet:bad', title: 'こわれた かず', photoCount: 1e9 },
+      ],
+    })
+    expect(parsed.booklets.map((b) => b.photoCount)).toEqual([1, 3, 30])
   })
 
   it('とうろくがあれば「記録あり」とみなす（空ファイルで消さないため）', () => {

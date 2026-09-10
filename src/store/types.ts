@@ -6,8 +6,8 @@ export type MadeRecord = {
 
 /**
  * 手元の LaQ の冊子から自分で登録した作品。
- * 冊子は商品に付いてくる著作物なので、つくり方の図は取り込まない。
- * 「どの冊子の何ページに何があるか」を引けるようにするための索引。
+ * 冊子は商品に付いてくる著作物なので、中身をアプリに同梱はしない。
+ * 「どの冊子の何ページに何があるか」の索引と、本人が撮ったページの写真だけを持つ。
  */
 export type BookletEntry = {
   /** 'my-booklet:<乱数>' */
@@ -20,8 +20,8 @@ export type BookletEntry = {
   level: 'beginner' | 'intermediate' | 'advanced' | null
   categories: string[]
   note: string
-  /** 写真を IndexedDB に持っているか */
-  hasPhoto: boolean
+  /** IndexedDB に持っている写真の枚数。ページの順に photoKey(id, n) で入っている */
+  photoCount: number
   createdAt: string
 }
 

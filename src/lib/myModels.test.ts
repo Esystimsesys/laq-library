@@ -13,7 +13,7 @@ const entry: BookletEntry = {
   level: 'intermediate',
   categories: ['きょうりゅう'],
   note: 'あしが むずかしい',
-  hasPhoto: true,
+  photoCount: 2,
   createdAt: '2026-09-07T00:00:00.000Z',
 }
 
