@@ -19,8 +19,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -35,8 +35,10 @@ jobs:
       # Pages の有効化はここではできない（GITHUB_TOKEN に権限が無く
       # enablement: true は Resource not accessible by integration で落ちる）。
       # リポジトリ設定側で Source を GitHub Actions にしておくこと。
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      # v4 以降はドットファイル（.well-known など）を成果物に入れない。
+      # 要るようになったら include-hidden-files: true を付ける
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
@@ -48,4 +50,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
