@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { LEVEL_KANA, LEVEL_LABELS, sourceOf } from '../data'
 import { useLookup } from '../lib/lookup'
 import { isMyBooklet } from '../lib/myModels'
+import { photoKeys } from '../lib/photos'
 import { today } from '../store/reducer'
 import { useApp } from '../store/useApp'
 import ImageViewer from '../components/ImageViewer'
@@ -56,6 +57,10 @@ function DetailContent({ modelId }: { modelId: string }) {
   const bookletEntry = mine
     ? state.booklets.find((b) => b.id === model.id)
     : undefined
+  // 自分で撮った冊子のページ。公式の手順の図と同じように並べて、拡大して読む
+  const pagePhotos = bookletEntry
+    ? photoKeys(bookletEntry.id, bookletEntry.photoCount)
+    : []
   const isFavorite = state.favorites.includes(model.id)
   const made = state.made[model.id]
 
@@ -87,24 +92,16 @@ function DetailContent({ modelId }: { modelId: string }) {
           <h1 className={styles.title}>{model.title}</h1>
         </div>
 
-        {mine
-          ? bookletEntry?.hasPhoto && (
-              <PhotoImage
-                className={styles.main}
-                id={model.id}
-                alt={`${model.title} の しゃしん`}
-                fallbackText="しゃしんが 見つかりません"
-              />
-            )
-          : model.mainImage && (
-              <RemoteImage
-                className={styles.main}
-                src={model.mainImage}
-                alt={`${model.title} の かんせいひん`}
-                loading="eager"
-                fallbackText="しゃしんは インターネットに つながると 出ます"
-              />
-            )}
+        {/* 自分の作品の写真は冊子のページなので、下の「つくりかた」に順に並べる */}
+        {!mine && model.mainImage && (
+          <RemoteImage
+            className={styles.main}
+            src={model.mainImage}
+            alt={`${model.title} の かんせいひん`}
+            loading="eager"
+            fallbackText="しゃしんは インターネットに つながると 出ます"
+          />
+        )}
 
         {bookletEntry && (
           <dl className={styles.bookletInfo}>
@@ -210,12 +207,37 @@ function DetailContent({ modelId }: { modelId: string }) {
         {mine ? (
           <section className={styles.howto}>
             <h2 className={styles.h2}>つくりかた</h2>
-            <p className={styles.note}>
-              つくり方は、手元の
-              {bookletEntry?.booklet ? `「${bookletEntry.booklet}」` : 'さっし'}
-              {bookletEntry?.page ? ` の ${bookletEntry.page}ページ` : ''}を 見てね。
-              さっしの 図は この アプリには 入れていません。
-            </p>
+            {pagePhotos.length > 0 ? (
+              <ol className={styles.steps}>
+                {pagePhotos.map((key, i) => (
+                  <li key={key} className={styles.step}>
+                    <span className={styles.stepNo}>{i + 1}</span>
+                    <PhotoImage
+                      className={styles.stepImage}
+                      id={key}
+                      alt={`${model.title} のつくり方 ${i + 1}まいめ`}
+                      fallbackText="しゃしんが 見つかりません"
+                    />
+                    <button
+                      type="button"
+                      className={styles.zoom}
+                      onClick={() => setZoomIndex(i)}
+                    >
+                      <ZoomIcon size={20} />
+                      大きく見る
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className={styles.note}>
+                つくり方は、手元の
+                {bookletEntry?.booklet ? `「${bookletEntry.booklet}」` : 'さっし'}
+                {bookletEntry?.page ? ` の ${bookletEntry.page}ページ` : ''}を 見てね。
+                「とうろくを なおす」で さっしの ページを しゃしんに とると、
+                ここで 見られます。
+              </p>
+            )}
             <div className={styles.links}>
               <Link
                 className={styles.linkBtn}
@@ -307,7 +329,8 @@ function DetailContent({ modelId }: { modelId: string }) {
 
       {zoomIndex !== null && (
         <ImageViewer
-          images={model.stepImages}
+          images={mine ? pagePhotos : model.stepImages}
+          local={mine}
           index={zoomIndex}
           title={model.title}
           onMove={setZoomIndex}

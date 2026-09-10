@@ -1,10 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { CloseIcon } from './icons'
+import PhotoImage from './PhotoImage'
 import RemoteImage from './RemoteImage'
 import styles from './ImageViewer.module.css'
 
 type Props = {
+  /** 画像の URL。local のときは端末に入れた写真のキー */
   images: string[]
+  /** 自分で撮った冊子のページを出すとき */
+  local?: boolean
   index: number
   title: string
   onMove: (index: number) => void
@@ -17,6 +21,7 @@ type Props = {
  */
 export default function ImageViewer({
   images,
+  local = false,
   index,
   title,
   onMove,
@@ -103,15 +108,27 @@ export default function ImageViewer({
       </div>
 
       {/* 画像そのものを押しても閉じないようにして、拡大操作の邪魔をしない */}
-      <RemoteImage
-        key={images[index]}
-        className={styles.image}
-        src={images[index]}
-        alt={`${title} のつくり方 ${index + 1}まいめ`}
-        loading="eager"
-        fallbackText="つくり方の図は インターネットに つながると 出ます"
-        onClick={(e) => e.stopPropagation()}
-      />
+      {local ? (
+        <PhotoImage
+          key={images[index]}
+          className={styles.image}
+          id={images[index]}
+          alt={`${title} のつくり方 ${index + 1}まいめ`}
+          loading="eager"
+          fallbackText="しゃしんが 見つかりません"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        <RemoteImage
+          key={images[index]}
+          className={styles.image}
+          src={images[index]}
+          alt={`${title} のつくり方 ${index + 1}まいめ`}
+          loading="eager"
+          fallbackText="つくり方の図は インターネットに つながると 出ます"
+          onClick={(e) => e.stopPropagation()}
+        />
+      )}
 
       {images.length > 1 && (
         <div className={styles.pager} onClick={(e) => e.stopPropagation()}>

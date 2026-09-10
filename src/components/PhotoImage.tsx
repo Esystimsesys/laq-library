@@ -1,22 +1,31 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type MouseEventHandler } from 'react'
 import { getPhoto } from '../lib/photos'
 import styles from './RemoteImage.module.css'
 
 type Props = {
-  /** 冊子エントリの id。写真は IndexedDB にこの id で入っている */
+  /** 写真のキー（photoKey）。1 枚目は冊子エントリの id と同じ */
   id: string
   alt: string
   className?: string
   fallbackText?: string
+  loading?: 'lazy' | 'eager'
+  onClick?: MouseEventHandler<HTMLElement>
 }
 
 /** 自分で撮った写真。端末の IndexedDB にあるので、読み出して表示する。 */
-export default function PhotoImage({ id, alt, className, fallbackText }: Props) {
+export default function PhotoImage({
+  id,
+  alt,
+  className,
+  fallbackText,
+  loading = 'lazy',
+  onClick,
+}: Props) {
   const [url, setUrl] = useState<string | null>(null)
   const [missing, setMissing] = useState(false)
   // IntersectionObserver が無い環境では待たずに読む（見えたか判定できないため）
   const [near, setNear] = useState(
-    () => typeof IntersectionObserver === 'undefined',
+    () => loading === 'eager' || typeof IntersectionObserver === 'undefined',
   )
   const holder = useRef<HTMLDivElement>(null)
 
@@ -70,11 +79,14 @@ export default function PhotoImage({ id, alt, className, fallbackText }: Props) 
         className={`${styles.fallback} ${className ?? ''}`}
         role="img"
         aria-label={alt}
+        onClick={onClick}
       >
         {missing && fallbackText && <span className={styles.text}>{fallbackText}</span>}
       </div>
     )
   }
 
-  return <img className={className} src={url!} alt={alt} decoding="async" />
+  return (
+    <img className={className} src={url!} alt={alt} decoding="async" onClick={onClick} />
+  )
 }

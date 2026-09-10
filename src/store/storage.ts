@@ -1,3 +1,4 @@
+import { MAX_PHOTOS } from '../lib/photos'
 import type { BookletEntry, UserState } from './types'
 
 const KEY = 'laq-library:v1'
@@ -55,9 +56,18 @@ function toBookletEntry(raw: Record<string, unknown>): BookletEntry {
       ? raw.categories.filter((c): c is string => typeof c === 'string')
       : [],
     note: typeof raw.note === 'string' ? raw.note : '',
-    hasPhoto: raw.hasPhoto === true,
+    photoCount: toPhotoCount(raw),
     createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : '',
   }
+}
+
+/** 写真が 1 枚だけだったころの記録（hasPhoto）も、1 枚として読む。 */
+function toPhotoCount(raw: Record<string, unknown>): number {
+  const count = raw.photoCount
+  if (typeof count === 'number' && Number.isInteger(count) && count >= 0) {
+    return Math.min(count, MAX_PHOTOS)
+  }
+  return raw.hasPhoto === true ? 1 : 0
 }
 
 /** 記録が 1 件でも入っているか。空のファイルで今の記録を消さないための判定。 */

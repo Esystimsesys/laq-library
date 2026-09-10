@@ -87,13 +87,81 @@
   background: var(--red);
 }
 
+/* 冊子のページは何枚にもなるので、2 列に並べて順番をひと目で見られるようにする */
+.photos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.photoItem {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.photoNo {
+  position: absolute;
+  left: -6px;
+  top: -6px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--card);
+  background: var(--blue);
+  border: var(--line-thin);
+  border-radius: 999px;
+}
+
 .photo {
   width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  background: var(--paper);
   border: var(--line-thin);
   border-radius: var(--radius-m);
 }
 
+.photoTools {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.tool {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 8px;
+  font-size: 15px;
+  font-weight: 900;
+  background: var(--paper);
+  border: var(--line-thin);
+  border-radius: 999px;
+}
+
+.toolDanger {
+  color: var(--red);
+}
+
+.tool:disabled {
+  opacity: 0.35;
+}
+
+.photoButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .photoButton {
+  flex: 1 1 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -106,6 +174,12 @@
   border-radius: 999px;
   box-shadow: var(--shadow-s);
   cursor: pointer;
+}
+
+.photoButton:has(input:disabled) {
+  opacity: 0.6;
+  box-shadow: none;
+  cursor: default;
 }
 
 .note {
