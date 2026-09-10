@@ -8,6 +8,15 @@ export default defineConfig({
     serviceWorkers: 'block',
     trace: 'retain-on-failure',
   },
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium' } },
+    /*
+      iOS でだけ出る崩れ（フレックスの最小幅の決まり方が Blink と違う）を
+      捕まえるための 1 つ。操作をともなう確認は chromium 側で見ているので、
+      ここは画面の幅の検査だけ走らせて、CI の時間を増やしすぎない。
+    */
+    { name: 'webkit', use: { browserName: 'webkit' }, testMatch: /layout\.spec\.ts/ },
+  ],
   webServer: {
     // preview 側にも GITHUB_PAGES=true が要る。付け忘れると base が '/' に戻り、
     // index.html が指す /laq-library/assets/*.js が 404 になって真っ白になる。

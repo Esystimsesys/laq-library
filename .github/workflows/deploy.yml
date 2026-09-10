@@ -28,7 +28,7 @@ jobs:
       - run: npm run lint
       - run: npm test
       # 実ブラウザでの画面確認。build:pages と同じサブパス配信で動かす
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e
       # GITHUB_PAGES=true でサブディレクトリ配信用のパスに切り替え、404.html も作る
       - run: npm run build:pages

@@ -23,6 +23,12 @@
   align-items: center;
   gap: 8px;
   flex: 1;
+  /*
+    iOS の Safari は、この行の最小幅を中の input の既定幅（size=20 ＝ 20文字ぶん）
+    から決める。input 側の min-width:0 は見てくれないので、ここに置かないと
+    flex:1 でも縮まず、検索窓がカードごと画面の外へはみ出す。
+  */
+  min-width: 0;
   padding: 0 10px;
   background: var(--paper);
   border: var(--line-thin);
