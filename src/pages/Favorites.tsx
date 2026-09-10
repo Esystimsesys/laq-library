@@ -46,16 +46,23 @@ export default function Favorites() {
       <PageHeader title="おきにいり" sub={`${shown.length} こ`} />
 
       {list.length > 0 && (
-        <StatusChips
-          label="つくったかどうかで しぼる"
-          options={STATUSES}
-          value={status}
-          onChange={setStatus}
-        />
+        <>
+          <StatusChips
+            label="つくったかどうかで しぼる"
+            options={STATUSES}
+            value={status}
+            onChange={setStatus}
+          />
+          {/* カードの ★ は出さないので、はずし方をここで伝える */}
+          <p className={page.note}>
+            おきにいりから はずすときは、さくひんを ひらいて「おきにいり」を おしてね。
+          </p>
+        </>
       )}
 
       <ModelGrid
         models={shown}
+        favoriteButton={false}
         // 自分で選んだぶんだけなので、区切らずに全部見せる
         paged={false}
         empty={

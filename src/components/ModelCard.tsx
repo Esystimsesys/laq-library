@@ -12,7 +12,8 @@ type Props = {
   model: Model
   isFavorite: boolean
   isMade: boolean
-  onToggleFavorite: (id: string) => void
+  /** 渡さなければ ★ のボタンを出さない */
+  onToggleFavorite?: (id: string) => void
 }
 
 /**
@@ -61,19 +62,21 @@ function ModelCard({ model, isFavorite, isMade, onToggleFavorite }: Props) {
       </Link>
 
       {/* カードを開かずに、その場でおきにいりを付け外しできるようにする */}
-      <button
-        type="button"
-        className={isFavorite ? `${styles.fav} ${styles.favOn}` : styles.fav}
-        aria-pressed={isFavorite}
-        aria-label={
-          isFavorite
-            ? `${model.title} をおきにいりから はずす`
-            : `${model.title} をおきにいりに いれる`
-        }
-        onClick={() => onToggleFavorite(model.id)}
-      >
-        <StarIcon size={22} filled={isFavorite} />
-      </button>
+      {onToggleFavorite && (
+        <button
+          type="button"
+          className={isFavorite ? `${styles.fav} ${styles.favOn}` : styles.fav}
+          aria-pressed={isFavorite}
+          aria-label={
+            isFavorite
+              ? `${model.title} をおきにいりから はずす`
+              : `${model.title} をおきにいりに いれる`
+          }
+          onClick={() => onToggleFavorite(model.id)}
+        >
+          <StarIcon size={22} filled={isFavorite} />
+        </button>
+      )}
     </li>
   )
 }

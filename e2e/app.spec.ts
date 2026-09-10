@@ -404,9 +404,15 @@ test('おきにいりを「つくってない」「つくった」でしぼれ�
   await expect(cards).toHaveCount(1)
   await expect(cards.first()).toContainText(made)
 
-  // ぜんぶ つくった状態で「つくってない」を見ると、から の知らせから戻れる
+  // おきにいりの一覧では、押しまちがいで消えないよう ★ を出さない
+  await expect(page.getByRole('button', { name: /をおきにいりから はずす/ })).toHaveCount(0)
+
+  // はずすのは作品のページから。ぜんぶ つくった状態で「つくってない」を見ると、
+  // から の知らせから戻れる
   await page.getByRole('radio', { name: 'ぜんぶ', exact: true }).click()
-  await page.getByRole('button', { name: `${notMade} をおきにいりから はずす` }).click()
+  await cards.filter({ hasText: notMade }).first().click()
+  await page.getByRole('button', { name: 'おきにいり', exact: true }).click()
+  await page.goto('./favorites')
   await page.getByRole('radio', { name: 'つくってない', exact: true }).click()
   await expect(page.getByText('おきにいりは ぜんぶ つくったね！')).toBeVisible()
   await page.getByRole('button', { name: 'おきにいりを ぜんぶ みる' }).click()
