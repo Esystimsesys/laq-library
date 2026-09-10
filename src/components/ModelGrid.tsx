@@ -25,6 +25,11 @@ type Props = {
    * 自分の持ちものが隠れているように見えるため。
    */
   paged?: boolean
+  /**
+   * false ならカードに ★ を出さない。おきにいりの一覧では全部に付いているので
+   * 情報にならず、押しまちがえると一覧から消えてしまうため。
+   */
+  favoriteButton?: boolean
 }
 
 export default function ModelGrid({
@@ -34,6 +39,7 @@ export default function ModelGrid({
   shown: initialShown = 0,
   onShownChange,
   paged = true,
+  favoriteButton = true,
 }: Props) {
   const { state, actions } = useApp()
   // ★ が付いているかはカードの数だけ引くので、配列を毎回なめると
@@ -67,7 +73,7 @@ export default function ModelGrid({
             model={model}
             isFavorite={favorites.has(model.id)}
             isMade={Boolean(state.made[model.id])}
-            onToggleFavorite={actions.toggleFavorite}
+            onToggleFavorite={favoriteButton ? actions.toggleFavorite : undefined}
           />
         ))}
       </ul>
