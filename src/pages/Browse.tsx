@@ -45,12 +45,19 @@ export default function Browse() {
 
   return (
     <div className={page.page}>
+      {/* 検索や共有のリンクから はじめて来た人にも、何ができるサイトかが伝わるようにする。
+          スマホで開いてすぐ 1 まいめの作品が見えるよう、2 行に収める */}
       <PageHeader
         title="LaQライブラリ"
-        sub={`ぜんぶで ${models.length + state.booklets.length} こ`}
+        lead="LaQの つくり方をさがせるページです。つくった きろくも のこせます。"
       />
 
-      <FilterBar filters={filters} onChange={setFilters} hitCount={hits.length} />
+      <FilterBar
+        filters={filters}
+        onChange={setFilters}
+        hitCount={hits.length}
+        totalCount={models.length + state.booklets.length}
+      />
 
       <ModelGrid
         models={hits}

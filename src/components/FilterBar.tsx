@@ -21,6 +21,8 @@ type Props = {
   onChange: (next: Filters) => void
   /** しぼりこんだ結果の件数 */
   hitCount: number
+  /** しぼりこむ前の全体の件数。しぼりこんでいるときだけ「x / 全体」で出す */
+  totalCount: number
 }
 
 function toggle(list: string[], value: string): string[] {
@@ -29,7 +31,7 @@ function toggle(list: string[], value: string): string[] {
     : [...list, value]
 }
 
-export default function FilterBar({ filters, onChange, hitCount }: Props) {
+export default function FilterBar({ filters, onChange, hitCount, totalCount }: Props) {
   const [openCategories, setOpenCategories] = useState(false)
   const searchId = useId()
   const categoriesId = useId()
@@ -152,8 +154,10 @@ export default function FilterBar({ filters, onChange, hitCount }: Props) {
       </div>
 
       <div className={styles.resultRow}>
+        {/* しぼりこんでいないときに「1472 / 1472」と出しても同じ数のくり返しになる */}
         <p className={styles.count}>
-          <strong>{hitCount}</strong> こ
+          <strong>{hitCount}</strong>
+          {isFiltering(filters) && ` / ${totalCount}`} こ
         </p>
         {isFiltering(filters) && (
           <button
