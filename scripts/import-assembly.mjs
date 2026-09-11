@@ -166,12 +166,50 @@ export function validateGuide(guide) {
   return variant
 }
 
-export function importAssembly({ source, name = 'metamon', modelId, title, article, revision, root = projectRoot, updateRuntime = false }) {
+/** Validate finalized source presentation too; shared by local review and source-reading import. */
+export function validateSourceGuide(guide) {
+  const variant = validateGuide(guide)
+  const record = (value, label) => check(value && typeof value === 'object' && !Array.isArray(value), `${label} must be an object`)
+  const byKey = stages(variant), unitIds = new Set(variant.units.map(unit => unit.id))
+  const reading = guide.reading
+  if (reading !== undefined) {
+    record(reading, 'reading')
+    for (const field of ['unitNames', 'steps']) if (reading[field] !== undefined) record(reading[field], `reading.${field}`)
+    for (const [id, label] of Object.entries(reading.unitNames ?? {})) check(unitIds.has(id) && text(label), `invalid reading unit: ${id}`)
+    ids(reading.combineUnits ?? [], unitIds, 'reading.combineUnits', true)
+    for (const [key, copy] of Object.entries(reading.steps ?? {})) check(byKey.has(key) && text(copy?.title) && text(copy?.description), `invalid reading step: ${key}`)
+    if (reading.sequence !== undefined) validateSequence(variant, reading.sequence)
+  }
+  const sequence = guide.sequence ?? reading?.sequence ?? [...byKey.keys()]
+  validateSequence(variant, sequence)
+  const labels = displayLabels(variant, sequence, reading?.labelFamilies)
+  if (guide.displayLabels !== undefined) {
+    record(guide.displayLabels, 'displayLabels')
+    for (const [id, label] of Object.entries(guide.displayLabels)) check(Object.hasOwn(labels, id) && text(label), `invalid display label: ${id}`)
+  }
+  if (guide.legacyAtKeys !== undefined) {
+    const known = new Set(['welcome', 'parts', 'done', ...byKey.keys()])
+    for (const key of array(guide.legacyAtKeys, 'legacyAtKeys')) check(known.has(key), `legacyAtKeys: unknown reference ${key}`)
+  }
+  const copies = [...byKey.values()].map(value => value.stage).concat(Object.values(reading?.steps ?? {}))
+  for (const unit of variant.units) if (unit.label !== undefined) {
+    check(text(unit.label), `invalid unit label: ${unit.id}`)
+    copies.push({ title: unit.label })
+  }
+  for (const title of Object.values(reading?.unitNames ?? {})) copies.push({ title })
+  for (const copy of copies) {
+    if (copy.description !== undefined) check(typeof copy.description === 'string', 'step description must be a string')
+    for (const match of `${copy.title ?? ''} ${copy.description ?? ''}`.matchAll(/\{\{([^}]+)\}\}/g)) check(Object.hasOwn(labels, match[1]), `unknown display reference: ${match[1]}`)
+  }
+  return variant
+}
+
+export function importAssembly({ source, name = 'metamon', modelId, title, article, revision, root = projectRoot, updateRuntime = false, useSourceReading = false }) {
   check(text(source), '--source is required')
   check(/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name), '--name must be a lowercase slug')
   source = path.resolve(source)
   const sourceGuide = readJson(path.join(source, 'models', name, 'unit-guide.json'))
-  const variant = validateGuide(sourceGuide)
+  const variant = useSourceReading ? validateSourceGuide(sourceGuide) : validateGuide(sourceGuide)
   const library = readdirSync(path.join(root, 'src/data/sources')).filter((f) => f.endsWith('.json'))
     .flatMap((file) => { const data = readJson(path.join(root, 'src/data/sources', file)); return data.models ?? [] })
   const trialPath = path.join(source, 'models', name, `${name}-trial.json`)
@@ -198,13 +236,16 @@ export function importAssembly({ source, name = 'metamon', modelId, title, artic
   const originalKeys = [...stages(variant).keys()]
   if (sourceGuide.verification) guide.verification = { ...sourceGuide.verification, variantCount: 1, variants: { [sourceGuide.defaultVariant]: variant.verification } }
   const readingPath = path.join(root, 'content/assemblies', `${name}.json`)
-  if (existsSync(readingPath)) {
-    const reading = readJson(readingPath)
+  const selectedReading = useSourceReading ? sourceGuide.reading : existsSync(readingPath) ? readJson(readingPath) : undefined
+  if (selectedReading !== undefined) {
+    const reading = selectedReading
     check(reading && typeof reading === 'object' && !Array.isArray(reading), 'reading must be an object')
+    for (const field of ['unitNames', 'steps']) if (reading[field] !== undefined) check(reading[field] && typeof reading[field] === 'object' && !Array.isArray(reading[field]), `reading.${field} must be an object`)
     for (const [id, label] of Object.entries(reading.unitNames ?? {})) check(variant.units.some((unit) => unit.id === id) && text(label), `invalid reading unit: ${id}`)
     const combined = ids(reading.combineUnits ?? [], new Set(variant.units.map((unit) => unit.id)), 'reading.combineUnits', true)
     for (const unit of variant.units) {
-      if (!combined.has(unit.id)) continue
+      // A reviewed source already contains its final steps. Do not reapply its historical combineUnits.
+      if (useSourceReading || !combined.has(unit.id)) continue
       const final = unit.steps.at(-1)
       const copy = reading.steps?.[`unit:${unit.id}:0`]
       unit.steps = [{
@@ -227,15 +268,23 @@ export function importAssembly({ source, name = 'metamon', modelId, title, artic
       return kind === 'unit' && combined.has(id) ? `unit:${id}:0` : key
     }), 'done']
   }
+  if (useSourceReading && sourceGuide.legacyAtKeys !== undefined) {
+    const known = new Set(['welcome', 'parts', 'done', ...stages(variant).keys()])
+    array(sourceGuide.legacyAtKeys, 'legacyAtKeys')
+    for (const key of sourceGuide.legacyAtKeys) check(known.has(key), `legacyAtKeys: unknown reference ${key}`)
+    guide.legacyAtKeys = sourceGuide.legacyAtKeys
+  }
   guide.legacyAtKeys ??= ['welcome', 'parts', ...originalKeys, 'done']
-  guide.sequence = guide.reading?.sequence === undefined ? [...stages(variant).keys()] : guide.reading.sequence
+  if (useSourceReading && guide.reading?.sequence !== undefined) validateSequence(variant, guide.reading.sequence)
+  guide.sequence = useSourceReading && sourceGuide.sequence !== undefined ? sourceGuide.sequence
+    : guide.reading?.sequence === undefined ? [...stages(variant).keys()] : guide.reading.sequence
   validateGuide(guide)
   guide.displayLabels = displayLabels(variant, guide.sequence, guide.reading?.labelFamilies)
   for (const copy of Object.values(guide.reading?.steps ?? {})) {
     for (const match of `${copy.title} ${copy.description}`.matchAll(/\{\{([^}]+)\}\}/g)) check(guide.displayLabels[match[1]], `unknown display reference: ${match[1]}`)
   }
   // Prototype stage counts describe the pre-combination guide, not this import.
-  if (guide.reading?.combineUnits?.length) {
+  if (!useSourceReading && guide.reading?.combineUnits?.length) {
     if (guide.verification) { guide.sourceVerification = guide.verification; delete guide.verification }
     if (variant.verification) { variant.sourceVerification = variant.verification; delete variant.verification }
     guide.importVerification = { unitStepCount: variant.units.reduce((n, u) => n + u.steps.length, 0), assemblyStepCount: variant.assembly.length, sequenceStepCount: guide.sequence.length, sequenceDependenciesValidated: true }
@@ -266,8 +315,8 @@ export function importAssembly({ source, name = 'metamon', modelId, title, artic
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    const { values } = parseArgs({ options: { source: { type: 'string' }, name: { type: 'string', default: 'metamon' }, 'model-id': { type: 'string' }, title: { type: 'string' }, article: { type: 'string' }, revision: { type: 'string' }, 'update-runtime': { type: 'boolean', default: false } } })
-    const result = importAssembly({ source: values.source, name: values.name, modelId: values['model-id'], title: values.title, article: values.article, revision: values.revision === undefined ? undefined : Number(values.revision), updateRuntime: values['update-runtime'] })
+    const { values } = parseArgs({ options: { source: { type: 'string' }, name: { type: 'string', default: 'metamon' }, 'model-id': { type: 'string' }, title: { type: 'string' }, article: { type: 'string' }, revision: { type: 'string' }, 'update-runtime': { type: 'boolean', default: false }, 'use-source-reading': { type: 'boolean', default: false } } })
+    const result = importAssembly({ source: values.source, name: values.name, modelId: values['model-id'], title: values.title, article: values.article, revision: values.revision === undefined ? undefined : Number(values.revision), updateRuntime: values['update-runtime'], useSourceReading: values['use-source-reading'] })
     console.log(`Imported ${result.id}: ${result.unitCount} units, ${result.pieceCount} pieces → ${result.guidePath}`)
   } catch (error) { console.error(`Assembly import failed: ${error.message}`); process.exitCode = 1 }
 }

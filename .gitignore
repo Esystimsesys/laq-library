@@ -30,3 +30,6 @@ dist-ssr
 .cache
 test-results
 playwright-report
+
+# Private photos, AI drafts and human review history
+.local/
