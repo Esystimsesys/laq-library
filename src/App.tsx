@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Link, Route, Routes } from 'react-router'
 import { AppProvider } from './store/AppStore'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -9,6 +10,8 @@ import Favorites from './pages/Favorites'
 import Made from './pages/Made'
 import Settings from './pages/Settings'
 import page from './pages/Page.module.css'
+
+const Assembly = lazy(() => import('./assemblies/Assembly'))
 
 export default function App() {
   return (
@@ -22,6 +25,7 @@ export default function App() {
               <Route path="/made" element={<Made />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/model/:modelId" element={<Detail />} />
+              <Route path="/assembly/:assemblyId" element={<Suspense fallback={<p role="status">つくりかたを よみこんでいるよ…</p>}><Assembly /></Suspense>} />
               <Route path="/booklet/new" element={<BookletForm />} />
               <Route path="/booklet/:entryId" element={<BookletForm />} />
               <Route path="*" element={
