@@ -131,6 +131,8 @@ test('No.6・7も中央に継ぎ目がなく、外周・接続溝・端面のく
 })
 
 for (const width of [390,1240]) test(`左右の手は本体を動かさず接続方向へ離れる ${width}px`, async ({page}) => {
+  // CI renders WebGL in software; budget the complete multi-action scenario.
+  test.setTimeout(90000)
   await page.setViewportSize({width,height:844})
   await page.goto('./assembly/metamon?step=assembly:6')
   await expect(page.locator('iframe')).toHaveAttribute('data-shown','assembly:6',{timeout:30000})
@@ -152,6 +154,8 @@ for (const width of [390,1240]) test(`左右の手は本体を動かさず接続
 })
 
 for(const width of [390,1240]) test(`分解スライダーを連続ドラッグしても形状を再生成しない ${width}px`,async({page})=>{
+  // CI renders WebGL in software; budget the complete multi-action scenario.
+  test.setTimeout(90000)
   await page.setViewportSize({width,height:844})
   await page.goto('./assembly/metamon?step=assembly:6')
   await expect(page.locator('iframe')).toHaveAttribute('data-shown','assembly:6',{timeout:30000})

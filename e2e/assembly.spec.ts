@@ -138,6 +138,8 @@ test('3D表示に失敗しても再試行でき、表示前に完了扱いにし
 
 
 test('旧URLの手順を保ち、C1は一枚の図で表示する', async ({page}) => {
+  // Two full 3D page loads share this test budget; each load still has a 30s assertion.
+  test.setTimeout(90000)
   await page.goto('./assembly/metamon?at=19')
   await expect(page.locator('iframe')).toHaveAttribute('data-shown','assembly:6',{timeout:30000})
   await page.goto('./assembly/metamon?step=unit:C1:0')
