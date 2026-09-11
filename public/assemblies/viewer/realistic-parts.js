@@ -159,12 +159,86 @@
     }
     g.computeVertexNormals();return new T.Mesh(g,material);
   }
-  function spine(T,piece,axis,dirs,center,profile,material){
-    const b=(piece.partNo===6||piece.partNo===7)?dirs[0].dir.clone():dirs[0].dir.clone().add(dirs[1].dir).normalize(),side=new T.Vector3().crossVectors(b,axis).normalize(),mm=PLATE_PROFILE.edgeMm;
+  const squareJointGeometryCache=new Map();
+  function squareJoint(T, axis, dirs, center, profile, material) {
+    // One exterior surface for the hub and all forks. Separate, overlapping
+    // extrusions used to leave full-length seams on the same physical part.
+    // Sweep the union's cross-section along the 17 mm axis; socket pockets
+    // remain open and the square end retains its blind circular recess.
+    const mm=PLATE_PROFILE.edgeMm,half=profile.bodyMm/2/mm,length=profile.lengthMm/mm;
+    const radial=dirs[0].dir,normal=new T.Vector3().crossVectors(axis,radial).normalize();
+    const active=new Set(dirs.map(d=>((Math.round(Math.atan2(d.dir.dot(normal),d.dir.dot(radial))/(Math.PI/2))%4)+4)%4));
+    const group=new T.Group();group.position.copy(center);group.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(axis,radial,normal));
+    const cacheKey=[profile.lengthMm,profile.bodyMm,profile.reachMm,profile.lobeWidthMm,[...active].sort().join('')].join(':');
+    if(squareJointGeometryCache.has(cacheKey)){
+      group.add(new T.Mesh(squareJointGeometryCache.get(cacheKey).clone(),material));return group;
+    }
+    const outline=wing(T,0,profile).getPoints(16);
+    const stations=[...new Set([-length/2,length/2,...outline.map(p=>p.x)].map(x=>Math.round(x*1e8)/1e8))].sort((a,b)=>a-b);
+    const extent=x=>{
+      let y=half;
+      for(let i=0;i<outline.length-1;i++){
+        const a=outline[i],b=outline[i+1];
+        if(Math.abs(a.x-b.x)<1e-10)continue;
+        const t=(x-a.x)/(b.x-a.x);
+        if(t>=-1e-6&&t<=1+1e-6)y=Math.max(y,a.y+t*(b.y-a.y));
+      }
+      return y;
+    };
+    const positions=[],triangle=(a,b,c)=>{
+      const ab=new T.Vector3().subVectors(b,a),ac=new T.Vector3().subVectors(c,a);
+      if(ab.cross(ac).lengthSq()>1e-20)positions.push(...a.toArray(),...b.toArray(),...c.toArray());
+    };
+    const crossSection=x=>{
+      const points=[],reach=extent(x),steps=8;
+      for(let side=0;side<4;side++){
+        const angle=side*Math.PI/2,cos=Math.cos(angle),sin=Math.sin(angle);
+        const add=(r,z)=>points.push(new T.Vector3(x,r*cos-z*sin,r*sin+z*cos));
+        const profileAt=i=>{
+          const r=half+(active.has(side)?reach-half:0)*i/steps;
+          const t=Math.max(0,(r*mm-profile.bodyMm/2)/(profile.reachMm-profile.bodyMm/2));
+          return {r,outer:(profile.bodyMm/2-.25*t)/mm,inner:(.65+.20*Math.exp(-(((t-.48)/.24)**2)))/mm};
+        };
+        // Counterclockwise outline: negative fork, its pocket, positive fork.
+        for(let i=0;i<=steps;i++){const p=profileAt(i);add(p.r,-p.outer);}
+        for(let i=steps;i>=0;i--){const p=profileAt(i);add(p.r,-p.inner);}
+        for(let i=0;i<=steps;i++){const p=profileAt(i);add(p.r,p.inner);}
+        for(let i=steps;i>=0;i--){const p=profileAt(i);add(p.r,p.outer);}
+      }
+      return points;
+    };
+    const sections=stations.map(crossSection);
+    for(let i=0;i<sections.length-1;i++)for(let j=0;j<sections[i].length;j++){
+      const k=(j+1)%sections[i].length,a=sections[i][j],b=sections[i+1][j],c=sections[i+1][k],d=sections[i][k];
+      triangle(a,c,b);triangle(a,d,c);
+    }
+    const radius=.70/mm,depth=1.3/mm;
+    const end=polygon(T,[[-half,-half],[half,-half],[half,half],[-half,half]]);
+    end.holes.push(circle(T,0,0,radius));
+    const cap=new T.ShapeGeometry(end,16).toNonIndexed(),cp=cap.attributes.position;
+    for(const side of [-1,1]){
+      for(let i=0;i<cp.count;i+=3){
+        const pts=[0,1,2].map(j=>new T.Vector3(side*length/2,cp.getX(i+j),cp.getY(i+j)));
+        triangle(pts[0],pts[side>0?1:2],pts[side>0?2:1]);
+      }
+      for(let i=0;i<32;i++){
+        const a=i/32*Math.PI*2,b=(i+1)/32*Math.PI*2;
+        const at=(angle,inset)=>new T.Vector3(side*(length/2-inset),radius*Math.cos(angle),radius*Math.sin(angle));
+        const p=at(a,0),q=at(b,0),r=at(a,depth),s=at(b,depth),floor=new T.Vector3(side*(length/2-depth),0,0);
+        if(side>0){triangle(p,q,r);triangle(q,s,r);triangle(floor,r,s);}
+        else{triangle(p,r,q);triangle(q,r,s);triangle(floor,s,r);}
+      }
+    }
+    cap.dispose();
+    const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(positions,3));geometry.computeVertexNormals();
+    squareJointGeometryCache.set(cacheKey,geometry.clone());
+    group.add(new T.Mesh(geometry,material));return group;
+  }
+  function spine(T,axis,dirs,center,profile,material){
+    const b=dirs[0].dir.clone().add(dirs[1].dir).normalize(),side=new T.Vector3().crossVectors(b,axis).normalize(),mm=PLATE_PROFILE.edgeMm;
     const half=profile.bodyMm/2/mm;
-    // The square end of No.6 shares the user-specified 3.5 mm plate thickness.
-    const points=(piece.partNo===6||piece.partNo===7)?[[-half,-half],[half,-half],[half,half],[-half,half]]:
-      [[-profile.hubTopMm/2/mm,-half],[profile.hubTopMm/2/mm,-half],[profile.hubBottomMm/2/mm,half],[-profile.hubBottomMm/2/mm,half]];
+    // No.5 retains its photo-informed trapezoidal hub.
+    const points=[[-profile.hubTopMm/2/mm,-half],[profile.hubTopMm/2/mm,-half],[profile.hubBottomMm/2/mm,half],[-profile.hubBottomMm/2/mm,half]];
     const end=roundedPolygon(T,points,.07);end.holes.push(circle(T,0,0,.70/mm));
     const g=new T.Group();g.position.copy(center);g.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(side,b,axis));
     const length=profile.lengthMm/mm;g.add(mesh(T,end,length-.004,-length/2+.002,material));
@@ -200,7 +274,8 @@
       dirs.push({id:1,dir:dirs[0].dir.clone().applyAxisAngle(axis,angle),inset:defaultInset});
     }
     const profile=JOINT_PROFILES[piece.partNo];
-    if(profile&&piece.partNo>=5)group.add(spine(T,piece,axis,dirs,center,profile,material));
+    if(profile&&piece.partNo===5)group.add(spine(T,axis,dirs,center,profile,material));
+    if(profile&&piece.partNo>=6)group.add(squareJoint(T,axis,dirs,center,profile,material));
     if(profile&&piece.partNo<5) {
       // Flat joints are one moulding. Build each outer skin across both ports,
       // so the renderer cannot outline an artificial join down the middle.
@@ -213,7 +288,7 @@
       const h=profile.lengthMm/mm/2-.003,reach=profile.waistMm/2/mm,slot=1.3/mm;
       flat.add(mesh(T,polygon(T,[[-h,-reach],[h,-reach],[h,reach],[-h,reach]]),slot,-slot/2,material));
       group.add(flat);
-    } else for(const d of dirs) {
+    } else if(piece.partNo<6) for(const d of dirs) {
       const normal=new T.Vector3().crossVectors(axis,d.dir).normalize();
       const arm=new T.Group();arm.position.copy(center);arm.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(axis,d.dir,normal));
       const shape=wing(T,d.inset,profile);
