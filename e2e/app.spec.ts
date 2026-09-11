@@ -50,7 +50,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('https://www.laq.co.jp/**', route => route.abort())
 })
 
-test('スマホ幅の一覧、カテゴリ展開、キーボード選択', async ({ page }) => {
+test('スマホ幅の一覧、カテゴリ展開、キーボード選択', { tag: '@smoke' }, async ({ page }) => {
   await page.goto('./')
   const card = page.locator('a[href*="/model/"]').first()
   await expect(card).toBeVisible()
@@ -105,7 +105,7 @@ test('存在しないURLから図鑑に戻れる', async ({ page }) => {
   await expect(page.locator('a[href*="/model/"]').first()).toBeVisible()
 })
 
-test('手元の冊子から自分で登録し、一覧と検索に出る', async ({ page }) => {
+test('手元の冊子から自分で登録し、一覧と検索に出る', { tag: '@smoke' }, async ({ page }) => {
   await page.goto('./settings')
   await page.getByRole('link', { name: /じぶんで とうろく/ }).click()
 

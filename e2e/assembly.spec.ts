@@ -98,7 +98,7 @@ for (const width of [390, 1240]) {
     expect(errors).toEqual([])
   })
 }
-test('図データが読み込めない場合に再試行できる', async ({ page }) => {
+test('図データが読み込めない場合に再試行できる', { tag: '@smoke' }, async ({ page }) => {
   await page.route('**/assemblies/metamon/guide.json', route => route.fulfill({ status: 503, body: '' }))
   await page.goto('./assembly/metamon')
   await expect(page.getByRole('alert')).toContainText('よみこめなかった')

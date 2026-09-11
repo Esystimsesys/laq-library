@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test --project=chromium --grep @smoke",
     "preview": "vite preview",
     "build:pages": "GITHUB_PAGES=true npm run build && cp dist/index.html dist/404.html",
     "preview:pages": "GITHUB_PAGES=true vite preview",

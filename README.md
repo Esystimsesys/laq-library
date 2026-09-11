@@ -35,7 +35,8 @@ npm run dev        # http://localhost:5173
 | `npm run build:pages` | GitHub Pages 用ビルド（サブパス配信 + 404.html） |
 | `npm run preview` | ビルド結果の確認 |
 | `npm run preview:pages` | GitHub Pages 用ビルドの確認（`build:pages` の結果を見るときはこちら。`preview` だとサブパスが合わず真っ白になる） |
-| `npm run test:e2e` | Playwright（実ブラウザでの画面確認） |
+| `npm run test:e2e` | Playwright（実ブラウザでの画面確認）。全件で数分かかる |
+| `npm run test:e2e:smoke` | Playwright の `@smoke` だけを chromium で（CI はこちらのみ） |
 | `npm run lint` | oxlint |
 | `npm test` | vitest（検索・絞り込み・記録・データ整合性） |
 | `npm run fetch:gallery` | 公式ギャラリーから作品データを取り込み直す |

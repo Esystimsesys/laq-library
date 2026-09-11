@@ -27,9 +27,11 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
-      # 実ブラウザでの画面確認。build:pages と同じサブパス配信で動かす
-      - run: npx playwright install --with-deps chromium webkit
-      - run: npm run test:e2e
+      # 実ブラウザでの画面確認。build:pages と同じサブパス配信で動かす。
+      # CI は @smoke の数本を chromium だけで見る。3D の通し操作や WebKit を含む
+      # 全件（npm run test:e2e）は数分かかるので、手元で走らせる
+      - run: npx playwright install --with-deps --only-shell chromium
+      - run: npm run test:e2e:smoke
       # GITHUB_PAGES=true でサブディレクトリ配信用のパスに切り替え、404.html も作る
       - run: npm run build:pages
       # Pages の有効化はここではできない（GITHUB_TOKEN に権限が無く

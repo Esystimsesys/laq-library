@@ -29,7 +29,7 @@ async function pageWidths(page: import('@playwright/test').Page) {
 }
 
 for (const route of ROUTES) {
-  test(`${route} が横にはみ出さない`, async ({ page }) => {
+  test(`${route} が横にはみ出さない`, { tag: '@smoke' }, async ({ page }) => {
     await page.goto(route)
     await expect(page.locator('main')).toBeVisible()
     const size = await pageWidths(page)
