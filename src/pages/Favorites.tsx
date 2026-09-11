@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router'
-import type { Model } from '../data/types'
+import { useMemo } from 'react'
+import { Link, useSearchParams } from 'react-router'
+import { assemblyForModel } from '../assemblies/catalog'
+import { collectionModels } from '../lib/collection'
 import { useLookup } from '../lib/lookup'
 import { useApp } from '../store/useApp'
+import AssemblyFilter from '../components/AssemblyFilter'
 import EmptyState from '../components/EmptyState'
 import ModelGrid from '../components/ModelGrid'
 import PageHeader from '../components/PageHeader'
@@ -10,8 +12,6 @@ import StatusChips, { type StatusOption } from '../components/StatusChips'
 import page from './Page.module.css'
 
 type Status = 'all' | 'notMade' | 'made'
-
-/** 言い方は「さがす」の しぼりこみ とそろえる */
 const STATUSES: StatusOption<Status>[] = [
   { value: 'all', label: 'ぜんぶ' },
   { value: 'notMade', label: 'つくってない' },
@@ -21,86 +21,33 @@ const STATUSES: StatusOption<Status>[] = [
 export default function Favorites() {
   const { state } = useApp()
   const lookup = useLookup()
-  const [status, setStatus] = useState<Status>('all')
+  const [params, setParams] = useSearchParams()
+  const status: Status = params.get('status') === 'made' ? 'made' : params.get('status') === 'notMade' ? 'notMade' : 'all'
+  const only3d = params.get('3d') === '1'
+  const update = (key: string, value: string | null) => {
+    const next = new URLSearchParams(params)
+    if (value === null) next.delete(key); else next.set(key, value)
+    setParams(next, { replace: true })
+  }
+  const list = useMemo(() => collectionModels(state, lookup), [state, lookup])
+  const madeCount = list.filter(m => Boolean(state.made[m.id])).length
+  const shown = list.filter(m => (!only3d || assemblyForModel(m.id)) && (status === 'all' || (status === 'made' ? Boolean(state.made[m.id]) : !state.made[m.id])))
 
-  // 保存してあるのは id だけなので、作品データに引き当てる。
-  // 取り込み直しで消えた作品が混ざっていても落ちないよう、見つからないものは捨てる。
-  const list = useMemo(
-    () =>
-      state.favorites
-        .map((id) => lookup(id))
-        .filter((m): m is Model => Boolean(m)),
-    [state.favorites, lookup],
-  )
-
-  // ★を付けたものが増えると「つぎ なに つくる？」が探しにくくなるので、
-  // まだ つくっていないものだけを見られるようにする。
-  const shown = useMemo(() => {
-    if (status === 'all') return list
-    const made = (m: Model) => Boolean(state.made[m.id])
-    return list.filter((m) => (status === 'made' ? made(m) : !made(m)))
-  }, [list, status, state.made])
-
-  return (
-    <div className={page.page}>
-      <PageHeader title="おきにいり" sub={`${shown.length} こ`} />
-
-      {list.length > 0 && (
-        <>
-          <StatusChips
-            label="つくったかどうかで しぼる"
-            options={STATUSES}
-            value={status}
-            onChange={setStatus}
-          />
-          {/* カードの ★ は出さないので、はずし方をここで伝える */}
-          <p className={page.note}>
-            おきにいりから はずすときは、さくひんを ひらいて「おきにいり」を おしてね。
-          </p>
-        </>
-      )}
-
-      <ModelGrid
-        models={shown}
-        favoriteButton={false}
-        // 自分で選んだぶんだけなので、区切らずに全部見せる
-        paged={false}
-        empty={
-          list.length === 0 ? (
-            <EmptyState
-              title="まだ おきにいりが ありません"
-              hint="きになる さくひんの ★ を おすと、ここに たまっていきます。"
-              action={
-                <Link to="/" className={page.linkButton}>
-                  さくひんを さがす
-                </Link>
-              }
-            />
-          ) : (
-            <EmptyState
-              title={
-                status === 'notMade'
-                  ? 'おきにいりは ぜんぶ つくったね！'
-                  : 'つくった きろくは まだ ありません'
-              }
-              hint={
-                status === 'notMade'
-                  ? 'あたらしい さくひんを さがしてみよう。'
-                  : 'つくれたら、さくひんの ページで「つくった！」を おしてね。'
-              }
-              action={
-                <button
-                  type="button"
-                  className={page.linkButton}
-                  onClick={() => setStatus('all')}
-                >
-                  おきにいりを ぜんぶ みる
-                </button>
-              }
-            />
-          )
-        }
+  return <div className={page.page}>
+    <PageHeader title="マイライブラリ" sub={`つくった ${madeCount} こ`} />
+    <p className={page.note}>おきにいりと つくった さくひんが、ここに ならぶよ。</p>
+    {list.length > 0 && <>
+      <StatusChips label="つくったかどうかで しぼる" options={STATUSES} value={status} onChange={value => update('status', value === 'all' ? null : value)} />
+      <AssemblyFilter value={only3d} onChange={value => update('3d', value ? '1' : null)} />
+      <p className={page.note}>{shown.length} / {list.length} こ</p>
+    </>}
+    <ModelGrid models={shown} favoriteButton={false} paged={false} empty={list.length === 0 ?
+      <EmptyState title="まだ さくひんが ありません" hint="きになる さくひんに ★ をつけたり、「つくった！」を きろくすると、ここに たまります。" action={<Link to="/" className={page.linkButton}>さくひんを さがす</Link>} /> :
+      <EmptyState
+        title={only3d ? '3Dで つくれる さくひんは ありません' : status === 'notMade' ? 'ここにある さくひんは ぜんぶ つくったね！' : 'つくった きろくは まだ ありません'}
+        hint={only3d ? 'しぼりこみを やめると、ほかの さくひんも みられるよ。' : status === 'notMade' ? 'あたらしい さくひんを さがしてみよう。' : 'つくれたら、さくひんの ページで「つくった！」を おしてね。'}
+        action={<button type="button" className={page.linkButton} onClick={() => setParams({}, { replace: true })}>マイライブラリを ぜんぶ みる</button>}
       />
-    </div>
-  )
+    } />
+  </div>
 }

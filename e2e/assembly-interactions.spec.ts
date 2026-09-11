@@ -11,7 +11,7 @@ test('3Dから作品へ戻ったあと、検索した一覧・お気に入りへ
   const card = page.locator('a[href$="/model/purimatu%3Ametamon"]')
   await card.locator('..').getByRole('button').click()
   for (const origin of ['', 'favorites']) {
-    if (origin) await page.getByRole('link', {name:'おきにいり',exact:true}).click()
+    if (origin) await page.getByRole('link', {name:'マイライブラリ',exact:true}).click()
     await card.click()
     await page.getByRole('link', {name:'3Dで 作る',exact:true}).click()
     await expect(page.locator('iframe')).toHaveAttribute('data-shown','welcome',{timeout:30000})

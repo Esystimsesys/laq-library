@@ -39,6 +39,7 @@ export function matchesQuery(haystack: string, query: string): boolean {
 }
 
 export type Filters = {
+  only3d: boolean
   query: string
   levels: string[]
   categories: string[]
@@ -51,10 +52,12 @@ export const emptyFilters: Filters = {
   levels: [],
   categories: [],
   status: 'all',
+  only3d: false,
 }
 
 export function isFiltering(filters: Filters): boolean {
   return (
+    filters.only3d ||
     filters.query.trim() !== '' ||
     filters.levels.length > 0 ||
     filters.categories.length > 0 ||

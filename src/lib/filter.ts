@@ -1,3 +1,4 @@
+import { assemblyForModel } from '../assemblies/catalog'
 import { models } from '../data'
 import type { Model } from '../data/types'
 import type { UserState } from '../store/types'
@@ -42,6 +43,7 @@ export function filterModels(
   const terms = queryTerms(filters.query)
 
   return list.filter((m) => {
+    if (filters.only3d && !assemblyForModel(m.id)) return false
     if (filters.levels.length > 0) {
       if (!m.level || !filters.levels.includes(m.level)) return false
     }
