@@ -1,5 +1,7 @@
+import { listReturnTo } from '../lib/returnTo'
+import { assemblyForModel } from '../assemblies/catalog'
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { LEVEL_KANA, LEVEL_LABELS, sourceOf } from '../data'
 import { useLookup } from '../lib/lookup'
 import { isMyBooklet } from '../lib/myModels'
@@ -28,6 +30,7 @@ export default function Detail() {
 
 function DetailContent({ modelId }: { modelId: string }) {
   const navigate = useNavigate()
+  const returnTo = listReturnTo(useLocation().state)
   const { state, actions } = useApp()
   const lookup = useLookup()
   const [zoomIndex, setZoomIndex] = useState<number | null>(null)
@@ -54,6 +57,7 @@ function DetailContent({ modelId }: { modelId: string }) {
   const mine = isMyBooklet(model)
   // つくり方の図を持っているのは公式ぶんだけ。ぷりまつラボは本家の記事へ送る
   const hasSteps = model.stepImages.length > 0
+  const assembly = assemblyForModel(model.id)
   const bookletEntry = mine
     ? state.booklets.find((b) => b.id === model.id)
     : undefined
@@ -64,12 +68,8 @@ function DetailContent({ modelId }: { modelId: string }) {
   const isFavorite = state.favorites.includes(model.id)
   const made = state.made[model.id]
 
-  /** この画面を直接開いたときは戻り先が無いので、ずかんへ帰す。 */
-  const goBack = () => {
-    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0
-    if (idx > 0) navigate(-1)
-    else navigate('/')
-  }
+  // Return to the originating list, even after a round trip through the 3D guide.
+  const goBack = () => navigate(returnTo, { replace: true })
 
   return (
     <div className={styles.wrap}>
@@ -273,13 +273,14 @@ function DetailContent({ modelId }: { modelId: string }) {
                 </li>
               ))}
             </ol>
-          ) : (
+          ) : assembly ? null : (
             <p className={styles.note}>
               つくり方は 下の「{source.sourceLinkLabel}」で 見てね。
             </p>
           )}
 
-          <div className={styles.links}>
+          <div className={`${styles.links} ${assembly ? styles.assemblyLinks : ''}`}>
+            {assembly && <Link to={`/assembly/${assembly.id}`} state={{ returnTo }} className={styles.linkBtn}>3Dで 作る</Link>}
             {model.pdfUrl && (
               <a
                 className={styles.linkBtn}

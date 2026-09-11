@@ -57,13 +57,17 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2}', 'assemblies/**/guide.json'],
         // 検索エンジンの所有権確認ファイルは端末に置く意味がない
         globIgnores: ['**/google*.html', '**/og.png'],
         // 作品データは 1MB を超えるので、既定の上限（2MiB）だと将来こぼれる
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         // 画面遷移はすべてクライアント側で行うので、オフラインでは index.html を返す
         navigateFallback: `${base}index.html`,
+        // The 3D viewer is a real HTML document, not a React route.
+        navigateFallbackDenylist: [/\/assemblies\//],
+        // Viewer query selects the JSON model; its static HTML is shared offline.
+        ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^id$/, /^v$/],
         runtimeCaching: [
           {
             // 作品の写真とつくり方の図は公式サイトのものをそのまま表示する。

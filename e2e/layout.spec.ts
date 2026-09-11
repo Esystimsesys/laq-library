@@ -12,6 +12,7 @@ const ROUTES = [
   './made',
   './settings',
   './booklet/new',
+  './assembly/metamon',
   `./model/${encodeURIComponent('laq-official:005337')}`,
 ]
 

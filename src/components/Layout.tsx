@@ -16,7 +16,7 @@ export default function Layout() {
   const { saveFailed, dataBusy } = useApp()
   // 作品の詳細と、自分で登録する画面はタブの外側なので、下のナビは出さない
   const isDetail =
-    pathname.startsWith('/model/') || pathname.startsWith('/booklet/')
+    pathname.startsWith('/model/') || pathname.startsWith('/booklet/') || pathname.startsWith('/assembly/')
 
   return (
     <div className="app">

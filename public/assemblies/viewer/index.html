@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>3Dの組み立て図</title>
+<link rel="stylesheet" href="unit-instructions.css"><link rel="stylesheet" href="library.css"></head><body><p id="loading" role="status">図を よみこんでいるよ…</p><main>
+<div class="eyebrow">LaQ / 写真からの組み立て図</div>
+<nav class="links"><a href="../metamon/metamon.html">メタモン</a><a href="../tairetu/tairetu.html">タイレーツ</a><a href="../UNIT-INSTRUCTIONS.md">IDと手順の読み方</a><a href="../../parts/photo-calibration.html">No.1・2と実物写真</a><a href="../../parts/joint-photo-calibration.html">ジョイントと実物写真</a><a href="../../ACCURACY-PLAN.md">精度を上げる方法</a></nav>
+<h1>3Dの組み立て図</h1><p class="intro">まず、IDごとに塊を作ります。次に、その塊同士をつないで完成させます。</p>
+<p class="notice" id="notice"></p><div id="tabs" class="tabs" aria-label="作るもの・構造候補"></div>
+<nav class="phases" aria-label="作り方の章"><button id="catalog-tab">1　塊を作る</button><span>→</span><button id="assembly-tab">2　塊をつなぐ</button><span>→</span><button id="complete">完成形</button></nav>
+<section id="catalog" class="catalog"><div class="section-heading"><h2 id="catalog-title">用意する塊</h2><button id="begin">順番に作る</button></div><p id="catalog-description"></p><div id="unit-cards" class="unit-cards"></div></section>
+<div id="workspace" class="layout"><section class="panel">
+<div class="text"><div id="breadcrumb" class="eyebrow"></div><h2 id="step-title"></h2><div id="formula" class="formula" aria-label="使う塊とできあがる塊"></div><p id="description"></p></div>
+<div class="toolbar"><button id="fit">ぜんたいを見る</button><label>はなして見る <input id="explode" type="range" min="0" max="100" value="0" aria-label="はなして見る度合い"></label><details class="view-options"><summary>むきを かえる・すかして見る</summary><div id="presets" class="nav"></div><label><input id="xray" type="checkbox">なかを すかして見る</label></details></div>
+<div id="stage" class="stage" role="img" aria-label="ID付きの3D組み立て図"><span class="hint">ドラッグで回転・ホイールで拡大・部品を押すと番号</span></div>
+<div class="nav"><button id="prev">前の手順</button><button id="next">次の手順</button><button id="finish-unit" hidden>この塊ができたら</button><button id="back-assembly" hidden>合体手順に戻る</button></div>
+<div class="text"><p id="summary" class="summary"></p><p id="selected" class="status"></p></div>
+<div class="nav"><button id="show-connections" hidden aria-expanded="false">必要なら接続を拡大して確認</button></div>
+<section id="guide" class="guide" hidden><h3 id="guide-title"></h3><p id="guide-description"></p><div id="actions" class="actions"></div><div id="detail-stage" class="detail-stage" role="img" aria-label="接続する口と辺の拡大図"></div><p id="guide-key"></p><button id="guide-prev">前の接続</button> <button id="guide-next">次の接続</button><button id="return-guide" hidden>手順の接続に戻る</button></section>
+</section><aside class="panel"><div id="steps" class="steps" aria-label="この章の手順"></div><div class="source-card"><strong id="source-title">照合写真</strong><img id="source-photo" class="photo" alt="組み立ての元写真"><p id="source-caption"></p><a id="article" target="_blank" rel="noopener">ぷりまつラボの元記事</a></div></aside></div>
+<h2>使う部品</h2><p id="inventory-title"></p><div class="inventory"><table><thead><tr><th>部品</th><th>色</th><th>個数</th><th>形の確認</th></tr></thead><tbody id="inventory"></tbody></table></div>
+<h2>元の写真と組み立ての経過</h2><div id="photos" class="photos"></div><details><summary>確認できたこと・確認が残ること</summary><ul id="limits"></ul></details>
+</main><dialog id="photo-dialog"><button id="close-photo">閉じる</button><img id="large-photo" alt="元写真の拡大"></dialog>
+<script src="../vendor/three.min.js"></script><script src="realistic-parts.js"></script><script id="data" type="application/json"></script><script src="boot.js"></script></body></html>

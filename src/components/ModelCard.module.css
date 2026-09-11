@@ -151,3 +151,5 @@
   transform: translate(2px, 2px);
   box-shadow: none;
 }
+
+.assembly{display:block;margin:0 10px 10px;padding:4px 8px;border-radius:8px;background:#efe1fa;color:#61328b;font-size:12px;font-weight:800;width:fit-content}

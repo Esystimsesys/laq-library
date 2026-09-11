@@ -1,5 +1,6 @@
+import { assemblyForModel } from '../assemblies/catalog'
 import { memo } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import type { Model } from '../data/types'
 import { LEVEL_KANA, sourceOf } from '../data'
 import { isMyBooklet } from '../lib/myModels'
@@ -21,9 +22,11 @@ type Props = {
  * 変わらないので、★ を 1 つ押したときに他のカードは描き直されない。
  */
 function ModelCard({ model, isFavorite, isMade, onToggleFavorite }: Props) {
+  const location = useLocation()
+  const returnTo = location.pathname + location.search + location.hash
   return (
     <li className={styles.item}>
-      <Link to={`/model/${encodeURIComponent(model.id)}`} className={styles.card}>
+      <Link to={`/model/${encodeURIComponent(model.id)}`} state={{ returnTo }} className={styles.card}>
         <div className={styles.thumbWrap}>
           {isMyBooklet(model) ? (
             <PhotoImage
@@ -59,6 +62,7 @@ function ModelCard({ model, isFavorite, isMade, onToggleFavorite }: Props) {
           )}
         </div>
         <p className={styles.title}>{model.title}</p>
+        {assemblyForModel(model.id) && <span className={styles.assembly}>3Dで つくれる</span>}
       </Link>
 
       {/* カードを開かずに、その場でおきにいりを付け外しできるようにする */}

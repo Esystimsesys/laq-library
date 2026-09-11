@@ -2,6 +2,7 @@ import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from
 import { AppContext, type Actions, type ContextValue } from './context'
 import { reducer } from './reducer'
 import { STORAGE_KEY, emptyState, loadState, parseState, saveState } from './storage'
+import { clearAssemblyProgress } from '../assemblies/progress'
 import { clearPhotos, importPhotos } from '../lib/photos'
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -66,6 +67,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       resetAll: () => exclusive(async () => {
         await clearPhotos()
         if (!saveState(emptyState)) throw new Error('記録を削除できませんでした')
+        clearAssemblyProgress()
         dispatch({ type: 'data/reset' })
         return true
       }),

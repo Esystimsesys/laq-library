@@ -1,0 +1,39 @@
+(async function () {
+  const send = payload => parent.postMessage({ channel: 'laq-assembly', ...payload }, location.origin);
+  try {
+    const name = new URLSearchParams(location.search).get('id');
+    if (!name || !/^[a-z0-9-]+$/.test(name)) throw new Error('Unknown guide');
+    const response = await fetch(`../${name}/guide.json`);
+    if (!response.ok) throw new Error('Guide unavailable');
+    const guide = await response.json();
+    document.getElementById('data').textContent = JSON.stringify(guide);
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'unit-instructions.js';script.onload = resolve;script.onerror = reject;document.body.append(script);
+    });
+    if (!window.LaQLibraryViewer) throw new Error('Renderer unavailable');
+    document.getElementById('loading').hidden = true;
+    document.body.classList.add('ready');
+    document.querySelector('.hint').textContent = 'ゆびで なぞって まわせるよ';
+    document.getElementById('fit').textContent = 'ぜんたいを見る';
+    document.getElementById('guide-prev').textContent = '← まえの ばしょ';
+    document.getElementById('guide-next').textContent = 'つぎの ばしょ →';
+    window.addEventListener('message', event => {
+      if (event.origin !== location.origin || event.source !== parent || event.data?.channel !== 'laq-assembly') return;
+      if (event.data.command === 'show') {
+        try { window.LaQLibraryViewer.show(event.data);send({ type: 'shown', key: event.data.key }); }
+        catch { send({ type: 'error' }); }
+      }
+    });
+    let lastHeight = 0;
+    new ResizeObserver(() => {
+      const height = Math.ceil(document.querySelector('main').getBoundingClientRect().height);
+      if (height !== lastHeight && height > 0) { lastHeight = height;send({ type: 'height', height }); }
+    }).observe(document.querySelector('main'));
+    send({ type: 'ready', images: window.LaQLibraryViewer.images() });
+    document.querySelectorAll('canvas').forEach(canvas => canvas.addEventListener('webglcontextlost', event => {event.preventDefault();send({type:'error'});}));
+  } catch {
+    document.getElementById('loading').textContent = '図が よみこめませんでした。もういちど 開いてね。';
+    send({ type: 'error' });
+  }
+})();

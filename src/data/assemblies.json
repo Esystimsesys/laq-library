@@ -1,0 +1,12 @@
+[
+  {
+    "id": "metamon",
+    "modelId": "purimatu:metamon",
+    "title": "メタモン",
+    "revision": 2,
+    "defaultVariant": "gap-hands-4-3-core-3",
+    "unitCount": 9,
+    "pieceCount": 53,
+    "guidePath": "assemblies/metamon/guide.json"
+  }
+]

@@ -344,3 +344,22 @@
   color: var(--ink-soft);
   border-top: 2px dotted var(--ink-faint);
 }
+
+.assemblyLinks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.assemblyLinks .linkBtn {
+  min-width: 0;
+  padding: 12px 10px;
+  font-size: 13px;
+  gap: 5px;
+  justify-content: center;
+  text-align: center;
+}
+
+.assemblyLinks .linkBtn svg {
+  flex-shrink: 0;
+}
