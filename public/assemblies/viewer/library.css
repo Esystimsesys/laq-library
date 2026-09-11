@@ -10,3 +10,6 @@ body[data-view=part] .toolbar,body[data-view=part] #stage,body[data-view=part] .
 
 /* All assembly connections are drawn together on the main diagram. */
 #guide,#show-connections{display:none!important}
+
+/* A finger-sized slider target; prevent page scrolling while dragging the thumb. */
+.toolbar input[type=range]{height:44px;min-width:110px;touch-action:none;cursor:ew-resize;margin:0}

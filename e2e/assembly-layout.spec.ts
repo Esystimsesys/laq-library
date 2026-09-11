@@ -21,6 +21,11 @@ test('スマホのメイン図に接続矢印を同時表示し、回転・分�
     await viewer.locator('#explode').dispatchEvent('input')
     await expect(arrows).toHaveCount(2)
   }
+  // Exercise the native range thumb in both Chromium and WebKit, not only fill().
+  const slider=viewer.locator('#explode'),box=(await slider.boundingBox())!
+  await page.mouse.move(box.x+box.width-8,box.y+box.height/2);await page.mouse.down()
+  await page.mouse.move(box.x+8,box.y+box.height/2,{steps:12});await page.mouse.up()
+  await expect(slider).toHaveValue('0');await expect(arrows).toHaveCount(2)
   const frame=page.frames().find(f=>f.url().includes('/assemblies/viewer/'))!
   const sizes=await frame.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth])
   expect(sizes[0]).toBe(sizes[1])

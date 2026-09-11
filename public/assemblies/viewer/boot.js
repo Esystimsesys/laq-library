@@ -20,6 +20,10 @@
     document.getElementById('guide-next').textContent = 'つぎの ばしょ →';
     window.addEventListener('message', event => {
       if (event.origin !== location.origin || event.source !== parent || event.data?.channel !== 'laq-assembly') return;
+      if (event.data.command === 'replace-guide') {
+        try { window.LaQLibraryViewer.replaceGuide(event.data.guide);send({type:'updated'}); } catch(error) {send({type:'error',message:error.message});}
+      }
+      if (event.data.command === 'select') window.LaQLibraryViewer.selectPieces(event.data.ids || []);
       if (event.data.command === 'show') {
         try { window.LaQLibraryViewer.show(event.data);send({ type: 'shown', key: event.data.key }); }
         catch { send({ type: 'error' }); }
@@ -30,7 +34,8 @@
       const height = Math.ceil(document.querySelector('main').getBoundingClientRect().height);
       if (height !== lastHeight && height > 0) { lastHeight = height;send({ type: 'height', height }); }
     }).observe(document.querySelector('main'));
-    send({ type: 'ready', images: window.LaQLibraryViewer.images() });
+    window.addEventListener('laq-piece-selected', event => send({type:'selected',id:event.detail.id}));
+    send({ type: 'ready', images: new URLSearchParams(location.search).has('review') ? {} : window.LaQLibraryViewer.images() });
     document.querySelectorAll('canvas').forEach(canvas => canvas.addEventListener('webglcontextlost', event => {event.preventDefault();send({type:'error'});}));
   } catch {
     document.getElementById('loading').textContent = '図が よみこめませんでした。もういちど 開いてね。';

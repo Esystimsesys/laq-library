@@ -1,3 +1,4 @@
+import AssemblyFilter from './AssemblyFilter'
 import { useId, useState } from 'react'
 import { categories as ALL_CATEGORIES, LEVEL_KANA } from '../data'
 import type { Level } from '../data/types'
@@ -159,6 +160,7 @@ export default function FilterBar({ filters, onChange, hitCount, totalCount }: P
           <strong>{hitCount}</strong>
           {isFiltering(filters) && ` / ${totalCount}`} こ
         </p>
+        <AssemblyFilter compact value={filters.only3d} onChange={only3d => onChange({ ...filters, only3d })} />
         {isFiltering(filters) && (
           <button
             type="button"

@@ -113,6 +113,62 @@ describe('assembly importing', () => {
     expect(readFileSync(path.join(options.root, 'public/assemblies/viewer/unit-instructions.js'), 'utf8')).toBe('locally maintained runtime')
   })
 
+  it('opt-in preserves reviewed reading, final steps, sequence and old links while ignoring repository overrides', () => {
+    const guide = clone()
+    guide.reading.steps['unit:C1:0'] = { title: '人が修正した見出し', description: '人が写真で確認した説明' }
+    guide.reading.sequence = defaultSequence(active(guide))
+    // The top-level sequence remains the authoritative, reviewed display order.
+    active(guide).units.find(unit => unit.id === 'C1').steps[0].title = '構造側の見出しもそのまま'
+    const options = sandbox(guide)
+    put(path.join(options.root, 'content/assemblies/metamon.json'), { invalid: true, steps: { missing: {} } })
+    importAssembly({ ...options, useSourceReading: true })
+    const output = read(path.join(options.root, 'public/assemblies/metamon/guide.json'))
+    expect(output.reading).toEqual(guide.reading)
+    expect(output.sequence).toEqual(guide.sequence)
+    expect(output.legacyAtKeys).toEqual(guide.legacyAtKeys)
+    expect(active(output)).toEqual(active(guide))
+    expect(output.displayLabels).toEqual(displayLabels(active(guide), guide.sequence, guide.reading.labelFamilies))
+    importAssembly({ ...options, useSourceReading: true })
+    expect(read(path.join(options.root, 'public/assemblies/metamon/guide.json'))).toEqual(output)
+  })
+
+  it('source-reading opt-in never falls back to repository content when source has no reading', () => {
+    const guide = clone(); delete guide.reading
+    const options = sandbox(guide)
+    put(path.join(options.root, 'content/assemblies/metamon.json'), { steps: { missing: {} } })
+    importAssembly({ ...options, useSourceReading: true })
+    const output = read(path.join(options.root, 'public/assemblies/metamon/guide.json'))
+    expect(output.reading).toBeUndefined()
+    expect(output.sequence).toEqual(guide.sequence)
+  })
+
+  it('uses validated source reading sequence when top-level sequence is absent', () => {
+    const guide = clone(); delete guide.sequence
+    const options = sandbox(guide)
+    importAssembly({ ...options, useSourceReading: true })
+    expect(read(path.join(options.root, 'public/assemblies/metamon/guide.json')).sequence).toEqual(guide.reading.sequence)
+  })
+
+  it.each([
+    ['null reading', guide => { guide.reading = null }],
+    ['invalid step copy', guide => { guide.reading.steps['unit:C1:0'].title = '' }],
+    ['unknown unit label', guide => { guide.reading.unitNames = { missing: '名前' } }],
+    ['invalid nested object', guide => { guide.reading.steps = [] }],
+    ['invalid source reading sequence', guide => { guide.reading.sequence = [] }],
+    ['unknown combined unit', guide => { guide.reading.combineUnits = ['missing'] }],
+    ['unknown old link', guide => { guide.legacyAtKeys.push('unit:missing:0') }],
+    ['unknown display token', guide => { guide.reading.steps['unit:C1:0'].description = '{{missing}}をつなぐ' }],
+    ['invalid display label', guide => { guide.displayLabels.A1 = 42 }],
+  ])('rejects %s in reviewed source without changing existing output', (_, corrupt) => {
+    const guide = clone(); corrupt(guide)
+    const options = sandbox(guide)
+    const target = path.join(options.root, 'public/assemblies/metamon/guide.json')
+    put(target, { original: true })
+    expect(() => importAssembly({ ...options, useSourceReading: true })).toThrow()
+    expect(read(target)).toEqual({ original: true })
+    expect(() => read(path.join(options.root, 'src/data/assemblies.json'))).toThrow()
+  })
+
   it('reproduces combined bumps and the interleaved guide on every import', () => {
     const source = originalSource()
     const options = sandbox(source)

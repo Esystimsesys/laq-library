@@ -121,3 +121,12 @@ describe('filterModels', () => {
     expect(hits.some((m) => m.title === 'ウサギ')).toBe(true)
   })
 })
+
+it('3D対応は登録データで判定し、検索・完成記録の条件とも組み合わせる', () => {
+  const metamon = models.find(m => m.id === 'purimatu:metamon')!
+  const filters = { ...emptyFilters, only3d: true }
+  expect(ids(filterModels([metamon,...sample], filters, emptyState))).toEqual([metamon.id])
+  expect(filterModels([metamon,...sample], {...filters, query:'ねこ'}, emptyState)).toEqual([])
+  expect(filterModels([metamon,...sample], {...filters, status:'made'}, emptyState)).toEqual([])
+  expect(ids(filterModels([metamon,...sample], {...filters, status:'made'}, {...emptyState, made:{[metamon.id]:{madeAt:'2026-01-01'}}}))).toEqual([metamon.id])
+})

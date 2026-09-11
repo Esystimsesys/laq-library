@@ -1,13 +1,12 @@
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { useApp } from '../store/useApp'
 import RouteChange from './RouteChange'
-import { BookIcon, GearIcon, StampIcon, StarIcon } from './icons'
+import { BookIcon, GearIcon, StarIcon } from './icons'
 import styles from './Layout.module.css'
 
 const TABS = [
   { to: '/', label: 'さがす', Icon: BookIcon },
-  { to: '/favorites', label: 'おきにいり', Icon: StarIcon },
-  { to: '/made', label: 'つくった', Icon: StampIcon },
+  { to: '/favorites', label: 'マイライブラリ', Icon: StarIcon },
   { to: '/settings', label: 'せってい', Icon: GearIcon },
 ]
 
