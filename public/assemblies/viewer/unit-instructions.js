@@ -185,6 +185,12 @@ function joinOffsets(visible,added){
  for(const id of added){if(seen.has(id))continue;const ids=[],stack=[id];seen.add(id);while(stack.length){const x=stack.pop();ids.push(x);for(const y of link.get(x))if(!seen.has(y)){seen.add(y);stack.push(y);}}components.push(ids);}
  return blockOffsets(built,components);
 }
+// A combined authoring step can preserve the subassemblies that were prepared separately.
+// Earlier pieces remain fixed; every declared group moves without breaking apart.
+function explicitGroupOffsets(visible,added,declared){
+ const built=[...visible].filter(id=>!added.has(id));if(!built.length)return null;
+ return blockOffsets(built,declared);
+}
 // Geometry and maximum travel are prepared once per step. A slider frame only
 // translates existing groups and their cached bounds; no mesh/DOM rebuild.
 function applyExplosion(){
@@ -205,7 +211,7 @@ function build(){if(explodeFrame)cancelAnimationFrame(explodeFrame);explodeFrame
  const offsets=new Map(),overall=point([...visible]);let n=0;for(const ids of Object.values(separationMembers)){const v=point(ids).sub(overall);if(phase!=='unit'&&v.length()<.08)v.set(n%2?1:-1,0,.7);if(phase==='unit')v.multiplyScalar(2.5);else v.normalize().multiplyScalar(1.55);for(const pid of ids)offsets.set(pid,v);n++;}
  for(const p of model.pieces.filter(p=>visible.has(p.id))){const g=mainPart(p,added.has(p.id));root.add(g);groups.set(p.id,g);}scene.updateMatrixWorld(true);
  basePieceBounds.clear();pieceBounds.clear();for(const [id,g]of groups){const box=new T.Box3().setFromObject(g);basePieceBounds.set(id,box);pieceBounds.set(id,box.clone());}
- separationOffsets=phase==='assembly'?assemblyOffsets():phase==='unit'&&current.presentation==='join'?(joinOffsets(visible,added)??offsets):offsets;applyExplosion();
+ separationOffsets=phase==='assembly'?assemblyOffsets():phase==='unit'&&current.explodeGroups?.length?(explicitGroupOffsets(visible,added,current.explodeGroups)??offsets):phase==='unit'&&current.presentation==='join'?(joinOffsets(visible,added)??offsets):offsets;applyExplosion();
  $('breadcrumb').textContent=phase==='unit'?`1　塊を作る ／ ${displayLabel(unit.id)} ${unit.label}`:phase==='assembly'?`2　塊をつなぐ ／ ${step+1}・${sequence.length}`:'できあがりを確認';
  $('step-title').textContent=phase==='unit'?`${displayLabel(unit.id)}${sequence.length>1?'－'+(step+1):''}　${current.title}`:current.title;
  $('description').textContent=current.description||(phase==='unit'?`${displayLabel(unit.id)} を図の形に組み立てます。`:'');

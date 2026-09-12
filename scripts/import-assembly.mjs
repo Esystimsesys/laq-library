@@ -115,7 +115,17 @@ export function validateGuide(guide) {
     stepIds.add(stage.id)
     check(text(stage.title), `${stage.id}: title is required`)
     const visible = ids(stage.visiblePieces, allowed, `${stage.id}.visiblePieces`)
-    ids(stage.newPieces, visible, `${stage.id}.newPieces`, true)
+    const added = ids(stage.newPieces, visible, `${stage.id}.newPieces`, true)
+    if (stage.explodeGroups !== undefined) {
+      const grouped = new Set()
+      for (const [index, group] of array(stage.explodeGroups, `${stage.id}.explodeGroups`).entries()) {
+        for (const id of ids(group, added, `${stage.id}.explodeGroups[${index}]`)) {
+          check(!grouped.has(id), `${stage.id}.explodeGroups: piece grouped twice ${id}`)
+          grouped.add(id)
+        }
+      }
+      check(same(grouped, added), `${stage.id}.explodeGroups: must group every new piece`)
+    }
     for (const action of array(stage.actions, `${stage.id}.actions`, true)) {
       check(action.kind === 'port', `${stage.id}: unsupported action kind`)
       check(visible.has(action.joint) && visible.has(action.piece), `${stage.id}: action references invisible piece`)

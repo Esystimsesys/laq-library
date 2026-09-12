@@ -50,7 +50,7 @@ for (const width of [390, 1240]) {
     await expect(page.getByText('つくりかたの コツ',{exact:true})).toHaveCount(0)
     await expect(page.getByRole('note',{name:'この図について'})).toContainText('実物での差し込み')
     await expect(page.getByRole('region', {name:'つかう パーツの めやす'})).toBeVisible()
-    await expect(page.getByLabel('つくりかたの ながれ')).toHaveText('1パーツを たしかめる→2まとまりを つくる→3まとまりを つなぐ')
+    await expect(page.getByLabel('つくりかたの ながれ')).toHaveCount(0)
     await expect(page.getByRole('button', {name:'はじめに もどる'})).toHaveCount(0)
     await expect(page.getByRole('listitem', {name:/No.3 くろ/})).toBeVisible()
     await expect(page.getByRole('button', {name:'パーツ',exact:true})).toHaveCount(0)

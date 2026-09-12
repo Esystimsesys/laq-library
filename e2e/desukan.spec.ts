@@ -8,12 +8,44 @@ test('デスカーンの統合した15手順を表示する', async ({ page }) =
   await expect(page.getByRole('progressbar')).toHaveAttribute('value', '3')
   await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'unit:body:0', { timeout: 30000 })
   await expect(page.frameLocator('iframe').locator('#step-title')).toContainText('まえと そこ')
+  await expect(page.frameLocator('iframe').locator('#fit')).toBeHidden()
+  const stage = await page.frameLocator('iframe').locator('#stage').boundingBox()
+  expect(stage!.height).toBeGreaterThanOrEqual(420)
+  const viewerRegion = await page.getByRole('region', { name: 'まわせる 組み立て図' }).boundingBox()
+  const quickNav = await page.getByRole('navigation', { name: '図を えらぶ' }).boundingBox()
+  expect(quickNav!.y).toBeGreaterThanOrEqual(viewerRegion!.y + viewerRegion!.height)
+  await page.getByRole('button', { name: 'ぜんたいの ながれ', exact: true }).click()
+  const flowMap = await page.getByRole('region', { name: 'ぜんたいの ながれ' }).boundingBox()
+  expect(flowMap!.y).toBeGreaterThanOrEqual(quickNav!.y + quickNav!.height)
+  await page.getByRole('button', { name: 'いまの てじゅんに もどる' }).click()
 
   const next = page.getByRole('navigation', { name: 'てじゅんを すすめる' }).getByRole('button', { name: /つぎへ/ })
   await next.click()
   await expect(page.getByRole('progressbar')).toHaveAttribute('value', '4')
   await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'unit:body:1', { timeout: 30000 })
   await expect(page.frameLocator('iframe').locator('#step-title')).toContainText('りょうがわの かべと てんじょう')
+
+  const viewer = page.frames().find(frame => frame.url().includes('/assemblies/viewer/'))!
+  await page.frameLocator('iframe').locator('#explode').fill('100')
+  await page.frameLocator('iframe').locator('#explode').dispatchEvent('input')
+  const separated = await viewer.evaluate(async () => {
+    await new Promise(requestAnimationFrame)
+    const host = window as unknown as {
+      __unitGuide: () => { pieceScreens: { id: string; offset: number[] }[] }
+      __LaQLibraryGuide: { defaultVariant: string; variants: Record<string, { units: { id: string; steps: { newPieces: string[]; explodeGroups: string[][] }[] }[] }> }
+    }
+    const guide = host.__LaQLibraryGuide
+    const step = guide.variants[guide.defaultVariant].units.find(unit => unit.id === 'body')!.steps[1]
+    return { ...host.__unitGuide(), newPieces: step.newPieces, explodeGroups: step.explodeGroups }
+  })
+  const offsets = new Map(separated.pieceScreens.map(piece => [piece.id, piece.offset]))
+  const moved = (offset: number[]) => offset.some(value => Math.abs(value) > 1e-8)
+  expect(separated.pieceScreens.filter(piece => !separated.newPieces.includes(piece.id)).every(piece => !moved(piece.offset))).toBe(true)
+  for (const group of separated.explodeGroups) {
+    expect(group.every(id => moved(offsets.get(id)!))).toBe(true)
+    expect(new Set(group.map(id => JSON.stringify(offsets.get(id)))).size).toBe(1)
+  }
+  expect(new Set(separated.explodeGroups.map(group => JSON.stringify(offsets.get(group[0])))).size).toBe(3)
 
   await next.click()
   await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'unit:body:2', { timeout: 30000 })
