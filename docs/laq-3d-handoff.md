@@ -4,6 +4,8 @@
 
 ## 現在地
 
+- イワパレス（2026-09-12）: 記事写真14枚から227パーツ・8塊・20手順のレビュー候補を作成。原本 `.local/assembly-work/iwaparesu/guide.json`、根拠・未確認点は同所のmanifest/review。draft・実物未確認・本体未取り込み。製作室 `http://127.0.0.1:5183/`。構造・理想部品の形/角度/有限間隔、および全20手順・7方向・14写真の表示を確認。目No.7と腕への接続、腕の隠れた面、脚のジョイント、壁底部は推定。レビュー開始後は生成器で保存済みguideを上書きしない。
+
 - 本体：`/Users/wataru/Documents/Development/laq-library`。`main` の `7fe4478` までpush・GitHub Pages公開済み。
 - 公開先：<https://esystimsesys.github.io/laq-library/>。
 - メタモンは53パーツ、9つの基本の塊、作成と合体を混ぜた17手順。
@@ -12,6 +14,9 @@
   製作室はreviewed、実物はnot-performed。完成原本は `.local/assembly-work/jaroda/guide.json`、取り込み記録は `checks/final-import/`。
   手動の位置・色変更とNo.5校正を含むため生成器で上書きしない。反復した指摘と予防策は [振り返り](JARODA-RETROSPECTIVE.md)、次回の手順は [AI-3D-WORKFLOW.md](AI-3D-WORKFLOW.md)。
 - タイレーツは `/Users/wataru/Documents/laq-3d-prototype/models/tairetu/` の試作。未導入で、形状の未確定点も残る。
+- デスカーン最新（2026-09-12・完成確認）: ユーザーが「ok,完成です」と確認。原本は `.local/assembly-work/desukan/guide.json`、192パーツ・6塊・15手順。製作室reviewed、全54コメントresolved。`purimatu:desukan` のrevision 1として本体へ取り込み。実物確認はnot-performed。
+  C1＝本人右上腕17、C2＝本人左上腕19、D1/D2＝下腕各13パーツ。本人基準の左右なので画面右が左手。内部IDは旧座標基準。C1/C2内部の確認を維持し、C2/D1/D2の体への取付辺を修正。最後に左右壁のパーツ16・26の手前に黄色No.6を追加。
+  No.4に合わせ左右幅を約3.19mm拡張済み。現行の概算寸法で最大約0.124mmの位置残差を既知の限界として保持。公開前の指定で旧手順3・4（正面・底）と、旧手順5・6・8（左右壁・天井）をそれぞれ統合。現行の手順5は背中、6は襟。完成原本を生成器で上書きしない。詳細はreview.json・changes.json・history。[振り返り](DESUKAN-RETROSPECTIVE.md) と [次回の手順](AI-3D-WORKFLOW.md) に再発防止を反映。以下は完成確認前の経緯。
 - デスカーン（2026-09-11〜12）: 記事写真13枚から候補1を作成。人のレビューコメントを反映し181パーツ（からだの奥行き1、背中は黄の正方形2段＋三角の段＋青の正方形2枚、顔の外周・あごのジョイント修正、色）。ジョイントは2枚の板を初めてつなぐ段で付ける（新しく付ける板の側）。塊は記事の4種に合わせた6つ（あたまA1・からだB1・うで(うえ)C1/C2・うで(した)D1/D2）、記事の順で18手順。ジョイントIDはつなぐ板の名前から作り、作り直しても変わらない。構造検証・試験用worktreeでの出力→取り込み→test/buildは通過。
   人の確認前のため本体へは未取り込み。作業場所 `.local/assembly-work/desukan/`（写真・根拠・astraの回答・生成器 `generator/build_desukan.py`）。
   制作室で確認→「確認済みにして保存」→ `.local/assembly-work/desukan/finish.sh` で出力・取り込み・test・build。

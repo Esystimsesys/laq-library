@@ -18,5 +18,15 @@
     "unitCount": 6,
     "pieceCount": 219,
     "guidePath": "assemblies/jaroda/guide.json"
+  },
+  {
+    "id": "desukan",
+    "modelId": "purimatu:desukan",
+    "title": "デスカーン",
+    "revision": 1,
+    "defaultVariant": "photo-candidate-1",
+    "unitCount": 6,
+    "pieceCount": 192,
+    "guidePath": "assemblies/desukan/guide.json"
   }
 ]

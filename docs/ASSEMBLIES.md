@@ -8,6 +8,9 @@
 ジャローダも `purimatu:jaroda` → `jaroda` に登録した。219パーツ、6塊、17手順。製作室での完成承認を反映したrevision 2。
 資料・生成器・検証範囲は [ジャローダの制作記録](JARODA-3D.md)。
 
+デスカーンは `purimatu:desukan` → `desukan` に登録した。192パーツ、6塊、15手順。製作室で54件のコメントを解決して完成確認したrevision 1。
+制作中の訂正と次回への改善点は [デスカーン制作の振り返り](DESUKAN-RETROSPECTIVE.md)。
+
 ## 写真から新しい作品を作る
 
 [AIと人による3D制作の手順](AI-3D-WORKFLOW.md) に入力写真、根拠記録、作業用JSON、
