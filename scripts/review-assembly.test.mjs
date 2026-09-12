@@ -54,7 +54,7 @@ it('moves a group in millimetres while preserving its distances and rotates norm
  const guide=JSON.parse(readFileSync('public/assemblies/metamon/guide.json','utf8')),v=guide.variants[guide.defaultVariant],ids=v.units[0].pieceIds
  const before=structuredClone(v.model.pieces),vector=before.find(p=>ids.includes(p.id)&&p.pose.normal)
  transformPieces(guide,ids,[17,0,0],[0,0,0])
- for(const p of v.model.pieces){const original=before.find(o=>o.id===p.id);if(!ids.includes(p.id)){expect(p).toEqual(original);continue}const key=p.pose.center?'center':'vertices',point=key==='center'?p.pose.center:p.pose.vertices[0],old=key==='center'?original.pose.center:original.pose.vertices[0];expect(point[0]).toBeCloseTo(old[0]+1);expect(point[1]).toBeCloseTo(old[1])}
+ for(const p of v.model.pieces){const original=before.find(o=>o.id===p.id);if(!ids.includes(p.id)){const unchanged=structuredClone(p);delete unchanged.pose.directions;expect(unchanged).toEqual(original);continue}const key=p.pose.center?'center':'vertices',point=key==='center'?p.pose.center:p.pose.vertices[0],old=key==='center'?original.pose.center:original.pose.vertices[0];expect(point[0]).toBeCloseTo(old[0]+1);expect(point[1]).toBeCloseTo(old[1])}
  transformPieces(guide,ids,[0,0,0],[90,0,0])
  const normal=v.model.pieces.find(p=>p.id===vector.id).pose.normal
  expect(normal[0]).toBeCloseTo(vector.pose.normal[0]);expect(normal[1]).toBeCloseTo(-vector.pose.normal[2]);expect(normal[2]).toBeCloseTo(vector.pose.normal[1])

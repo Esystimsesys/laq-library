@@ -124,7 +124,7 @@
   const JOINT_PROFILES={
     3:{lengthMm:17,totalWidthMm:11.7,waistMm:3.5,bodyMm:3.5,lobeWidthMm:6},
     4:{lengthMm:17,totalWidthMm:13.6,waistMm:5.9,bodyMm:3.5,lobeWidthMm:6},
-    5:{lengthMm:17,reachMm:6,bodyMm:3.5,lobeWidthMm:6,hubTopMm:5.9,hubBottomMm:3.5},
+    5:{lengthMm:17,bodyMm:3.5,hubNarrowMm:4,hubNarrowUserConfirmed:true,shapeEvidence:'user-connected-photos-2026-09-12'},
     6:{lengthMm:17,reachMm:6,bodyMm:3.5,lobeWidthMm:6,hubSquareMm:3.5},
     7:{lengthMm:17,reachMm:6,bodyMm:3.5,lobeWidthMm:6,hubSquareMm:3.5,shapeEvidence:"prior-hypothesis"}
   };
@@ -234,18 +234,84 @@
     squareJointGeometryCache.set(cacheKey,geometry.clone());
     group.add(new T.Mesh(geometry,material));return group;
   }
-  function spine(T,axis,dirs,center,profile,material){
-    const b=dirs[0].dir.clone().add(dirs[1].dir).normalize(),side=new T.Vector3().crossVectors(b,axis).normalize(),mm=PLATE_PROFILE.edgeMm;
-    const half=profile.bodyMm/2/mm;
-    // No.5 retains its photo-informed trapezoidal hub.
-    const points=[[-profile.hubTopMm/2/mm,-half],[profile.hubTopMm/2/mm,-half],[profile.hubBottomMm/2/mm,half],[-profile.hubBottomMm/2/mm,half]];
-    const end=roundedPolygon(T,points,.07);end.holes.push(circle(T,0,0,.70/mm));
-    const g=new T.Group();g.position.copy(center);g.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(side,b,axis));
-    const length=profile.lengthMm/mm;g.add(mesh(T,end,length-.004,-length/2+.002,material));
-    // End photos show circular recesses; a thin floor avoids claiming an
-    // unobserved through-bore. Both ends can be inspected in the comparison.
-    const floor=new T.Mesh(new T.CylinderGeometry(.70/mm,.70/mm,length-2*1.3/mm,24),material);floor.rotation.x=Math.PI/2;g.add(floor);
-    return g;
+  function obtuseJointInset(profile=JOINT_PROFILES[5]) {
+    // The short (inner) edge is user-measured at 4 mm. The plate end is
+    // perpendicular to its centre plane: innerWidth = 2*inset*sin(60)-t*cos(60).
+    return (profile.hubNarrowMm+profile.bodyMm*.5)/(2*Math.sin(Math.PI/3))/PLATE_PROFILE.edgeMm;
+  }
+  const obtuseJointGeometryCache=new Map();
+  function obtuseJoint(T,axis,dirs,center,profile,material){
+    // Connected photos: both outer faces continue into the plate faces without
+    // a shoulder. Derive the hub from the mating planes, and use the plate's
+    // own socket curve for the fork silhouette; independent tapers do not fit.
+    const mm=PLATE_PROFILE.edgeMm,half=profile.bodyMm/2/mm,length=profile.lengthMm/mm,inset=obtuseJointInset(profile);
+    const b=dirs[0].dir.clone().add(dirs[1].dir).normalize(),side=new T.Vector3().crossVectors(b,axis).normalize();
+    const group=new T.Group();group.position.copy(center);group.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(axis,side,b));
+    const directions=dirs.map(d=>new T.Vector2(d.dir.dot(side),d.dir.dot(b))).sort((a,b)=>b.x-a.x);
+    const key=JSON.stringify([profile,directions.map(d=>d.toArray())]);
+    if(obtuseJointGeometryCache.has(key)){
+      group.add(new T.Mesh(obtuseJointGeometryCache.get(key).clone(),material));return group;
+    }
+    // Same notch as socketShape(), in edge-length coordinates. Only the thin
+    // socket bed enters the fork pocket; the two plate skins meet its exterior.
+    const socket=new T.CurvePath();
+    socket.add(new T.CubicBezierCurve(new T.Vector2(-.27,0),new T.Vector2(-.16,0),new T.Vector2(-.19,.225),new T.Vector2(0,.225)));
+    socket.add(new T.CubicBezierCurve(new T.Vector2(0,.225),new T.Vector2(.19,.225),new T.Vector2(.16,0),new T.Vector2(.27,0)));
+    const outline=socket.getPoints(16),stations=[-length/2,...outline.map(p=>p.x),length/2];
+    const extent=x=>{
+      for(let i=0;i<outline.length-1;i++){
+        const a=outline[i],b=outline[i+1];if(x<a.x||x>b.x)continue;
+        return a.y+(x-a.x)/(b.x-a.x)*(b.y-a.y);
+      }
+      return 0;
+    };
+    const section=x=>{
+      const points=[],reach=extent(x),steps=8;
+      for(const dir of directions){
+        const normal=new T.Vector2(-dir.y,dir.x);
+        const at=(i,face)=>{
+          const r=reach*i/steps,u=r/.225;
+          const inner=(.65+.20*Math.exp(-(((u-.48)/.24)**2)))/mm;
+          const z=(face<2?-1:1)*(face===0||face===3?half:inner);
+          const p=dir.clone().multiplyScalar(inset+r).addScaledVector(normal,z);
+          return new T.Vector3(x,p.x,p.y);
+        };
+        for(let i=0;i<=steps;i++)points.push(at(i,0));
+        for(let i=steps;i>=0;i--)points.push(at(i,1));
+        for(let i=0;i<=steps;i++)points.push(at(i,2));
+        for(let i=steps;i>=0;i--)points.push(at(i,3));
+      }
+      return points;
+    };
+    const positions=[],triangle=(a,b,c)=>{
+      if(new T.Vector3().subVectors(b,a).cross(new T.Vector3().subVectors(c,a)).lengthSq()>1e-20)
+        positions.push(...a.toArray(),...b.toArray(),...c.toArray());
+    };
+    const sections=stations.map(section);
+    for(let i=0;i<sections.length-1;i++)for(let j=0;j<sections[i].length;j++){
+      const k=(j+1)%sections[i].length,a=sections[i][j],b=sections[i+1][j],c=sections[i+1][k],d=sections[i][k];
+      triangle(a,c,b);triangle(a,d,c);
+    }
+    const radius=.70/mm,depth=1.3/mm,recessY=inset*directions[0].y;
+    const end=polygon(T,section(length/2).filter((p,i,ps)=>i===0||p.distanceToSquared(ps[i-1])>1e-16).map(p=>[p.y,p.z]));
+    end.holes.push(circle(T,0,recessY,radius));
+    const cap=new T.ShapeGeometry(end,16).toNonIndexed(),cp=cap.attributes.position;
+    for(const sign of [-1,1]){
+      for(let i=0;i<cp.count;i+=3){
+        const pts=[0,1,2].map(j=>new T.Vector3(sign*length/2,cp.getX(i+j),cp.getY(i+j)));
+        triangle(pts[0],pts[sign>0?1:2],pts[sign>0?2:1]);
+      }
+      for(let i=0;i<32;i++){
+        const a=i/32*Math.PI*2,b=(i+1)/32*Math.PI*2;
+        const at=(angle,inset)=>new T.Vector3(sign*(length/2-inset),radius*Math.cos(angle),recessY+radius*Math.sin(angle));
+        const p=at(a,0),q=at(b,0),r=at(a,depth),s=at(b,depth),floor=new T.Vector3(sign*(length/2-depth),0,recessY);
+        if(sign>0){triangle(p,q,r);triangle(q,s,r);triangle(floor,r,s);}
+        else{triangle(p,r,q);triangle(q,r,s);triangle(floor,s,r);}
+      }
+    }
+    cap.dispose();
+    const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(positions,3));geometry.computeVertexNormals();
+    obtuseJointGeometryCache.set(key,geometry.clone());group.add(new T.Mesh(geometry,material));return group;
   }
   function joint(T, piece, connection, pieces, material, fullConnection) {
     const group=new T.Group(), ports=(fullConnection?.ports?.length?fullConnection:connection)?.ports||[];
@@ -257,9 +323,12 @@
     }).filter(Boolean);
     const axis=piece.pose?.axis?vec(T,piece.pose.axis).normalize():(records[0]?.axis||new T.Vector3(1,0,0));
     const center=piece.pose?.center?vec(T,piece.pose.center):(records[0]?.mid.clone()||new T.Vector3());
-    const defaultInset=piece.partNo===4?.195:.10;
-    const dirs=records.map(r=>({id:r.port,dir:r.dir.clone().addScaledVector(axis,-r.dir.dot(axis)).normalize(),
-      inset:Math.max(.075,Math.min(.23,r.mid.clone().sub(center).dot(r.dir)||defaultInset))}));
+    const defaultInset=piece.partNo===4?.195:piece.partNo===5?obtuseJointInset():.10;
+    const dirs=records.map(r=>{
+      const stored=piece.pose?.directions?.[r.port],direction=stored?vec(T,stored):r.dir.clone();
+      direction.addScaledVector(axis,-direction.dot(axis)).normalize();
+      return {id:r.port,dir:direction,inset:Math.max(.075,Math.min(.23,r.mid.clone().sub(center).dot(r.dir)||defaultInset))};
+    });
     if(!dirs.length) {const seed=Math.abs(axis.y)<.9?new T.Vector3(0,1,0):new T.Vector3(1,0,0);dirs.push({id:0,dir:seed.addScaledVector(axis,-seed.dot(axis)).normalize(),inset:defaultInset});}
     // An assembly stage may expose only one or two connected ports. Missing
     // ports still belong to the physical moulding, especially No.7's third fin.
@@ -274,7 +343,7 @@
       dirs.push({id:1,dir:dirs[0].dir.clone().applyAxisAngle(axis,angle),inset:defaultInset});
     }
     const profile=JOINT_PROFILES[piece.partNo];
-    if(profile&&piece.partNo===5)group.add(spine(T,axis,dirs,center,profile,material));
+    if(profile&&piece.partNo===5)group.add(obtuseJoint(T,axis,dirs,center,profile,material));
     if(profile&&piece.partNo>=6)group.add(squareJoint(T,axis,dirs,center,profile,material));
     if(profile&&piece.partNo<5) {
       // Flat joints are one moulding. Build each outer skin across both ports,
@@ -288,7 +357,7 @@
       const h=profile.lengthMm/mm/2-.003,reach=profile.waistMm/2/mm,slot=1.3/mm;
       flat.add(mesh(T,polygon(T,[[-h,-reach],[h,-reach],[h,reach],[-h,reach]]),slot,-slot/2,material));
       group.add(flat);
-    } else if(piece.partNo<6) for(const d of dirs) {
+    } else if(!profile) for(const d of dirs) {
       const normal=new T.Vector3().crossVectors(axis,d.dir).normalize();
       const arm=new T.Group();arm.position.copy(center);arm.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(axis,d.dir,normal));
       const shape=wing(T,d.inset,profile);
@@ -308,5 +377,5 @@
     if(profile)group.userData.photoProfile=profile;
     return group;
   }
-  window.LaQRealisticParts={plate,joint,plateProfile:PLATE_PROFILE,jointProfiles:JOINT_PROFILES};
+  window.LaQRealisticParts={plate,joint,plateProfile:PLATE_PROFILE,jointProfiles:JOINT_PROFILES,obtuseJointInset};
 })();

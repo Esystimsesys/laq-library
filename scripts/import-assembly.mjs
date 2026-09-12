@@ -204,6 +204,42 @@ export function validateSourceGuide(guide) {
   return variant
 }
 
+/** Keep authoring evidence in the private source and publish only viewer data. */
+export function runtimeGuide(source) {
+  const guide = structuredClone(source)
+  delete guide.verification
+  delete guide.sourceVerification
+  delete guide.importVerification
+  for (const variant of Object.values(guide.variants)) {
+    delete variant.verification
+    delete variant.sourceVerification
+    const model = variant.model
+    for (const key of ['version', 'candidateId', 'title', 'scope', 'status', 'description', 'evidenceSummary', 'geometry']) delete model[key]
+    for (const piece of model.pieces) { delete piece.confidence; delete piece.evidence }
+    for (const connection of model.connections) delete connection.evidence
+    for (const stage of [...variant.units.flatMap(unit => unit.steps), ...variant.assembly]) {
+      for (const action of stage.actions ?? []) { delete action.title; delete action.description }
+    }
+  }
+  const round = value => {
+    if (Array.isArray(value)) {
+      for (let index = 0; index < value.length; index++) {
+        const item = value[index]
+        if (typeof item === 'number' && !Number.isInteger(item)) value[index] = Math.round(item * 1e6) / 1e6
+        else if (item && typeof item === 'object') round(item)
+      }
+    } else if (value && typeof value === 'object') {
+      for (const [key, item] of Object.entries(value)) {
+        if (typeof item === 'number' && !Number.isInteger(item)) value[key] = Math.round(item * 1e6) / 1e6
+        else if (item && typeof item === 'object') round(item)
+      }
+    }
+  }
+  round(guide)
+  validateGuide(guide)
+  return guide
+}
+
 export function importAssembly({ source, name = 'metamon', modelId, title, article, revision, root = projectRoot, updateRuntime = false, useSourceReading = false }) {
   check(text(source), '--source is required')
   check(/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name), '--name must be a lowercase slug')
@@ -285,7 +321,7 @@ export function importAssembly({ source, name = 'metamon', modelId, title, artic
   }
   const entry = { id: name, modelId, title, revision, defaultVariant: guide.defaultVariant, unitCount: variant.units.length, pieceCount: variant.model.pieces.length, guidePath: `assemblies/${name}/guide.json` }
   const nextManifest = previous ? manifest.map((item) => item.id === name ? entry : item) : [...manifest, entry]
-  const files = [[path.join(root, 'public', entry.guidePath), JSON.stringify(guide, null, 2) + '\n'], [manifestPath, JSON.stringify(nextManifest, null, 2) + '\n']]
+  const files = [[path.join(root, 'public', entry.guidePath), JSON.stringify(runtimeGuide(guide)) + '\n'], [manifestPath, JSON.stringify(nextManifest, null, 2) + '\n']]
   const runtime = [
     ['three.min.js', 'vendor/three.min.js'],
     ['models/metamon/realistic-parts.js', 'viewer/realistic-parts.js'],

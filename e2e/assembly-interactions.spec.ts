@@ -140,7 +140,7 @@ for (const width of [390,1240]) test(`左右の手は本体を動かさず接続
   type Screen={id:string;offset:number[];bounds:{left:number;right:number;top:number;bottom:number}}
   const read=()=>frame.evaluate(async()=>{await new Promise(requestAnimationFrame);return (window as any).__unitGuide()})
   for(const step of [6,7]){
-    if(step===7){await page.getByRole('button',{name:'できた！ つぎへ →',exact:true}).click();await expect(page.locator('iframe')).toHaveAttribute('data-shown','unit:D2:0');await page.getByRole('button',{name:'できた！ つぎへ →',exact:true}).click();await expect(page.locator('iframe')).toHaveAttribute('data-shown','assembly:7')}
+    if(step===7){await page.getByRole('button',{name:'つぎへ →',exact:true}).click();await expect(page.locator('iframe')).toHaveAttribute('data-shown','unit:D2:0');await page.getByRole('button',{name:'つぎへ →',exact:true}).click();await expect(page.locator('iframe')).toHaveAttribute('data-shown','assembly:7')}
     await frame.locator('#explode').fill('0');await frame.locator('#explode').dispatchEvent('input')
     const before=await read()
     await frame.locator('#explode').fill('100');await frame.locator('#explode').dispatchEvent('input')
@@ -181,4 +181,52 @@ for(const width of [390,1240]) test(`分解スライダーを連続ドラッグ�
   // Coalesce many input events and still apply the last value on the next frame.
   const final=await frame.evaluate(async()=>{const slider=document.getElementById('explode') as HTMLInputElement;for(let value=90;value>=0;value-=10){slider.value=String(value);slider.dispatchEvent(new Event('input',{bubbles:true}))}await new Promise(requestAnimationFrame);const w=window as any;return{created:w.__createdDuringDrag,view:w.__unitGuide()}})
   expect(final.created).toBe(0);expect(final.view.explode).toBe(0);expect(final.view.pieceScreens.every((p:any)=>p.offset.every((n:number)=>Math.abs(n)<1e-8))).toBe(true)
+})
+
+test('No.5の外側に段差がなく、左右の差し込み溝と両端のくぼみが残る', async ({page}) => {
+  await page.goto('./assembly/metamon')
+  await expect(page.locator('iframe')).toHaveAttribute('data-shown','welcome',{timeout:30000})
+  const frame=page.frames().find(f=>f.url().includes('/assemblies/viewer/'))!
+  const result=await frame.evaluate(()=>{
+    const w=window as unknown as {THREE:any;LaQRealisticParts:any},T=w.THREE
+    const material=new T.MeshStandardMaterial()
+    const group=w.LaQRealisticParts.joint(T,{id:'sample',partNo:5,pose:{center:[0,0,0],axis:[1,0,0]}},null,new Map(),material)
+    group.updateMatrixWorld(true)
+    const axis=new T.Vector3(1,0,0),side=new T.Vector3(0,Math.sqrt(3)/2,-.5),bisector=new T.Vector3(0,.5,Math.sqrt(3)/2)
+    const world=(x:number,y:number,z:number)=>axis.clone().multiplyScalar(x).addScaledVector(side,y).addScaledVector(bisector,z)
+    const ray=(origin:any,direction:any)=>new T.Raycaster(origin,direction).intersectObject(group,true).map((h:any)=>h.distance)
+    // Outside the rounded lobes, every radial hit must lie on the photographed
+    // trapezoid. Separate full-width fork roots used to protrude beyond it.
+    const halfHeight=1.75*Math.sqrt(3)/2/17,recessY=(4+1.75)/(2*Math.sqrt(3)/2)/17/2
+    const polygon=[[-3.75/17,-halfHeight],[3.75/17,-halfHeight],[2/17,halfHeight],[-2/17,halfHeight]]
+    let maxStep=0
+    for(const x of [-.4,.4])for(let i=0;i<72;i++){
+      const angle=(i+.3)*Math.PI/36,dy=Math.cos(angle),dz=Math.sin(angle)
+      const candidates:number[]=[]
+      polygon.forEach((a,j)=>{
+        const b=polygon[(j+1)%polygon.length],ey=b[0]-a[0],ez=b[1]-a[1],den=dy*ez-dz*ey
+        if(Math.abs(den)<1e-10)return
+        const r=(a[0]*ez-a[1]*ey)/den,t=(a[0]*dz-a[1]*dy)/den
+        if(r>0&&t>=0&&t<=1)candidates.push(r)
+      })
+      const hit=ray(world(x,dy,dz+recessY),world(0,-dy,-dz))[0]
+      maxStep=Math.max(maxStep,Math.abs(hit-(1-Math.max(...candidates))))
+    }
+    const slots=[1,-1].map(sign=>{
+      const dir=side.clone().multiplyScalar(sign*Math.sqrt(3)/2).addScaledVector(bisector,.5),normal=new T.Vector3().crossVectors(axis,dir)
+      return {
+        opening:ray(axis.clone().addScaledVector(dir,.32),axis.clone().negate()).length,
+        skins:[-1,1].map(s=>ray(axis.clone().addScaledVector(dir,.34).addScaledVector(normal,s*.085),axis.clone().negate()).length),
+      }
+    })
+    const ends=[-1,1].map(sign=>({
+      floor:ray(world(sign,0,recessY),world(-sign,0,0))[0],
+      solid:ray(world(sign,.08,recessY),world(-sign,0,0))[0],
+    }))
+    group.traverse((mesh:any)=>{if(mesh.isMesh)mesh.geometry.dispose()});material.dispose()
+    return {maxStep,slots,ends}
+  })
+  expect(result.maxStep).toBeLessThan(1e-6)
+  for(const slot of result.slots){expect(slot.opening).toBe(0);for(const hits of slot.skins)expect(hits).toBeGreaterThan(0)}
+  for(const end of result.ends){expect(end.floor).toBeCloseTo(.5+1.3/17,5);expect(end.solid).toBeCloseTo(.5,5)}
 })

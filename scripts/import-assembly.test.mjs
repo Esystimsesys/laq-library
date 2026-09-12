@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { displayLabels, importAssembly, validateGuide, validateSequence } from './import-assembly.mjs'
+import { displayLabels, importAssembly, runtimeGuide, validateGuide, validateSequence } from './import-assembly.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const read = (file) => JSON.parse(readFileSync(file, 'utf8'))
@@ -93,6 +93,30 @@ describe('assembly data validation', () => {
 })
 
 describe('assembly importing', () => {
+  it('publishes compact viewer data without private reconstruction evidence', () => {
+    const guide = clone(), variant = active(guide)
+    guide.sourceVerification = { reviewed: true }
+    variant.sourceVerification = { reviewed: true }
+    variant.model.geometry = { residual: 0.123456789 }
+    variant.model.pieces[0].confidence = 'observed'
+    variant.model.pieces[0].evidence = 'private observation'
+    variant.model.connections[0].evidence = 'private connection observation'
+    variant.units[0].steps[0].actions[0].title = 'authoring copy'
+    variant.units[0].steps[0].actions[0].description = 'authoring detail'
+    variant.model.pieces[0].pose.vertices[0][0] = 0.123456789
+    const output = runtimeGuide(guide), published = active(output)
+    expect(output).not.toHaveProperty('sourceVerification')
+    expect(published).not.toHaveProperty('sourceVerification')
+    expect(published.model).not.toHaveProperty('geometry')
+    expect(published.model.pieces[0]).not.toHaveProperty('confidence')
+    expect(published.model.pieces[0]).not.toHaveProperty('evidence')
+    expect(published.model.connections[0]).not.toHaveProperty('evidence')
+    expect(published.units[0].steps[0].actions[0]).not.toHaveProperty('title')
+    expect(published.units[0].steps[0].actions[0]).not.toHaveProperty('description')
+    expect(published.model.pieces[0].pose.vertices[0][0]).toBe(0.123457)
+    expect(variant.model.pieces[0].evidence).toBe('private observation')
+  })
+
   it('selects only default variant, preserves geometry/actions, merges reading, and keeps other manifest entries and viewer edits', () => {
     const guide = clone()
     guide.variants.unselected = { invalid: 'not exported' }

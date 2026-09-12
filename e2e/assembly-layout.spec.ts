@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-test('スマホのメイン図に接続矢印を同時表示し、回転・分解に追従する', async ({ page }) => {
+test('スマホの接続矢印は分解に追従し、接続点が近い向きでは非表示になる', async ({ page }) => {
   test.setTimeout(60000)
   await page.goto('./assembly/metamon?step=assembly:0')
   const iframe = page.locator('iframe'), viewer = page.frameLocator('iframe')
@@ -7,25 +7,34 @@ test('スマホのメイン図に接続矢印を同時表示し、回転・分�
   await expect(viewer.locator('#guide')).toBeHidden()
   await expect(viewer.locator('#show-connections')).toBeHidden()
   const arrows=viewer.locator('#stage .connection-path')
+  await viewer.locator('#explode').fill('0')
+  await viewer.locator('#explode').dispatchEvent('input')
+  await expect(arrows).toHaveCount(0)
+  await viewer.locator('#explode').fill('1')
+  await viewer.locator('#explode').dispatchEvent('input')
+  await expect(arrows).toHaveCount(0)
+  await viewer.locator('#explode').fill('100')
+  await viewer.locator('#explode').dispatchEvent('input')
   await expect(arrows).toHaveCount(2)
   await expect(viewer.locator('#stage .connection-arrow text')).toHaveCount(0)
-  const before=await arrows.first().getAttribute('d')
   await viewer.getByText('むきを かえる・すかして見る', { exact: true }).click()
   await viewer.getByRole('button', { name: 'まえ', exact: true }).click()
-  await expect(arrows.first()).not.toHaveAttribute('d',before!)
+  await expect(arrows).toHaveCount(0)
+  await viewer.getByRole('button', { name: 'ななめ', exact: true }).click()
+  await expect(arrows).toHaveCount(2)
   await viewer.locator('#stage').focus()
   await page.keyboard.press('ArrowRight')
   await expect(arrows).toHaveCount(2)
-  for(const value of ['0','100']){
+  for(const value of ['0','1','100']){
     await viewer.locator('#explode').fill(value)
     await viewer.locator('#explode').dispatchEvent('input')
-    await expect(arrows).toHaveCount(2)
+    await expect(arrows).toHaveCount(value==='100'?2:0)
   }
   // Exercise the native range thumb in both Chromium and WebKit, not only fill().
   const slider=viewer.locator('#explode'),box=(await slider.boundingBox())!
   await page.mouse.move(box.x+box.width-8,box.y+box.height/2);await page.mouse.down()
   await page.mouse.move(box.x+8,box.y+box.height/2,{steps:12});await page.mouse.up()
-  await expect(slider).toHaveValue('0');await expect(arrows).toHaveCount(2)
+  await expect(slider).toHaveValue('0');await expect(arrows).toHaveCount(0)
   const frame=page.frames().find(f=>f.url().includes('/assemblies/viewer/'))!
   const sizes=await frame.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth])
   expect(sizes[0]).toBe(sizes[1])

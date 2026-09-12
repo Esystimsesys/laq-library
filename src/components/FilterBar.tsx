@@ -72,6 +72,8 @@ export default function FilterBar({ filters, onChange, hitCount, totalCount }: P
         </label>
       </div>
 
+      <AssemblyFilter value={filters.only3d} onChange={only3d => onChange({ ...filters, only3d })} />
+
       {/*
         しぼりこみのまとまりは fieldset ではなく div + role="group" にしている。
         読み上げでの伝わり方は同じだが、legend は行の高さの決まり方が
@@ -160,7 +162,6 @@ export default function FilterBar({ filters, onChange, hitCount, totalCount }: P
           <strong>{hitCount}</strong>
           {isFiltering(filters) && ` / ${totalCount}`} こ
         </p>
-        <AssemblyFilter compact value={filters.only3d} onChange={only3d => onChange({ ...filters, only3d })} />
         {isFiltering(filters) && (
           <button
             type="button"

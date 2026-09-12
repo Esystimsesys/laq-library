@@ -32,6 +32,7 @@ describe('local assembly authoring', () => {
     expect(draft.manifest).toMatchObject({ slug: 'sample-model', units: { edgeMm: 17, thicknessMm: 3.5 }, photos: [{ id: 'photo-1', originalPath: realpathSync(photos[0]), path: 'photos/photo-1.jpg' }] })
     expect(readFileSync(safeWorkspaceFile(workspace, draft.manifest.photos[0].path), 'utf8')).toBe('local reference photo bytes')
     expect(draft.review.status).toBe('draft')
+    expect(draft.guide).not.toHaveProperty('notice')
     expect(readFileSync(path.join(workspace, 'AI-PROMPT.md'), 'utf8')).toContain('見えない面や接続を観測済みと書かない')
     expect(() => validateWorkspace({ workspace })).toThrow(/model.pieces/)
   })
@@ -77,7 +78,9 @@ describe('local assembly authoring', () => {
     const reviewFile = path.join(workspace, 'review.json'), review = read(reviewFile)
     review.unresolved.push({ id: 'hidden', description: '背面の接続を調べる', status: 'open' }); put(reviewFile, review)
     expect(() => exportWorkspace({ workspace })).toThrow(/open unresolved/)
-    review.unresolved.pop(); review.physicalCheck = 'failed'; put(reviewFile, review)
+    review.unresolved.pop(); review.comments = [{ id: 'c1', author: 'human', createdAt: '2026-09-12T00:00:00Z', text: '色を確認', status: 'open' }]; put(reviewFile, review)
+    expect(() => exportWorkspace({ workspace })).toThrow(/open review comments/)
+    review.comments[0].status = 'resolved'; review.physicalCheck = 'failed'; put(reviewFile, review)
     expect(() => exportWorkspace({ workspace })).toThrow(/failed physical/)
   })
 
@@ -157,6 +160,14 @@ describe('local assembly authoring', () => {
       const copy = structuredClone(review); mutate(copy)
       expect(() => validateReview(copy, manifest, guide)).toThrow()
     }
+    const comment = { id: 'c1', author: 'human', createdAt: '2026-09-12T00:00:00Z', text: 'あたまの ふちに No.6 が足りない', status: 'open', stepKey: 'unit:A1:0', photoId: 'photo-1' }
+    const aiEvidence = { id: 'e1', author: 'ai', photoId: 'photo-1', pieceIds: [], observation: '輪郭', interpretation: '推測', confidence: 'inferred' }
+    expect(validateReview({ ...structuredClone(review), comments: [comment], evidence: [aiEvidence] }, manifest, guide).comments).toHaveLength(1)
+    for (const bad of [{ author: 'robot' }, { text: '' }, { status: 'done' }, { createdAt: 'nonsense' }, { photoId: 'unknown' }, { pieceIds: 'j1' }, { reply: 1 }]) {
+      expect(() => validateReview({ ...structuredClone(review), comments: [{ ...comment, ...bad }] }, manifest, guide)).toThrow()
+    }
+    expect(() => validateReview({ ...structuredClone(review), comments: [comment, comment] }, manifest, guide)).toThrow(/duplicate comment/)
+    expect(() => validateReview({ ...structuredClone(review), evidence: [{ ...aiEvidence, author: 'robot' }] }, manifest, guide)).toThrow(/author/)
     expect(guideDigest(Buffer.from('same'))).toBe(guideDigest('same'))
     const invalidGuide = structuredClone(guide)
     invalidGuide.variants[invalidGuide.defaultVariant].model.pieces[0].pose.vertices[0][0] = null

@@ -44,7 +44,7 @@ export function inventory(pieces: { partNo: number; color: string }[]) {
   }
   return [...counts.values()].sort((a, b) => a.partNo - b.partNo || a.color.localeCompare(b.color))
 }
-export const colorWords: Record<string, string> = { lavender: 'むらさき', black: 'くろ', yellow: 'きいろ', red: 'あか', white: 'しろ', blue: 'あお', skyblue: 'みずいろ', transparent: 'とうめい', clear: 'とうめい' }
+export const colorWords: Record<string, string> = { lavender: 'むらさき', purple: 'むらさき', black: 'くろ', yellow: 'きいろ', red: 'あか', white: 'しろ', blue: 'あお', skyblue: 'みずいろ', lightblue: 'みずいろ', green: 'みどり', lime: 'きみどり', orange: 'オレンジ', pink: 'ピンク', brown: 'ちゃいろ', gray: 'はいいろ', transparent: 'とうめい', clear: 'とうめい' }
 
 /** New links use stable step IDs. Old numeric links retain their original meaning. */
 export function routeIndex(params: URLSearchParams, guide: Guide, steps: JourneyStep[]): number {

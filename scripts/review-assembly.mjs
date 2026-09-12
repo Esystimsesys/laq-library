@@ -4,6 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { readWorkspace, validateManifest, validateReview, safeWorkspaceFile, guideDigest, validateAuthorGuide } from './author-assembly.mjs'
+import { displayLabels } from './import-assembly.mjs'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const json = value => JSON.stringify(value, null, 2) + '\n'
 const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.json':'application/json', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.png':'image/png', '.webp':'image/webp', '.avif':'image/avif', '.gif':'image/gif' }
@@ -14,7 +15,13 @@ function snapshot(workspace) {
   const version = guideDigest(Buffer.concat([Buffer.from(data.guideBytes), manifestBytes, reviewBytes]))
   let validation = 'OK'
   try { validateAuthorGuide(data.guide); validateReview(data.review, data.manifest, data.guide) } catch (e) { validation = e.message }
-  return { ...data, version, validation }
+  let labels = {}
+  try {
+    const variant = data.guide.variants[data.guide.defaultVariant]
+    const sequence = data.guide.sequence ?? data.guide.reading?.sequence ?? [...variant.units.flatMap(u=>u.steps.map((_,i)=>`unit:${u.id}:${i}`)),...variant.assembly.map((_,i)=>`assembly:${i}`)]
+    labels = displayLabels(variant, sequence, data.guide.reading?.labelFamilies)
+  } catch { /* 未作成の下書きでも制作室は開ける。 */ }
+  return { ...data, displayLabels:labels, version, validation }
 }
 function save(workspace, body) {
   const before = snapshot(workspace)
@@ -65,8 +72,8 @@ export function createReviewServer({ workspace }) {
       if (req.method !== 'GET') return send(405,{error:'Method not allowed'})
       if (url.pathname === '/api/workspace') return send(200,snapshot(workspace))
       if (url.pathname === '/assemblies/draft/guide.json') {
-        const {guide} = snapshot(workspace); validateAuthorGuide(guide)
-        return send(200,{...guide,photos:[],limits:[]})
+        const {guide,displayLabels} = snapshot(workspace); validateAuthorGuide(guide)
+        return send(200,{...guide,displayLabels,photos:[],limits:[]})
       }
       let file
       if (url.pathname.startsWith('/photo/')) {
