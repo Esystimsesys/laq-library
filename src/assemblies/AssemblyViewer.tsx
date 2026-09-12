@@ -35,7 +35,7 @@ export default function AssemblyViewer({ entry, current, onShown, onImages }: Pr
     {failed && <div className={styles.loading} role="alert"><p>図を ひらけなかったよ。</p><button className={styles.secondary} onClick={() => { setReady(false); setError(false); setShown(''); onShown(''); setAttempt(n => n + 1) }}>もういちど ひらく</button><p>元の つくりかたも、ページの 下から 見られるよ。</p></div>}
     <iframe ref={frame} key={attempt} title={`${entry.title}の まわせる組み立て図`}
       src={`${import.meta.env.BASE_URL}assemblies/viewer/index.html?id=${encodeURIComponent(entry.id)}&v=${entry.revision}`}
-      style={{ height, display: failed ? 'none' : 'block' }} data-shown={shown}
+      style={{ height, display: failed ? 'none' : 'block', visibility: ready ? 'visible' : 'hidden' }} data-shown={shown}
       allow="" />
   </section>
 }

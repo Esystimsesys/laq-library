@@ -47,7 +47,8 @@ for (const width of [390, 1240]) {
       const info = await frame.evaluate(() => (window as unknown as { __unitGuide: () => { visible: number; inFrame: boolean; actions: number } }).__unitGuide())
       expect(info.inFrame).toBe(true)
       if (steps[at].source) expect(info.visible).toBe(steps[at].source!.visiblePieces.length)
-      if (steps[at].unit) await expect(page.getByRole('heading',{level:1})).toContainText(guide.displayLabels[steps[at].unit!])
+      const currentGroup = steps[at].unit ?? steps[at].source?.result
+      if (currentGroup) await expect(page.getByRole('heading',{level:1})).toContainText(guide.displayLabels[currentGroup])
       if (steps[at].phase==='assembly') {
         const inputIds=guide.variants[guide.defaultVariant].assembly[steps[at].step].inputs
         const tags=await viewer.locator('#stage .unit-label text').allTextContents()
@@ -126,13 +127,29 @@ test('一度読み込んだ3Dの図はオフラインでも開ける', async ({ 
 })
 
 test('3D表示に失敗しても再試行でき、表示前に完了扱いにしない', async ({ page }) => {
-  await page.route('**/assemblies/viewer/unit-instructions.js', route => route.abort())
-  await page.goto('./assembly/metamon?at=2')
+  let failRendering!: () => void
+  const rendering = new Promise<void>(resolve => { failRendering = resolve })
+  await page.route('**/assemblies/viewer/unit-instructions.js', async route => {
+    await rendering
+    await route.abort()
+  })
+  await page.goto('./assembly/metamon?at=2', { waitUntil: 'domcontentloaded' })
+  const iframe = page.locator('iframe')
+  try {
+    await expect(page.getByRole('status')).toHaveText('図を よみこんでいるよ…')
+    await expect(page.frameLocator('iframe').locator('#loading')).toHaveText('図を よみこんでいるよ…')
+    // Keep the embedded loading message out of view while preserving the diagram's layout for rendering.
+    await expect(iframe).toBeHidden()
+    expect((await iframe.evaluate(el => el.getBoundingClientRect().width))).toBeGreaterThan(0)
+  } finally { failRendering() }
   await expect(page.getByRole('alert')).toContainText('図を ひらけなかった')
   await expect(page.getByRole('button', { name: 'できた！ つぎへ →' })).toBeDisabled()
   await page.unroute('**/assemblies/viewer/unit-instructions.js')
   await page.getByRole('button', { name: 'もういちど ひらく' }).click()
   await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'unit:A1:0', { timeout: 30000 })
+  await expect(iframe).toBeVisible()
+  await expect(page.getByRole('status')).toHaveCount(0)
+  await expect(page.frameLocator('iframe').locator('#loading')).toBeHidden()
   await expect(page.getByRole('button', { name: 'できた！ つぎへ →' })).toBeEnabled()
 })
 

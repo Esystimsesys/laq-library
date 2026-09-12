@@ -46,6 +46,7 @@ function Journey({ entry, guide }: { entry: AssemblyEntry; guide: Guide }) {
   const totalTasks = steps.filter(s => s.phase === 'unit' || s.phase === 'assembly').length
   const doneTasks = steps.filter(s => (s.phase === 'unit' || s.phase === 'assembly') && checked.has(s.key)).length
   const stageUnits = current.phase === 'unit' ? variant.units.find(u => u.id === current.unit) : null
+  const currentGroup = current.unit ?? current.source?.result
   const stageInventory = current.phase === 'unit' ? inventory(variant.model.pieces.filter(p => current.source?.visiblePieces.includes(p.id))) : null
   useEffect(() => {
     if (at === 0) return
@@ -86,7 +87,7 @@ function Journey({ entry, guide }: { entry: AssemblyEntry; guide: Guide }) {
       })}</ol>
       <button className={styles.secondary} onClick={() => setMapOpen(false)}>いまの てじゅんに もどる</button>
     </section>}
-    <div className={styles.heading}><p className={styles.eyebrow}>{flowText}</p><h1 ref={heading} tabIndex={-1}>{current.unit && <span className={styles.badge}>{label(current.unit)}</span>}{current.title}</h1><p>{current.description}</p>
+    <div className={styles.heading}><p className={styles.eyebrow}>{flowText}</p><h1 ref={heading} tabIndex={-1}>{currentGroup && <span className={styles.badge}>{label(currentGroup)}</span>}{current.title}</h1><p>{current.description}</p>
       {stageUnits && stageUnits.steps.length > 1 && <p className={styles.small}>この まとまりは {stageUnits.steps.length} まいの 図で つくるよ。いまは {current.step + 1} まいめ。</p>}
     </div>
     {returnStack.length > 0 && <button className={styles.returnButton} onClick={() => { const target = returnStack[returnStack.length - 1];setReturnStack(stack => stack.slice(0, -1));go(target) }}>← さっきの てじゅんに もどる</button>}
