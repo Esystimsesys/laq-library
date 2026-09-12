@@ -71,9 +71,14 @@ function Journey({ entry, guide }: { entry: AssemblyEntry; guide: Guide }) {
     : current.phase === 'done' ? 'さいごの かたちを たしかめよう' : 'まずは できあがりの かたちを 見てみよう'
   return <div className={styles.page}>
     <header className={styles.header}><Link to={`/model/${encodeURIComponent(entry.modelId)}`} state={{ returnTo }} className={styles.back}>← さくひん</Link><span>{entry.title} / 3Dでつくる</span></header>
-    <nav className={styles.quickNav} aria-label="図を えらぶ">{current.phase !== 'welcome' && <button onClick={() => go(0)}>はじめに もどる</button>}<button aria-expanded={mapOpen} onClick={() => setMapOpen(!mapOpen)}>ぜんたいの ながれ</button></nav>
     <div className={styles.progressLine}><progress max={totalTasks} value={progressStep} aria-label="いまの てじゅん" /><span>{progressStep === 0 ? 'スタート前' : `てじゅん ${progressStep} / ${totalTasks}`}</span></div>
     {saveFailed && <p role="alert" className={styles.note}>つづきを ほぞんできなかったよ。このページを とじると きえることがあるよ。</p>}
+    <div className={styles.heading}><p className={styles.eyebrow}>{flowText}</p><h1 ref={heading} tabIndex={-1}>{currentGroup && <span className={styles.badge}>{label(currentGroup)}</span>}{current.title}</h1>{current.description && <p>{current.description}</p>}
+    </div>
+    {returnStack.length > 0 && <button className={styles.returnButton} onClick={() => { const target = returnStack[returnStack.length - 1];setReturnStack(stack => stack.slice(0, -1));go(target) }}>← さっきの てじゅんに もどる</button>}
+    {current.phase === 'assembly' && <div className={styles.formula} aria-label="つかう まとまり">{current.source?.inputs?.map((id, i) => <div className={styles.formulaItem} key={id}>{i > 0 && <span className={styles.operator}>＋</span>}<button onClick={() => reference(id)}>{images[id] && <img src={images[id]} alt="" />}<b>{label(id)}</b><small>{unitName(id)}</small></button></div>)}<span className={styles.operator}>→</span><strong>{label(current.source?.result ?? '')}</strong></div>}
+    <AssemblyViewer entry={entry} guide={guide} current={current} onImages={setImages} onShown={setRenderedKey} />
+    <nav className={styles.quickNav} aria-label="図を えらぶ">{current.phase !== 'welcome' && <button onClick={() => go(0)}>はじめに もどる</button>}<button aria-expanded={mapOpen} onClick={() => setMapOpen(!mapOpen)}>ぜんたいの ながれ</button></nav>
     {mapOpen && <section className={styles.map} aria-label="ぜんたいの ながれ">
       <h2>この じゅんばんで つくるよ</h2><p>つくる図も、つなぐ図も、この じゅんばんで 見てね。</p>
       <ol className={styles.instructionMap}>{tasks.map((item, i) => {
@@ -85,12 +90,6 @@ function Journey({ entry, guide }: { entry: AssemblyEntry; guide: Guide }) {
       })}</ol>
       <button className={styles.secondary} onClick={() => setMapOpen(false)}>いまの てじゅんに もどる</button>
     </section>}
-    <div className={styles.heading}><p className={styles.eyebrow}>{flowText}</p><h1 ref={heading} tabIndex={-1}>{currentGroup && <span className={styles.badge}>{label(currentGroup)}</span>}{current.title}</h1>{current.description && <p>{current.description}</p>}
-    </div>
-    {returnStack.length > 0 && <button className={styles.returnButton} onClick={() => { const target = returnStack[returnStack.length - 1];setReturnStack(stack => stack.slice(0, -1));go(target) }}>← さっきの てじゅんに もどる</button>}
-    {current.phase === 'welcome' && <div className={styles.welcomeFlow} aria-label="つくりかたの ながれ"><span><b>1</b>パーツを たしかめる</span><i>→</i><span><b>2</b>まとまりを つくる</span><i>→</i><span><b>3</b>まとまりを つなぐ</span></div>}
-    {current.phase === 'assembly' && <div className={styles.formula} aria-label="つかう まとまり">{current.source?.inputs?.map((id, i) => <div className={styles.formulaItem} key={id}>{i > 0 && <span className={styles.operator}>＋</span>}<button onClick={() => reference(id)}>{images[id] && <img src={images[id]} alt="" />}<b>{label(id)}</b><small>{unitName(id)}</small></button></div>)}<span className={styles.operator}>→</span><strong>{label(current.source?.result ?? '')}</strong></div>}
-    <AssemblyViewer entry={entry} guide={guide} current={current} onImages={setImages} onShown={setRenderedKey} />
     {current.phase === 'welcome' && <section className={styles.partsReference} aria-label="つかう パーツの めやす">
       <h2>つかう パーツの めやす</h2><p>ぜんぶで {entry.pieceCount}こ。つくりながら、ひつような パーツを えらんでね。</p>
       <ul className={styles.parts}>{counts.map(p => <li key={`${p.partNo}:${p.color}`} aria-label={`No.${p.partNo} ${colorWords[p.color] ?? p.color} ${p.count}こ`}>

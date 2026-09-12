@@ -5,7 +5,7 @@ export type AssemblyEntry = {
 export type Piece = { id: string; partNo: number; color: string }
 export type GuideStep = {
   title: string; description?: string; visiblePieces: string[]; newPieces: string[]
-  presentation?: string; inputs?: string[]; result?: string
+  presentation?: string; explodeGroups?: string[][]; inputs?: string[]; result?: string
 }
 export type Unit = { id: string; label: string; pieceIds: string[]; steps: GuideStep[] }
 export type Variant = { units: Unit[]; assembly: GuideStep[]; model: { pieces: Piece[] }; finished: string }

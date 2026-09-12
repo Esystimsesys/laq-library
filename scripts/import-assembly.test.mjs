@@ -77,6 +77,9 @@ describe('assembly data validation', () => {
     ['missing steps', (g) => { active(g).units[0].steps = [] }],
     ['unknown visible piece', (g) => { active(g).units[0].steps[0].visiblePieces.push('missing') }],
     ['incorrect additions', (g) => { active(g).units[0].steps[0].newPieces = [] }],
+    ['unknown explode group piece', (g) => { active(g).units[0].steps[0].explodeGroups = [['missing']] }],
+    ['incomplete explode groups', (g) => { const s = active(g).units[0].steps[0]; s.explodeGroups = [s.newPieces.slice(1)] }],
+    ['duplicate explode group piece', (g) => { const s = active(g).units[0].steps[0]; s.explodeGroups = [[...s.newPieces], [s.newPieces[0]]] }],
     ['invalid port', (g) => { active(g).model.connections[0].ports[0].port = 99 }],
     ['incorrect action port', (g) => { active(g).units[0].steps[0].actions[0].port = 99 }],
     ['missing actions', (g) => { active(g).units[0].steps[0].actions = [] }],
@@ -95,6 +98,7 @@ describe('assembly data validation', () => {
 describe('assembly importing', () => {
   it('publishes compact viewer data without private reconstruction evidence', () => {
     const guide = clone(), variant = active(guide)
+    variant.units[0].steps[0].explodeGroups = [variant.units[0].steps[0].newPieces]
     guide.sourceVerification = { reviewed: true }
     variant.sourceVerification = { reviewed: true }
     variant.model.geometry = { residual: 0.123456789 }
@@ -113,6 +117,7 @@ describe('assembly importing', () => {
     expect(published.model.connections[0]).not.toHaveProperty('evidence')
     expect(published.units[0].steps[0].actions[0]).not.toHaveProperty('title')
     expect(published.units[0].steps[0].actions[0]).not.toHaveProperty('description')
+    expect(published.units[0].steps[0].explodeGroups).toEqual(variant.units[0].steps[0].explodeGroups)
     expect(published.model.pieces[0].pose.vertices[0][0]).toBe(0.123457)
     expect(variant.model.pieces[0].evidence).toBe('private observation')
   })
