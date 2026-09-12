@@ -28,5 +28,15 @@
     "unitCount": 6,
     "pieceCount": 192,
     "guidePath": "assemblies/desukan/guide.json"
+  },
+  {
+    "id": "iwaparesu",
+    "modelId": "purimatu:iwaparesu",
+    "title": "イワパレス",
+    "revision": 2,
+    "defaultVariant": "photo-v1",
+    "unitCount": 8,
+    "pieceCount": 248,
+    "guidePath": "assemblies/iwaparesu/guide.json"
   }
 ]
