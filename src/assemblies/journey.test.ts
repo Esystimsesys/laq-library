@@ -21,11 +21,10 @@ describe('assembly journey', () => {
     expect(route.find(s => s.unit === 'C1')?.source?.visiblePieces).toHaveLength(8)
     expect(route.find(s => s.unit === 'C1')?.source?.presentation).toBe('overview')
   })
-  it('renders display references without renaming stable route IDs', () => {
-    const step=route.find(s=>s.key==='assembly:0')!
-    expect(step.description).toContain('B1 の しかくを、A1')
-    expect(step.description).toContain('C1 だよ')
-    expect(step.description).not.toContain('{{')
+  it('shows only the part name for build and assembly steps', () => {
+    expect(route.find(s=>s.key==='unit:A1:0')).toMatchObject({ title: 'まえの からだ', description: '' })
+    expect(route.find(s=>s.key==='assembly:0')).toMatchObject({ title: 'からだ', description: '' })
+    expect(route.find(s=>s.key==='assembly:7')).toMatchObject({ title: 'できあがり', description: '' })
   })
   it('counts parts without merging different colours or duplicating pieces', () => {
     const counts = inventory(guide.variants[guide.defaultVariant].model.pieces)

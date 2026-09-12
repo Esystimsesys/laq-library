@@ -104,7 +104,7 @@ describe('assembly importing', () => {
     const result = importAssembly(options)
     const output = read(path.join(options.root, 'public/assemblies/metamon/guide.json'))
     expect(output.variants).toEqual({ [guide.defaultVariant]: active(guide) })
-    expect(output.reading).toEqual(reading)
+    expect(output.reading).toEqual({ unitNames: reading.unitNames })
     expect(output.sequence).toEqual(defaultSequence(active(guide)))
     expect(output).toMatchObject({ name: 'metamon', displayName: 'メタモン', article: 'https://purimatu.com/metamon/', photos: [], limits: [] })
     expect(read(path.join(options.root, 'src/data/assemblies.json'))).toEqual([other, result])
@@ -113,9 +113,9 @@ describe('assembly importing', () => {
     expect(readFileSync(path.join(options.root, 'public/assemblies/viewer/unit-instructions.js'), 'utf8')).toBe('locally maintained runtime')
   })
 
-  it('opt-in preserves reviewed reading, final steps, sequence and old links while ignoring repository overrides', () => {
+  it('opt-in preserves group names, final steps, sequence and old links while dropping per-step copy', () => {
     const guide = clone()
-    guide.reading.steps['unit:C1:0'] = { title: '人が修正した見出し', description: '人が写真で確認した説明' }
+    guide.reading.steps = { 'unit:C1:0': { title: '以前の見出し', description: '以前の説明' } }
     guide.reading.sequence = defaultSequence(active(guide))
     // The top-level sequence remains the authoritative, reviewed display order.
     active(guide).units.find(unit => unit.id === 'C1').steps[0].title = '構造側の見出しもそのまま'
@@ -123,7 +123,8 @@ describe('assembly importing', () => {
     put(path.join(options.root, 'content/assemblies/metamon.json'), { invalid: true, steps: { missing: {} } })
     importAssembly({ ...options, useSourceReading: true })
     const output = read(path.join(options.root, 'public/assemblies/metamon/guide.json'))
-    expect(output.reading).toEqual(guide.reading)
+    const publishedReading = structuredClone(guide.reading); delete publishedReading.steps
+    expect(output.reading).toEqual(publishedReading)
     expect(output.sequence).toEqual(guide.sequence)
     expect(output.legacyAtKeys).toEqual(guide.legacyAtKeys)
     expect(active(output)).toEqual(active(guide))
@@ -151,13 +152,13 @@ describe('assembly importing', () => {
 
   it.each([
     ['null reading', guide => { guide.reading = null }],
-    ['invalid step copy', guide => { guide.reading.steps['unit:C1:0'].title = '' }],
+    ['invalid step copy', guide => { guide.reading.steps = { 'unit:C1:0': { title: '', description: '説明' } } }],
     ['unknown unit label', guide => { guide.reading.unitNames = { missing: '名前' } }],
     ['invalid nested object', guide => { guide.reading.steps = [] }],
     ['invalid source reading sequence', guide => { guide.reading.sequence = [] }],
     ['unknown combined unit', guide => { guide.reading.combineUnits = ['missing'] }],
     ['unknown old link', guide => { guide.legacyAtKeys.push('unit:missing:0') }],
-    ['unknown display token', guide => { guide.reading.steps['unit:C1:0'].description = '{{missing}}をつなぐ' }],
+    ['unknown display token', guide => { guide.reading.steps = { 'unit:C1:0': { title: '見出し', description: '{{missing}}をつなぐ' } } }],
     ['invalid display label', guide => { guide.displayLabels.A1 = 42 }],
   ])('rejects %s in reviewed source without changing existing output', (_, corrupt) => {
     const guide = clone(); corrupt(guide)
@@ -203,7 +204,6 @@ describe('assembly importing', () => {
     ['missing step', (reading) => { reading.sequence.pop() }],
     ['merge before build', (reading) => { [reading.sequence[0], reading.sequence[2]] = [reading.sequence[2], reading.sequence[0]] }],
     ['unknown combined unit', (reading) => { reading.combineUnits.push('missing') }],
-    ['obsolete combined step copy', (reading) => { reading.steps['unit:C1:1'] = reading.steps['unit:C1:0'] }],
   ])('rejects %s before changing guide or manifest', (_, corrupt) => {
     const options = sandbox(originalSource())
     const reading = structuredClone(readingConfig); corrupt(reading)

@@ -1,6 +1,11 @@
 import type { Guide, JourneyStep } from './types'
 export const groupLabel = (guide: Guide, id: string) => guide.displayLabels?.[id] ?? id
-const displayText = (guide: Guide, text: string) => text.replace(/\{\{([^}]+)\}\}/g, (_, id: string) => groupLabel(guide, id))
+export const groupName = (guide: Guide, id: string) => {
+  const variant = guide.variants[guide.defaultVariant]
+  return guide.reading?.unitNames?.[id]
+    ?? variant.units.find(unit => unit.id === id)?.label
+    ?? (id === variant.finished ? 'できあがり' : 'からだ')
+}
 export function journey(guide: Guide): JourneyStep[] {
   const variant = guide.variants[guide.defaultVariant]
   const steps: JourneyStep[] = [
@@ -9,15 +14,13 @@ export function journey(guide: Guide): JourneyStep[] {
   const instructions = new Map<string, JourneyStep>()
   for (const unit of variant.units) unit.steps.forEach((source, index) => {
     const key = `unit:${unit.id}:${index}`
-    const reading = guide.reading?.steps?.[key]
     instructions.set(key, { key, phase: 'unit', unit: unit.id, step: index, source,
-      title: reading?.title ?? `${guide.reading?.unitNames?.[unit.id] ?? unit.label}を つくろう`,
-      description: reading?.description ?? source.description ?? '図と おなじ かたちに つなげよう。' })
+      title: groupName(guide, unit.id), description: '' })
   })
   variant.assembly.forEach((source, index) => {
-    const key = `assembly:${index}`, reading = guide.reading?.steps?.[key]
+    const key = `assembly:${index}`
     instructions.set(key, { key, phase: 'assembly', step: index, source,
-      title: reading?.title ?? source.title, description: reading?.description ?? source.description ?? 'やじるしの ところを つなげよう。' })
+      title: groupName(guide, source.result ?? ''), description: '' })
   })
   for (const key of guide.sequence ?? instructions.keys()) {
     const instruction = instructions.get(key)
@@ -25,7 +28,7 @@ export function journey(guide: Guide): JourneyStep[] {
     steps.push(instruction)
   }
   steps.push({ key: 'done', phase: 'done', step: 0, title: 'できあがり！', description: 'くるっと まわして、できた かたちを 見くらべよう。' })
-  return steps.map(s => ({ ...s, title: displayText(guide, s.title), description: displayText(guide, s.description) }))
+  return steps
 }
 export function stepIndex(raw: string | null, length: number): number {
   if (!raw || !/^\d+$/.test(raw)) return 0

@@ -12,7 +12,7 @@ export type Variant = { units: Unit[]; assembly: GuideStep[]; model: { pieces: P
 export type Guide = {
   defaultVariant: string; variants: Record<string, Variant>; article: string
   sequence?: string[]; legacyAtKeys?: string[]; displayLabels?: Record<string, string>
-  reading?: { unitNames?: Record<string, string>; steps?: Record<string, { title: string; description: string }> }
+  reading?: { unitNames?: Record<string, string> }
 }
 export type JourneyStep = {
   key: string; phase: 'welcome' | 'unit' | 'assembly' | 'done'

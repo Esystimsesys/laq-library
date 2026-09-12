@@ -35,7 +35,7 @@ for (const width of [390, 1240]) {
     const diagramWidth = (await page.getByRole('region',{name:'まわせる 組み立て図'}).boundingBox())!.width
     expect(Math.abs(diagramWidth-detailWidth)).toBeLessThan(1)
     await page.getByRole('button', { name: 'ぜんたいの ながれ', exact: true }).click()
-    await expect(page.getByRole('button', { name: 'てじゅん 2 うしろの からだを つくろう' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'てじゅん 2 うしろの からだ' })).toBeVisible()
     await page.getByRole('button', { name: 'いまの てじゅんに もどる' }).click()
     await page.screenshot({ path: `test-results/assembly-welcome-${width}.png`, fullPage: true })
     for (let at = 1; at < steps.length; at++) {
@@ -106,6 +106,22 @@ test('図データが読み込めない場合に再試行できる', { tag: '@sm
   await page.unroute('**/assemblies/metamon/guide.json')
   await page.getByRole('button', { name: 'もういちど ひらく' }).click()
   await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'welcome', { timeout: 30000 })
+})
+
+test('手順の見出しはパーツ番号とパーツ名だけを表示する', async ({ page }) => {
+  await page.goto('./assembly/metamon?step=unit:A1:0')
+  await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'unit:A1:0', { timeout: 30000 })
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('A1')
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('まえの からだ')
+  await expect(page.getByText('まえの からだを つくろう')).toHaveCount(0)
+  await expect(page.getByText(/さんかくを ならべて/)).toHaveCount(0)
+
+  await page.goto('./assembly/metamon?step=assembly:0')
+  await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'assembly:0', { timeout: 30000 })
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('C1')
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('からだ')
+  await expect(page.getByText('からだを つなごう')).toHaveCount(0)
+  await expect(page.getByText(/できた からだの なまえ/)).toHaveCount(0)
 })
 
 test('一度読み込んだ3Dの図はオフラインでも開ける', async ({ browser }) => {

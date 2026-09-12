@@ -238,29 +238,26 @@ export function importAssembly({ source, name = 'metamon', modelId, title, artic
   const readingPath = path.join(root, 'content/assemblies', `${name}.json`)
   const selectedReading = useSourceReading ? sourceGuide.reading : existsSync(readingPath) ? readJson(readingPath) : undefined
   if (selectedReading !== undefined) {
-    const reading = selectedReading
+    const reading = structuredClone(selectedReading)
+    // Per-step copy is no longer published; the app labels every diagram with only its group name.
+    delete reading.steps
     check(reading && typeof reading === 'object' && !Array.isArray(reading), 'reading must be an object')
-    for (const field of ['unitNames', 'steps']) if (reading[field] !== undefined) check(reading[field] && typeof reading[field] === 'object' && !Array.isArray(reading[field]), `reading.${field} must be an object`)
+    if (reading.unitNames !== undefined) check(reading.unitNames && typeof reading.unitNames === 'object' && !Array.isArray(reading.unitNames), 'reading.unitNames must be an object')
     for (const [id, label] of Object.entries(reading.unitNames ?? {})) check(variant.units.some((unit) => unit.id === id) && text(label), `invalid reading unit: ${id}`)
     const combined = ids(reading.combineUnits ?? [], new Set(variant.units.map((unit) => unit.id)), 'reading.combineUnits', true)
     for (const unit of variant.units) {
       // A reviewed source already contains its final steps. Do not reapply its historical combineUnits.
       if (useSourceReading || !combined.has(unit.id)) continue
       const final = unit.steps.at(-1)
-      const copy = reading.steps?.[`unit:${unit.id}:0`]
       unit.steps = [{
         ...unit.steps[0],
-        title: copy?.title ?? unit.label ?? unit.steps[0].title,
-        description: copy?.description ?? 'すべての パーツを、図と おなじ かたちに つなげよう。',
+        title: unit.label ?? unit.steps[0].title,
+        description: 'すべての パーツを、図と おなじ かたちに つなげよう。',
         presentation: 'overview',
         visiblePieces: [...final.visiblePieces],
         newPieces: [...final.visiblePieces],
         actions: unit.steps.flatMap((stage) => stage.actions),
       }]
-    }
-    const byKey = stages(variant)
-    for (const [key, value] of Object.entries(reading.steps ?? {})) {
-      check(byKey.has(key) && text(value?.title) && text(value?.description), `invalid reading step: ${key}`)
     }
     guide.reading = reading
     guide.legacyAtKeys = ['welcome', 'parts', ...originalKeys.map((key) => {
@@ -280,9 +277,6 @@ export function importAssembly({ source, name = 'metamon', modelId, title, artic
     : guide.reading?.sequence === undefined ? [...stages(variant).keys()] : guide.reading.sequence
   validateGuide(guide)
   guide.displayLabels = displayLabels(variant, guide.sequence, guide.reading?.labelFamilies)
-  for (const copy of Object.values(guide.reading?.steps ?? {})) {
-    for (const match of `${copy.title} ${copy.description}`.matchAll(/\{\{([^}]+)\}\}/g)) check(guide.displayLabels[match[1]], `unknown display reference: ${match[1]}`)
-  }
   // Prototype stage counts describe the pre-combination guide, not this import.
   if (!useSourceReading && guide.reading?.combineUnits?.length) {
     if (guide.verification) { guide.sourceVerification = guide.verification; delete guide.verification }

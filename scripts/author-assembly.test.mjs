@@ -119,8 +119,8 @@ describe('local assembly authoring', () => {
   it.each([
     ['reading null', g => { g.reading = null }],
     ['nested reading array', g => { g.reading.steps = [] }],
-    ['unknown reading step', g => { g.reading.steps['unit:missing:0'] = { title: '見出し', description: '説明' } }],
-    ['empty reading title', g => { g.reading.steps['unit:C1:0'].title = '' }],
+    ['unknown reading step', g => { g.reading.steps = { 'unit:missing:0': { title: '見出し', description: '説明' } } }],
+    ['empty reading title', g => { g.reading.steps = { 'unit:C1:0': { title: '', description: '説明' } } }],
     ['unknown unit name', g => { g.reading.unitNames = { missing: '名前' } }],
     ['invalid reading order', g => { g.reading.sequence = [] }],
     ['unknown combined unit', g => { g.reading.combineUnits = ['missing'] }],
@@ -128,8 +128,8 @@ describe('local assembly authoring', () => {
     ['unknown old URL reference', g => { g.legacyAtKeys.push('unit:missing:0') }],
     ['invalid display label', g => { g.displayLabels.A1 = 42 }],
     ['unknown display label', g => { g.displayLabels.missing = 'Z1' }],
-    ['unknown display token', g => { g.reading.steps['unit:C1:0'].description = '{{missing}}をつなぐ' }],
-    ['prototype property display token', g => { g.reading.steps['unit:C1:0'].description = '{{toString}}をつなぐ' }],
+    ['unknown display token', g => { g.reading.steps = { 'unit:C1:0': { title: '見出し', description: '{{missing}}をつなぐ' } } }],
+    ['prototype property display token', g => { g.reading.steps = { 'unit:C1:0': { title: '見出し', description: '{{toString}}をつなぐ' } } }],
     ['invalid fallback description', g => { g.variants[g.defaultVariant].assembly[0].description = { text: 'bad type' } }],
     ['unknown fallback token', g => { g.variants[g.defaultVariant].assembly[0].description = '{{missing}}をつなぐ' }],
   ])('rejects %s before author review/export instead of deferring failure to import', (_, corrupt) => {

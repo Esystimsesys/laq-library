@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useParams, useSearchParams } from 'react-router'
 import { listReturnTo } from '../lib/returnTo'
 import { assemblyById } from './catalog'
-import { colorWords, groupLabel, inventory, journey, routeIndex } from './journey'
+import { colorWords, groupLabel, groupName, inventory, journey, routeIndex } from './journey'
 import { loadProgress, saveProgress, type Progress } from './progress'
 import type { AssemblyEntry, Guide } from './types'
 import AssemblyViewer from './AssemblyViewer'
@@ -40,7 +40,7 @@ function Journey({ entry, guide }: { entry: AssemblyEntry; guide: Guide }) {
   const heading = useRef<HTMLHeadingElement>(null)
   const { state, actions } = useApp()
   const label = (id: string) => groupLabel(guide, id)
-  const unitName = (id: string) => guide.reading?.unitNames?.[id] ?? variant.units.find(u => u.id === id)?.label ?? 'ここまでの からだ'
+  const unitName = (id: string) => groupName(guide, id)
   const counts = useMemo(() => inventory(variant.model.pieces), [variant])
   const checked = new Set(progress.checked)
   const totalTasks = steps.filter(s => s.phase === 'unit' || s.phase === 'assembly').length
@@ -87,7 +87,7 @@ function Journey({ entry, guide }: { entry: AssemblyEntry; guide: Guide }) {
       })}</ol>
       <button className={styles.secondary} onClick={() => setMapOpen(false)}>いまの てじゅんに もどる</button>
     </section>}
-    <div className={styles.heading}><p className={styles.eyebrow}>{flowText}</p><h1 ref={heading} tabIndex={-1}>{currentGroup && <span className={styles.badge}>{label(currentGroup)}</span>}{current.title}</h1><p>{current.description}</p>
+    <div className={styles.heading}><p className={styles.eyebrow}>{flowText}</p><h1 ref={heading} tabIndex={-1}>{currentGroup && <span className={styles.badge}>{label(currentGroup)}</span>}{current.title}</h1>{current.description && <p>{current.description}</p>}
       {stageUnits && stageUnits.steps.length > 1 && <p className={styles.small}>この まとまりは {stageUnits.steps.length} まいの 図で つくるよ。いまは {current.step + 1} まいめ。</p>}
     </div>
     {returnStack.length > 0 && <button className={styles.returnButton} onClick={() => { const target = returnStack[returnStack.length - 1];setReturnStack(stack => stack.slice(0, -1));go(target) }}>← さっきの てじゅんに もどる</button>}
