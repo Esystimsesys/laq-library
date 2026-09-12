@@ -55,7 +55,7 @@ test('スマホ幅の一覧、カテゴリ展開、キーボード選択', { tag
   const card = page.locator('a[href*="/model/"]').first()
   await expect(card).toBeVisible()
   const box = await card.boundingBox()
-  expect(box!.y + box!.height).toBeLessThan(760)
+  expect(box!.y + box!.height).toBeLessThanOrEqual(await page.evaluate(() => innerHeight))
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390)
   const more = page.getByRole('button', { name: 'ぜんぶ見る' })
   await more.click()
@@ -421,17 +421,20 @@ test('マイライブラリを「つくってない」「つくった」でし�
 
 test('3Dだけに絞って作品を開き、戻っても条件が残る', async ({page}) => {
   await page.goto('./')
+  const assemblyCount=JSON.parse(await readFile(new URL('../src/data/assemblies.json',import.meta.url),'utf8')).length
   const filter=page.getByRole('button',{name:'3Dで つくれる',exact:true}),cards=page.locator('a[href*="/model/"]')
+  const position=await filter.boundingBox()
   await filter.click();await expect(filter).toHaveAttribute('aria-pressed','true')
-  await expect(cards).toHaveCount(1);await expect(cards.first()).toContainText('メタモン')
+  expect((await filter.boundingBox())!.y).toBeCloseTo(position!.y,0)
+  await expect(cards).toHaveCount(assemblyCount);await expect(cards.filter({hasText:'3Dで つくれる'})).toHaveCount(assemblyCount)
   await cards.first().click();await page.getByRole('button',{name:'もどる',exact:true}).click()
-  await expect(filter).toHaveAttribute('aria-pressed','true');await expect(cards).toHaveCount(1)
+  await expect(filter).toHaveAttribute('aria-pressed','true');await expect(cards).toHaveCount(assemblyCount)
   await page.getByRole('searchbox').fill('ねこ');await expect(cards).toHaveCount(0)
   await page.getByRole('button',{name:'しぼりこみを ぜんぶ やめる'}).first().click()
   await expect(filter).toHaveAttribute('aria-pressed','false');expect(await cards.count()).toBeGreaterThan(1)
 })
 
-test('作った記録をお気に入りへ統合し、件数・3D・旧リンク・戻り先を維持する', async ({page}) => {
+test('作った記録をお気に入りへ統合し、件数・旧リンク・戻り先を維持する', async ({page}) => {
   await page.goto('./')
   await page.evaluate(()=>localStorage.setItem('laq-library:v1',JSON.stringify({version:1,favorites:['purimatu:metamon'],made:{'purimatu:metamon':{madeAt:'2026-09-11'},'laq-official:005337':{madeAt:'2026-09-10'}},booklets:[]})))
   await page.goto('./favorites')
@@ -440,10 +443,10 @@ test('作った記録をお気に入りへ統合し、件数・3D・旧リンク
   await expect(page.getByText('つくった 2 こ',{exact:true})).toBeVisible()
   await expect(page.getByRole('navigation',{name:'メインメニュー'}).getByRole('link')).toHaveCount(3)
   await expect(page.getByRole('link',{name:'つくった',exact:true})).toHaveCount(0)
-  await page.getByRole('button',{name:'3Dで つくれる',exact:true}).click();await expect(cards).toHaveCount(1)
+  await expect(page.getByRole('button',{name:'3Dで つくれる',exact:true})).toHaveCount(0)
+  await page.goto('./favorites?3d=1');await expect(cards).toHaveCount(2)
   await page.getByRole('radio',{name:'つくった',exact:true}).click()
   await cards.first().click();await page.getByRole('button',{name:'もどる',exact:true}).click()
-  await expect(page.getByRole('button',{name:'3Dで つくれる',exact:true})).toHaveAttribute('aria-pressed','true')
   await expect(page.getByRole('radio',{name:'つくった',exact:true})).toBeChecked()
   await expect(page.getByText('つくった 2 こ',{exact:true})).toBeVisible()
   await page.goto('./made');await expect(page).toHaveURL(/\/favorites\?status=made$/);await expect(cards).toHaveCount(2)

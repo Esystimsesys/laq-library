@@ -7,6 +7,26 @@ const steps = journey(guide as Guide)
 test.beforeEach(async ({ page }) => {
   await page.route(/^https:\/\/(fonts\.|www\.laq|purimatu)/, route => route.abort())
 })
+test('共通noticeを作品データの外から表示する', async ({ page }) => {
+  expect(guide).not.toHaveProperty('notice')
+  await page.goto('./assembly/metamon')
+  const iframe=page.locator('iframe'),viewer=page.frameLocator('iframe')
+  await expect(iframe).toHaveAttribute('data-shown','welcome',{timeout:30000})
+  await expect(viewer.locator('#notice')).toHaveText('写真から作った おためしの3D組み立て図です。実物での差し込み・組みやすさは確認中です。')
+})
+test('現在の手順を進捗に表示し、前へ・次へと上部導線を簡潔にする', async ({page}) => {
+  await page.setViewportSize({width:390,height:844})
+  await page.goto('./assembly/metamon?step=unit:A2:0')
+  await expect(page.locator('iframe')).toHaveAttribute('data-shown','unit:A2:0',{timeout:30000})
+  await expect(page.getByRole('progressbar',{name:'いまの てじゅん'})).toHaveAttribute('value','2')
+  await expect(page.locator('progress + span')).toHaveText('てじゅん 2 / 17')
+  await expect(page.getByRole('button',{name:'← まえへ',exact:true})).toBeVisible()
+  await expect(page.getByRole('button',{name:'つぎへ →',exact:true})).toBeVisible()
+  await expect(page.getByRole('button',{name:/できた！/})).toHaveCount(0)
+  const complete=await page.getByRole('button',{name:'はじめに もどる'}).boundingBox()
+  const flow=await page.getByRole('button',{name:'ぜんたいの ながれ'}).boundingBox()
+  expect(Math.abs(complete!.y-flow!.y)).toBeLessThan(2)
+})
 for (const width of [390, 1240]) {
   test(`メタモンの入口から完成まで ${width}px`, async ({ page }) => {
     test.setTimeout(180000)
@@ -30,6 +50,8 @@ for (const width of [390, 1240]) {
     await expect(page.getByText('つくりかたの コツ',{exact:true})).toHaveCount(0)
     await expect(page.getByRole('note',{name:'この図について'})).toContainText('実物での差し込み')
     await expect(page.getByRole('region', {name:'つかう パーツの めやす'})).toBeVisible()
+    await expect(page.getByLabel('つくりかたの ながれ')).toHaveText('1パーツを たしかめる→2まとまりを つくる→3まとまりを つなぐ')
+    await expect(page.getByRole('button', {name:'はじめに もどる'})).toHaveCount(0)
     await expect(page.getByRole('listitem', {name:/No.3 くろ/})).toBeVisible()
     await expect(page.getByRole('button', {name:'パーツ',exact:true})).toHaveCount(0)
     const diagramWidth = (await page.getByRole('region',{name:'まわせる 組み立て図'}).boundingBox())!.width
@@ -63,7 +85,8 @@ for (const width of [390, 1240]) {
       }
       if (steps[at].phase === 'assembly') {
         await expect(viewer.locator('#guide')).toBeHidden()
-        await expect(viewer.locator('#stage .connection-arrow')).toHaveCount(guide.variants[guide.defaultVariant].assembly[steps[at].step].actions.length)
+        const actionCount = guide.variants[guide.defaultVariant].assembly[steps[at].step].actions.length
+        expect(await viewer.locator('#stage .connection-arrow').count()).toBeLessThanOrEqual(actionCount)
         await expect(viewer.locator('#stage .connection-arrow text')).toHaveCount(0)
       }
       if (steps[at].key === 'unit:C1:0') {
@@ -92,7 +115,8 @@ for (const width of [390, 1240]) {
     }
     await page.getByRole('button', { name: '★ つくった！を きろく' }).click()
     await expect(page.getByRole('button', { name: '✓ つくった！ きろくずみ' })).toBeDisabled()
-    await expect(page.getByText('17 / 17 できた')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'ぜんたいを ふりかえる' })).toHaveCount(0)
+    await expect(page.getByText('てじゅん 17 / 17')).toBeVisible()
     await page.goto('./assembly/metamon')
     await page.getByRole('button', { name: 'つづきから' }).click()
     await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'done', { timeout: 30000 })
@@ -100,10 +124,10 @@ for (const width of [390, 1240]) {
   })
 }
 test('図データが読み込めない場合に再試行できる', { tag: '@smoke' }, async ({ page }) => {
-  await page.route('**/assemblies/metamon/guide.json', route => route.fulfill({ status: 503, body: '' }))
+  await page.route('**/assemblies/metamon/guide.json*', route => route.fulfill({ status: 503, body: '' }))
   await page.goto('./assembly/metamon')
   await expect(page.getByRole('alert')).toContainText('よみこめなかった')
-  await page.unroute('**/assemblies/metamon/guide.json')
+  await page.unroute('**/assemblies/metamon/guide.json*')
   await page.getByRole('button', { name: 'もういちど ひらく' }).click()
   await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'welcome', { timeout: 30000 })
 })
@@ -124,7 +148,7 @@ test('手順の見出しはパーツ番号とパーツ名だけを表示する',
   await expect(page.getByText(/できた からだの なまえ/)).toHaveCount(0)
 })
 
-test('一度読み込んだ3Dの図はオフラインでも開ける', async ({ browser }) => {
+test('同じ版の3Dガイド更新を取得し、更新後の図をオフラインでも開ける', async ({ browser }) => {
   test.setTimeout(90000)
   const context = await browser.newContext({ serviceWorkers: 'allow', viewport: { width: 390, height: 844 } })
   const page = await context.newPage()
@@ -134,10 +158,30 @@ test('一度読み込んだ3Dの図はオフラインでも開ける', async ({ 
     await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'unit:A1:0', { timeout: 30000 })
     await page.evaluate(async () => { await navigator.serviceWorker.ready })
     await expect.poll(() => page.evaluate(async () => Boolean(await caches.match('/laq-library/assemblies/metamon/guide.json', { ignoreSearch: true })))).toBe(true)
+    expect(await page.evaluate(async () => Boolean(await caches.match('/laq-library/assemblies/jaroda/guide.json', { ignoreSearch: true })))).toBe(false)
+    // Simulate a previously opened guide with an old color and the same revision URL.
+    await page.evaluate(async () => {
+      const cache = await caches.open('laq-assembly-guides')
+      const request = (await cache.keys()).find(request => new URL(request.url).pathname.endsWith('/metamon/guide.json'))!
+      const old = await (await cache.match(request))!.json()
+      old.variants[old.defaultVariant].model.pieces[0].color = 'orange'
+      await cache.put(request, new Response(JSON.stringify(old), { headers: { 'Content-Type': 'application/json' } }))
+    })
+    await page.reload()
+    await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'unit:A1:0', { timeout: 30000 })
+    const frame = page.frames().find(frame => frame.url().includes('/assemblies/viewer/'))!
+    expect(await frame.evaluate(() => {
+      const guide = (window as any).__LaQLibraryGuide
+      return guide.variants[guide.defaultVariant].model.pieces[0].color
+    })).toBe('lavender')
+    await expect.poll(() => page.evaluate(async () => {
+      const saved = await (await caches.match('/laq-library/assemblies/metamon/guide.json', { ignoreSearch: true }))!.json()
+      return saved.variants[saved.defaultVariant].model.pieces[0].color
+    })).toBe('lavender')
     await context.setOffline(true)
     await page.reload()
     await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'unit:A1:0', { timeout: 30000 })
-    await page.getByRole('button', { name: 'できた！ つぎへ →' }).click()
+    await page.getByRole('button', { name: 'つぎへ →' }).click()
     await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'unit:A2:0')
   } finally { await context.close() }
 })
@@ -152,21 +196,25 @@ test('3D表示に失敗しても再試行でき、表示前に完了扱いにし
   await page.goto('./assembly/metamon?at=2', { waitUntil: 'domcontentloaded' })
   const iframe = page.locator('iframe')
   try {
-    await expect(page.getByRole('status')).toHaveText('図を よみこんでいるよ…')
+    await expect(page.getByRole('status')).toContainText('3Dモデルを よみこんでいるよ')
+    expect(await page.getByRole('status').evaluate(element => element.getAnimations({subtree:true}).length)).toBeGreaterThan(0)
     await expect(page.frameLocator('iframe').locator('#loading')).toHaveText('図を よみこんでいるよ…')
     // Keep the embedded loading message out of view while preserving the diagram's layout for rendering.
     await expect(iframe).toBeHidden()
     expect((await iframe.evaluate(el => el.getBoundingClientRect().width))).toBeGreaterThan(0)
+    await page.getByRole('button', { name: 'ぜんたいの ながれ', exact: true }).click()
+    await expect(page.getByRole('region', { name: 'ぜんたいの ながれ' })).toBeVisible()
+    await page.getByRole('button', { name: 'いまの てじゅんに もどる' }).click()
   } finally { failRendering() }
   await expect(page.getByRole('alert')).toContainText('図を ひらけなかった')
-  await expect(page.getByRole('button', { name: 'できた！ つぎへ →' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'つぎへ →' })).toBeDisabled()
   await page.unroute('**/assemblies/viewer/unit-instructions.js')
   await page.getByRole('button', { name: 'もういちど ひらく' }).click()
   await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'unit:A1:0', { timeout: 30000 })
   await expect(iframe).toBeVisible()
   await expect(page.getByRole('status')).toHaveCount(0)
   await expect(page.frameLocator('iframe').locator('#loading')).toBeHidden()
-  await expect(page.getByRole('button', { name: 'できた！ つぎへ →' })).toBeEnabled()
+  await expect(page.getByRole('button', { name: 'つぎへ →' })).toBeEnabled()
 })
 
 

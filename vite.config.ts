@@ -57,18 +57,33 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}', 'assemblies/**/guide.json'],
+        // The viewer runtime is shared, but each work's model data is downloaded
+        // only after that work is opened.
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         // 検索エンジンの所有権確認ファイルは端末に置く意味がない
-        globIgnores: ['**/google*.html', '**/og.png'],
-        // 作品データは 1MB を超えるので、既定の上限（2MiB）だと将来こぼれる
-        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+        // viewer と vendor は全作品共通。その他の assemblies 配下は作品別データなので
+        // 作品数に比例して初回ダウンロードが増えないよう事前キャッシュしない。
+        globIgnores: ['**/google*.html', '**/og.png', 'assemblies/!(viewer|vendor)/**'],
         // 画面遷移はすべてクライアント側で行うので、オフラインでは index.html を返す
         navigateFallback: `${base}index.html`,
         // The 3D viewer is a real HTML document, not a React route.
         navigateFallbackDenylist: [/\/assemblies\//],
         // Viewer query selects the JSON model; its static HTML is shared offline.
-        ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^id$/, /^v$/],
+        ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^id$/, /^v$/, /^embedded$/],
         runtimeCaching: [
+          {
+            // Reimports can fix colors/poses without changing the progress revision.
+            // Check for updates on opening; use the saved guide offline or on a slow network.
+            urlPattern: ({ sameOrigin, url }) => sameOrigin && /\/assemblies\/[^/]+\/guide\.json$/.test(url.pathname),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'laq-assembly-guides',
+              networkTimeoutSeconds: 3,
+              fetchOptions: { cache: 'no-cache' },
+              cacheableResponse: { statuses: [200] },
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
           {
             // 作品の写真とつくり方の図は公式サイトのものをそのまま表示する。
             // 一度見たものは端末に残して、二度目からは通信なしで開けるようにする。

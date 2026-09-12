@@ -8,5 +8,15 @@
     "unitCount": 9,
     "pieceCount": 53,
     "guidePath": "assemblies/metamon/guide.json"
+  },
+  {
+    "id": "jaroda",
+    "modelId": "purimatu:jaroda",
+    "title": "ジャローダ",
+    "revision": 2,
+    "defaultVariant": "photo-reconstruction-v4",
+    "unitCount": 6,
+    "pieceCount": 219,
+    "guidePath": "assemblies/jaroda/guide.json"
   }
 ]
