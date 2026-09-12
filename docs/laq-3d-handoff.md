@@ -1,10 +1,11 @@
 # LaQ 3D：再開用の短い引き継ぎ
 
-更新日：2026-09-12。過去の経緯ではなく、ここを入口に現行コードと対象の文書だけ確認する。
+更新日：2026-09-13。過去の経緯ではなく、ここを入口に現行コードと対象の文書だけ確認する。
 
 ## 現在地
 
-- イワパレス（2026-09-12）: 記事写真14枚から227パーツ・8塊・20手順のレビュー候補を作成。原本 `.local/assembly-work/iwaparesu/guide.json`、根拠・未確認点は同所のmanifest/review。draft・実物未確認・本体未取り込み。製作室 `http://127.0.0.1:5183/`。構造・理想部品の形/角度/有限間隔、および全20手順・7方向・14写真の表示を確認。目No.7と腕への接続、腕の隠れた面、脚のジョイント、壁底部は推定。レビュー開始後は生成器で保存済みguideを上書きしない。
+- イワパレス（2026-09-13・完成確認）: 写真14枚・製作室16コメントと会話の補足を反映した248パーツ・8塊・18手順を、ユーザーの完成確認と手順統合指示により `purimatu:iwaparesu` revision 2として本体へ取り込み。製作室reviewed・全コメントresolved、実物はnot-performed。
+  完成原本は `.local/assembly-work/iwaparesu/guide.json`。生成器は初回候補用なので上書きしない。初回取り込みは `checks/final-import/`、両腕・左右壁の合体統合と18手順の確認は `checks/grouped-assembly/`、[制作記録と振り返り](IWAPARESU-3D.md) と [次回の手順](AI-3D-WORKFLOW.md) に改善を記録。2026-09-13にユーザーが公開を指示。公開先では `/assembly/iwaparesu` から開く。
 
 - 本体：`/Users/wataru/Documents/Development/laq-library`。`main` の `7fe4478` までpush・GitHub Pages公開済み。
 - 公開先：<https://esystimsesys.github.io/laq-library/>。
