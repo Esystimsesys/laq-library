@@ -26,7 +26,7 @@
     if (!window.LaQLibraryViewer) throw new Error('Renderer unavailable');
     document.getElementById('loading').hidden = true;
     document.body.classList.add('ready');
-    document.querySelector('.hint').textContent = 'ゆびで なぞって まわせるよ';
+    document.querySelector('.hint').textContent = '1本の ゆびで まわす・2本の ゆびで 大きく／小さく';
     document.getElementById('fit').textContent = 'ぜんたいを見る';
     document.getElementById('guide-prev').textContent = '← まえの ばしょ';
     document.getElementById('guide-next').textContent = 'つぎの ばしょ →';

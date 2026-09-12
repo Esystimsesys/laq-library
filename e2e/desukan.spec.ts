@@ -62,3 +62,27 @@ test('デスカーンの統合した15手順を表示する', async ({ page }) =
   await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'unit:body:3', { timeout: 30000 })
   await expect(page.frameLocator('iframe').locator('#step-title')).toContainText('えり')
 })
+
+test('2本指のピンチで3Dモデルを拡大縮小できる', async ({ page, context }) => {
+  test.setTimeout(90000)
+  await page.goto('./assembly/desukan?step=unit%3Abody%3A0')
+  await expect(page.locator('iframe')).toHaveAttribute('data-shown', 'unit:body:0', { timeout: 30000 })
+  const stage = page.frameLocator('iframe').locator('#stage')
+  await stage.scrollIntoViewIfNeeded()
+  const box = (await stage.boundingBox())!
+  const viewer = page.frames().find(frame => frame.url().includes('/assemblies/viewer/'))!
+  const initialZoom = (await viewer.evaluate(() => (window as unknown as { __unitGuide: () => { zoom: number } }).__unitGuide().zoom))
+  const client = await context.newCDPSession(page)
+  const x = box.x + box.width / 2, y = box.y + box.height / 2
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x - 25, y, id: 1 }, { x: x + 25, y, id: 2 }] })
+  await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 60, y, id: 1 }, { x: x + 60, y, id: 2 }] })
+  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  const enlargedZoom = await viewer.evaluate(() => (window as unknown as { __unitGuide: () => { zoom: number } }).__unitGuide().zoom)
+  expect(enlargedZoom).toBeGreaterThan(initialZoom)
+
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x - 60, y, id: 3 }, { x: x + 60, y, id: 4 }] })
+  await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 30, y, id: 3 }, { x: x + 30, y, id: 4 }] })
+  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  const reducedZoom = await viewer.evaluate(() => (window as unknown as { __unitGuide: () => { zoom: number } }).__unitGuide().zoom)
+  expect(reducedZoom).toBeLessThan(enlargedZoom)
+})
