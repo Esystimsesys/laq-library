@@ -66,6 +66,29 @@ test('塊の途中の手順では、作成済みの部分を動かさず新し�
  }finally{await page.close();server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));rmSync(dir,{recursive:true,force:true})}
 })
 
+test('ディスク上で更新された手順とモデルを再読込で同時に反映する',async({page})=>{
+ const dir=mkdtempSync(path.join(tmpdir(),'laq-review-reload-')),workspace=path.join(dir,'work')
+ initWorkspace({workspace,slug:'reload-test',modelId:'purimatu:metamon',title:'Reload test',article:'https://example.com/',fromGuide:'public/assemblies/metamon/guide.json'})
+ const file=path.join(workspace,'guide.json'),server=createReviewServer({workspace});server.listen(0,'127.0.0.1');await once(server,'listening');const address=server.address() as {port:number}
+ try{
+  await page.setViewportSize({width:1440,height:1100});await page.goto(`http://127.0.0.1:${address.port}/`)
+  const frame=page.frameLocator('#viewer');await expect(frame.locator('#loading')).toBeHidden({timeout:30000})
+  const source=JSON.parse(readFileSync(file,'utf8')),variant=source.variants[source.defaultVariant],unit=variant.units[0],stepKey=`unit:${unit.id}:0`,piece=variant.model.pieces.find((candidate:{id:string})=>unit.steps[0].visiblePieces.includes(candidate.id))
+  await page.locator('#step').selectOption(stepKey)
+  const viewerFrame=page.frames().find(inner=>inner.url().includes('/assemblies/viewer/'))!
+  const before=await viewerFrame.evaluate(id=>(window as any).__unitGuide().pieceScreens.find((item:{id:string})=>item.id===id).worldBounds,piece.id)
+  source.reading.unitNames[unit.id]='再読込後の手順'
+  if(piece.pose.center)piece.pose.center[0]+=2
+  else for(const vertex of piece.pose.vertices)vertex[0]+=2
+  writeFileSync(file,JSON.stringify(source,null,2)+'\n')
+  await page.locator('#reload').click()
+  await expect(page.locator('#step').locator(`option[value="${stepKey}"]`)).toContainText('再読込後の手順')
+  await page.locator('#step').selectOption(stepKey)
+  await expect.poll(()=>viewerFrame.evaluate(()=>(window as any).__unitGuide().phase)).toBe('unit')
+  await expect.poll(()=>viewerFrame.evaluate(id=>(window as any).__unitGuide().pieceScreens.find((item:{id:string})=>item.id===id).worldBounds,piece.id)).not.toEqual(before)
+ }finally{await page.close();server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));rmSync(dir,{recursive:true,force:true})}
+})
+
 test('写真と3Dを照合し、色・位置を修正、戻す、保存して再開できる',async({page})=>{
  const dir=mkdtempSync(path.join(tmpdir(),'laq-review-ui-')),workspace=path.join(dir,'work'),photo=path.join(dir,'photo.png'),photo2=path.join(dir,'photo-2.png')
  const photoBytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64')

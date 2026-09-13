@@ -198,7 +198,17 @@ handle('save',()=>save(false));handle('review',()=>save(true))
 $('toggle-resolved').onclick=()=>{showResolved=!showResolved;reviewLists()}
 // 前へ・次へ: move the photo or step selection by one and reuse its change handler.
 for(const id of ['photo','step'])for(const [suffix,delta] of [['prev',-1],['next',1]])$(`${id}-${suffix}`).onclick=()=>{const s=$(id),i=s.selectedIndex+delta;if(i<0||i>=s.options.length)return;s.selectedIndex=i;s.dispatchEvent(new Event('change'))}
-handle('reload',async()=>{if(dirty&&!confirm('未保存の変更を破棄し、ディスクの内容を読み直しますか？'))return;accept(await (await fetch('/api/workspace')).json());ready=false;$('viewer').src='/assemblies/viewer/index.html?id=draft&review=1#phase=complete'})
+handle('reload',async()=>{
+  if(dirty&&!confirm('未保存の変更を破棄し、ディスクの内容を読み直しますか？'))return
+  const response=await fetch('/api/workspace'),result=await response.json()
+  if(!response.ok)throw new Error(result.error??'ディスクの内容を読み直せませんでした。')
+  accept(result)
+  // Replacing the iframe src with its current URL can be a no-op. In that case
+  // ready stayed false and later step changes never reached the 3D viewer.
+  // A ready viewer already has a safe guide-replacement API, so update it in place.
+  if(ready){post({command:'replace-guide',guide});showStep()}
+  else $('viewer').src='/assemblies/viewer/index.html?id=draft&review=1&t='+Date.now()+'#phase=complete'
+})
 handle('add-issue',()=>{if(!$('new-issue').value.trim())throw new Error('未確認点を入力してください。');review.unresolved.push({id:crypto.randomUUID(),description:$('new-issue').value.trim(),status:'open'});$('new-issue').value='';markDirty();reviewLists()})
 handle('add-evidence',()=>{if(!$('photo').value)throw new Error('先に写真を用意してください。');if(!$('observation').value.trim()&&!$('interpretation').value.trim())throw new Error('観測または解釈を入力してください。');review.evidence.push({id:crypto.randomUUID(),author:'human',photoId:$('photo').value,pieceIds:selectedIds(),observation:$('observation').value,interpretation:$('interpretation').value,confidence:$('confidence').value});$('observation').value='';$('interpretation').value='';markDirty();reviewLists();message('根拠を追加しました。「変更を保存」で書き込みます。')})
 handle('add-comment',async()=>{const text=$('comment-text').value.trim();if(!text)throw new Error('コメントを入力してください。')

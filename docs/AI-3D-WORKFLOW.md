@@ -259,7 +259,6 @@ AIの候補を人が修正すると確認済み状態を取り消し、もう一
 単に出力条件を通すために未解決事項を解決済みにしない。人が受け入れた表示上の近似や実物未検証の範囲は、
 採用判断と未実施の事実を併記して残す。
 
-
 ```sh
 node scripts/author-assembly.mjs validate \
   --workspace .local/assembly-work/new-model --for-export
