@@ -11,6 +11,10 @@
 デスカーンは `purimatu:desukan` → `desukan` に登録した。192パーツ、6塊、15手順。製作室で54件のコメントを解決して完成確認したrevision 1。
 制作中の訂正と次回への改善点は [デスカーン制作の振り返り](DESUKAN-RETROSPECTIVE.md)。
 
+ネギガナイトは `purimatu:negiganaito` → `negiganaito` revision 1。205ピース・5まとまり・13手順。
+43コメントと手動修正、ユーザーの形状・接続・手順の確認を反映した。
+[制作の振り返り](NEGIGANAITO-RETROSPECTIVE.md) に手順統合と柔軟性の表示近似を記録。
+
 ## 写真から新しい作品を作る
 
 [AIと人による3D制作の手順](AI-3D-WORKFLOW.md) に入力写真、根拠記録、作業用JSON、
@@ -88,7 +92,7 @@ node scripts/import-assembly.mjs \
 }
 ```
 
-画面にはパーツ番号と `unitNames` のパーツ名だけを表示する。合体途中のパーツ名は「からだ」とし、同じ名前の重複を許す。手順ごとのタイトルと説明文は持たない。
+画面にはパーツ番号と `unitNames` のパーツ名だけを表示する。合体途中の名前も `unitNames` に結果IDで指定できる。未指定時は「からだ」（完成形は「できあがり」）とし、同じ名前の重複を許す。手順ごとのタイトルと説明文は持たない。
 `combineUnits` に塊 ID の配列を指定すると、その塊の手順を `unit:<ID>:0` へまとめる。
 
 `sequence` は `unit:<ID>:<手順番号>` と `assembly:<手順番号>` を並べた文字列配列。

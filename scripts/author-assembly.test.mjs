@@ -37,6 +37,13 @@ describe('local assembly authoring', () => {
     expect(() => validateWorkspace({ workspace })).toThrow(/model.pieces/)
   })
 
+  it('accepts a name for an assembled group before saving the review', () => {
+    const guide = read(fixture)
+    const result = guide.variants[guide.defaultVariant].assembly[0].result
+    guide.reading = { ...guide.reading, unitNames: { ...guide.reading?.unitNames, [result]: 'けん' } }
+    expect(() => validateAuthorGuide(guide)).not.toThrow()
+  })
+
   it('validates a structurally complete draft without claiming human or physical review', () => {
     const { workspace } = setup()
     const data = validateWorkspace({ workspace })

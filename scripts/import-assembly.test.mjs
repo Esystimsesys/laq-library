@@ -128,7 +128,7 @@ describe('assembly importing', () => {
     const options = sandbox(guide)
     const other = { id: 'other', modelId: 'other:model', revision: 3 }
     put(path.join(options.root, 'src/data/assemblies.json'), [other])
-    const reading = { unitNames: { A1: 'まえの からだ' }, steps: { 'unit:A1:0': { title: 'ならべよう', description: 'ずと おなじに しよう' } } }
+    const reading = { unitNames: { A1: 'まえの からだ', M1: 'けん' }, steps: { 'unit:A1:0': { title: 'ならべよう', description: 'ずと おなじに しよう' } } }
     put(path.join(options.root, 'content/assemblies/metamon.json'), reading)
     const result = importAssembly(options)
     const output = read(path.join(options.root, 'public/assemblies/metamon/guide.json'))
