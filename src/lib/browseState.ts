@@ -15,13 +15,11 @@ type BrowseState = {
   scrollY: number
 }
 
-const initial: BrowseState = {
+let current: BrowseState = {
   filters: emptyFilters,
   shown: 0,
   scrollY: 0,
 }
-
-let current: BrowseState = { ...initial }
 
 export function getBrowseState(): BrowseState {
   return current
@@ -29,8 +27,4 @@ export function getBrowseState(): BrowseState {
 
 export function setBrowseState(patch: Partial<BrowseState>): void {
   current = { ...current, ...patch }
-}
-
-export function resetBrowseState(): void {
-  current = { ...initial }
 }

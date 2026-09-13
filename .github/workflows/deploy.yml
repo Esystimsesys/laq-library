@@ -32,8 +32,8 @@ jobs:
       # 全件（npm run test:e2e）は数分かかるので、手元で走らせる
       - run: npx playwright install --with-deps --only-shell chromium
       - run: npm run test:e2e:smoke
-      # GITHUB_PAGES=true でサブディレクトリ配信用のパスに切り替え、404.html も作る
-      - run: npm run build:pages
+      # Playwright の webServer が作成・検証した dist（404.html を含む）を配信する。
+      # ここで再ビルドせず、テスト済みの成果物をそのまま使う。
       # Pages の有効化はここではできない（GITHUB_TOKEN に権限が無く
       # enablement: true は Resource not accessible by integration で落ちる）。
       # リポジトリ設定側で Source を GitHub Actions にしておくこと。

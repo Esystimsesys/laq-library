@@ -23,9 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# macOS
-.DS_Store
-
 # 取り込みスクリプトが残す公式ページの HTML キャッシュ
 .cache
 test-results

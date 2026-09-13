@@ -38,8 +38,8 @@ export function filterModels(
   filters: Filters,
   user: UserState,
 ): Model[] {
-  const favorites = new Set(user.favorites)
-  // 検索語の分解は 1 回だけ。作品ごとにやり直すと 245 回むだに走る
+  const favorites = filters.status === 'favorite' ? new Set(user.favorites) : null
+  // 検索語の分解は 1 回だけ。作品ごとの繰り返しを避ける。
   const terms = queryTerms(filters.query)
 
   return list.filter((m) => {
@@ -52,7 +52,7 @@ export function filterModels(
     }
     switch (filters.status) {
       case 'favorite':
-        if (!favorites.has(m.id)) return false
+        if (!favorites?.has(m.id)) return false
         break
       case 'made':
         if (!user.made[m.id]) return false

@@ -1,8 +1,9 @@
 # LaQ 3D：再開用の短い引き継ぎ
 
-更新日：2026-09-13。過去の経緯ではなく、ここを入口に現行コードと対象の文書だけ確認する。
+2026-09-13までの3D制作・引き継ぎ記録。本文の公開状態・未コミット表記は記録時点の情報で、現行状態を示すものではない。
+現行仕様・制作手順は [文書一覧](README.md) から確認し、再開時は対象作品の制作記録とローカルの変更状態を確認する。
 
-## 現在地
+## 記録時点の状態
 
 - ネギガナイト（2026-09-13・完成確認）: 製作室43コメントと会話・手動修正を反映した205ピース・5まとまり・13手順を、ユーザーの完成承認により `purimatu:negiganaito` revision 1として本体へ取り込み。製作室reviewed・全コメントresolved、実物全体の試験はnot-performed。完成原本 `.local/assembly-work/negiganaito/guide.json` を生成器で上書きしない。[振り返り](NEGIGANAITO-RETROSPECTIVE.md) と [制作記録](NEGIGANAITO-3D.md) に記録。取り込み検証は `checks/final-import/`、本体画面は `/assembly/negiganaito`。commit・push・本番公開は未実施。
 

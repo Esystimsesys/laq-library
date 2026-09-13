@@ -75,6 +75,18 @@ describe('filterModels', () => {
     expect(ids(hits)).toEqual(['test:1'])
   })
 
+  it.each([
+    ['てぃらの', ['test:1']],
+    ['ティラノ', ['test:1']],
+    ['ティラノ きょうりゅう', ['test:1']],
+    ['ティラノ くるま', []],
+    ['ティラノ　きょうりゅう', ['test:1']],
+    ['', ['test:1', 'test:2', 'test:3']],
+    ['   ', ['test:1', 'test:2', 'test:3']],
+  ])('検索の表記ゆれ・AND・空入力: %j', (query, expected) => {
+    expect(ids(filterModels(sample, { ...emptyFilters, query }, emptyState))).toEqual(expected)
+  })
+
   it('むずかしさで絞る。レベルの無いものは対象外になる', () => {
     const hits = filterModels(
       sample,

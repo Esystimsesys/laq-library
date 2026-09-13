@@ -3,7 +3,13 @@
 LaQ は四角と三角の小さなパーツを組む玩具なので、その 4 枚を並べた絵にする。
 maskable 用は端が丸く切られても欠けないよう、絵を内側 60% に収める。
 """
+from __future__ import annotations
+
+from pathlib import Path
+
 from PIL import Image, ImageDraw
+
+OUT = Path(__file__).resolve().parent.parent / "public"
 
 PAPER = (255, 246, 229)
 INK = (58, 42, 34)
@@ -51,9 +57,9 @@ def save(name: str, size: int, scale: float, background):
     if background:
         flat = Image.new("RGB", img.size, background)
         flat.paste(img, mask=img.split()[3])
-        flat.save(f"public/{name}")
+        flat.save(OUT / name)
     else:
-        img.save(f"public/{name}")
+        img.save(OUT / name)
     print("wrote", name)
 
 

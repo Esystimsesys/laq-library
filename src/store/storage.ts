@@ -110,11 +110,3 @@ export function saveState(state: UserState): boolean {
     return false
   }
 }
-
-export function clearState(): void {
-  try {
-    localStorage.removeItem(KEY)
-  } catch {
-    // 何もしない
-  }
-}
