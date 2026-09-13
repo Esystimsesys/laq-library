@@ -1,7 +1,9 @@
 # 3D の組み立てガイド
 
 作品一覧とは別に、`src/data/assemblies.json` が作品 ID と組み立てガイドを結び付ける。
-現在は `purimatu:metamon` に `metamon` を登録している。取り込んだ候補は
+メタモン・ジャローダ・デスカーン・イワパレス・ネギガナイトの5作品を登録している。
+
+メタモンは `purimatu:metamon` → `metamon`。取り込んだ候補は
 `gap-hands-4-3-core-3` のみで、9 個の塊、53 パーツ。塊を作る 9 手順と合体する 8 手順を
 混ぜた、17 手順の一本道として表示する。C1・C2 は各 8 パーツを一度に組む全体図にまとめる。
 
@@ -10,6 +12,9 @@
 
 デスカーンは `purimatu:desukan` → `desukan` に登録した。192パーツ、6塊、15手順。製作室で54件のコメントを解決して完成確認したrevision 1。
 制作中の訂正と次回への改善点は [デスカーン制作の振り返り](DESUKAN-RETROSPECTIVE.md)。
+
+イワパレスは `purimatu:iwaparesu` → `iwaparesu` revision 2。248パーツ・8塊・18手順。
+[制作記録と振り返り](IWAPARESU-3D.md) に完成確認と手順統合を記録。
 
 ネギガナイトは `purimatu:negiganaito` → `negiganaito` revision 1。205ピース・5まとまり・13手順。
 43コメントと手動修正、ユーザーの形状・接続・手順の確認を反映した。
@@ -86,7 +91,9 @@ node scripts/import-assembly.mjs \
 
 ## パーツ名と手順の順番
 
-任意の `content/assemblies/<name>.json` がある場合、ガイドの `reading` へ取り込む。
+従来のプロトタイプ取り込みでは、任意の `content/assemblies/<name>.json` がある場合、
+ガイドの `reading` へ取り込む。メタモンの設定はこの再取り込み経路とテストで使用する。
+制作室で確認済みの出力には `--use-source-reading` を指定し、出力内の `reading` を使う。
 パーツ名・全体図にまとめる塊・手順の順番を独立して編集できる。書き換えたら再取り込みする。
 
 ```json

@@ -28,16 +28,6 @@ export function queryTerms(query: string): string[] {
   return query.split(/[\s　]+/).map(normalize).filter(Boolean)
 }
 
-/**
- * 空白区切りの語をすべて含むものを拾う（AND 検索）。
- * 語が 1 つも無いときは全件を通す。
- */
-export function matchesQuery(haystack: string, query: string): boolean {
-  const terms = queryTerms(query)
-  if (terms.length === 0) return true
-  return terms.every((t) => haystack.includes(t))
-}
-
 export type Filters = {
   only3d: boolean
   query: string

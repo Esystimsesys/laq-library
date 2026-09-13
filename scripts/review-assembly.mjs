@@ -82,7 +82,7 @@ export function createReviewServer({ workspace }) {
         file = safeWorkspaceFile(workspace,photo.path)
       } else {
         const assets = new Map([
-          ['/','tools/assembly-review/index.html'], ['/review.js','tools/assembly-review/review.js'], ['/review.css','tools/assembly-review/review.css'], ['/transforms.js','tools/assembly-review/transforms.js'],
+          ['/','tools/assembly-review/index.html'], ['/review.js','tools/assembly-review/review.js'], ['/review.css','tools/assembly-review/review.css'], ['/transforms.js','tools/assembly-review/transforms.js'], ['/pieces.js','tools/assembly-review/pieces.js'], ['/orientations.js','tools/assembly-review/orientations.js'],
           ...['index.html','boot.js','unit-instructions.js','realistic-parts.js','unit-instructions.css','library.css'].map(name=>[`/assemblies/viewer/${name}`,`public/assemblies/viewer/${name}`]),
           ['/assemblies/vendor/three.min.js','public/assemblies/vendor/three.min.js'],
         ])

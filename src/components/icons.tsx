@@ -60,26 +60,6 @@ export function CheckIcon(props: Props) {
   )
 }
 
-/** 「つくった」タブ。丸のなかにチェックを入れたスタンプ風 */
-export function StampIcon({ filled, ...props }: Props) {
-  return (
-    <Svg {...props}>
-      <circle
-        cx="12"
-        cy="12"
-        r="8.6"
-        {...stroke}
-        fill={filled ? 'currentColor' : 'none'}
-      />
-      <path
-        d="M7.8 12.3 10.8 15.3 16.2 8.9"
-        {...stroke}
-        stroke={filled ? 'var(--card)' : 'currentColor'}
-      />
-    </Svg>
-  )
-}
-
 export function BookIcon(props: Props) {
   return (
     <Svg {...props}>

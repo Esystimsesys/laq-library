@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isFiltering, matchesQuery, normalize, emptyFilters } from './search'
+import { isFiltering, normalize, emptyFilters } from './search'
 
 describe('normalize', () => {
   it('カタカナをひらがなに寄せる', () => {
@@ -20,29 +20,6 @@ describe('normalize', () => {
 
   it('長音は音の一部なので残す', () => {
     expect(normalize('レーサー')).toBe('れーさー')
-  })
-})
-
-describe('matchesQuery', () => {
-  const haystack = normalize('ティラノサウルス きょうりゅう 上級')
-
-  it('かなの書きかたが違っても当たる', () => {
-    expect(matchesQuery(haystack, 'てぃらの')).toBe(true)
-    expect(matchesQuery(haystack, 'ティラノ')).toBe(true)
-  })
-
-  it('空白で区切った語をすべて含むものだけ当たる（AND）', () => {
-    expect(matchesQuery(haystack, 'ティラノ きょうりゅう')).toBe(true)
-    expect(matchesQuery(haystack, 'ティラノ くるま')).toBe(false)
-  })
-
-  it('全角の空白でも区切れる', () => {
-    expect(matchesQuery(haystack, 'ティラノ　きょうりゅう')).toBe(true)
-  })
-
-  it('空の入力はすべて通す', () => {
-    expect(matchesQuery(haystack, '')).toBe(true)
-    expect(matchesQuery(haystack, '   ')).toBe(true)
   })
 })
 
