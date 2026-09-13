@@ -1,4 +1,6 @@
 import { transformPieces } from './transforms.js'
+import { attachPiece, reattachPiece, replacePiece, deletePiece, availableSlots, replacementParts, slotMarker, plateFaceState, flipPlate } from './pieces.js'
+import { jointOrientations, applyJointOrientation } from './orientations.js'
 const $=id=>document.getElementById(id), clone=value=>structuredClone(value)
 let data, guide, review, photos, undo=[], changes=[], ready=false, dirty=false, photoRotation=0, showResolved=false, busy=false
 const message=(text,error=false)=>{$('message').textContent=text;$('message').classList.toggle('error',error)}
@@ -35,9 +37,69 @@ function selectPiece(){
   const unit=variant().units.find(u=>u.pieceIds.includes(p.id));$('piece-info').textContent=`No.${p.partNo} / まとまり ${unit?label(unit.id):'なし'} / 選択 ${selectedIds().length} パーツ`
   $('color').value=p.color
   const connections=variant().model.connections.filter(c=>c.joint===p.id||c.ports.some(port=>port.piece===p.id))
-  $('connections').textContent='接続: '+(connections.map(c=>`${pieceLabel(c.joint)} → ${c.ports.map(port=>`${pieceLabel(port.piece)} (辺${port.socket})`).join(', ')}`).join(' / ')||'なし')
+  $('connections').textContent='接続: '+(connections.map(c=>`${pieceLabel(c.joint)} → ${c.ports.map(port=>`${pieceLabel(port.piece)} (辺${port.socket+1}・差し込み口${port.port+1})`).join(', ')}`).join(' / ')||'なし')
   if(ready)post({command:'select',ids:selectedIds()})
+  editorFields(p)
   commentContext()
+}
+const partNames={1:'四角',2:'三角',3:'平面（細）',4:'平面（幅広）',5:'120°',6:'90°',7:'3方向'}
+const partOption=no=>option(no,`No.${no} · ${partNames[no]}`)
+function setOptions(id,items){const previous=$(id).value;$(id).replaceChildren(...items);if(items.some(o=>o.value===previous))$(id).value=previous}
+function editorFields(piece){
+  setOptions('attach-slot',availableSlots(guide,piece.id).map(s=>option(s.value,s.label)))
+  setOptions('add-part',(piece.partNo<=2?[3,4,5,6,7]:[1,2]).map(partOption))
+  setOptions('replace-part',replacementParts(guide,piece.id).map(partOption))
+  $('replace-piece').disabled=!$('replace-part').options.length
+  setOptions('reattach-target',variant().model.pieces.filter(p=>p.id!==piece.id&&(p.partNo<=2)!==(piece.partNo<=2)).map(p=>option(p.id,pieceLabel(p.id))))
+  attachLocation();reattachFields();orientationFields(piece)
+  const face=plateFaceState(guide,piece.id)
+  $('flip-face').disabled=!face.canFlip;$('flip-viewer-face').disabled=!face.canFlip
+  $('face-hint').textContent=face.reason
+}
+let orientationOptions=[]
+function orientationFields(piece){
+  const result=jointOrientations(guide,piece.id)
+  orientationOptions=result.options
+  $('joint-orientation').replaceChildren(...orientationOptions.map((item,i)=>option(item.id,`${item.current?'現在 · ':''}向き ${i+1} · ${item.label}`)))
+  const current=orientationOptions.find(item=>item.current)
+  if(current)$('joint-orientation').value=current.id
+  $('joint-orientation').disabled=!orientationOptions.length
+  $('next-orientation').disabled=!orientationOptions.some(item=>!item.current)
+  $('cycle-viewer-orientation').disabled=$('next-orientation').disabled
+  $('orientation-status').textContent=result.reason||`接続が合う向きが ${orientationOptions.length} 通りあります。`
+  orientationChoice()
+}
+function orientationChoice(){
+  const item=orientationOptions.find(item=>item.id===$('joint-orientation').value)
+  $('apply-orientation').disabled=!item||item.current
+  $('orientation-mapping').textContent=item?item.ports.map(port=>`${pieceLabel(port.piece)}の辺 ${port.socket+1} → 差し込み口 ${port.port+1}`).join('\n'):''
+}
+async function changeOrientation(id){
+  const next=clone(guide),pieceId=$('piece').value,item=orientationOptions.find(item=>item.id===id)
+  if(!item||item.current)return
+  applyJointOrientation(next,pieceId,id)
+  await change(next,`${pieceLabel(pieceId)}: 接続を保って向きを変更（${item.label}）`)
+  message('接続先の板を動かさず、向きと差し込み口を切り替えました。「1つ戻す」で取り消せます。')
+}
+function attachLocation(){
+  const hasSlot=$('attach-slot').options.length>0
+  $('attach-piece').disabled=!hasSlot
+  $('attach-hint').textContent=hasSlot?'図のオレンジの印がはめる場所です。追加後に形と重なりを確認してください。':'空いている辺・差し込み口がありません。別のパーツを選んでください。'
+  if(ready)post({command:'edit-marker',pieceId:$('piece').value,marker:hasSlot?slotMarker(guide,$('piece').value,Number($('attach-slot').value)):null})
+}
+function reattachFields(){
+  const target=$('reattach-target').value
+  // The selected piece's old links will be removed before snapping.
+  const next=clone(guide),model=next.variants[next.defaultVariant].model,id=$('piece').value
+  model.connections=model.connections.filter(c=>c.joint!==id).map(c=>({...c,ports:c.ports.filter(p=>p.piece!==id)})).filter(c=>c.ports.length)
+  setOptions('reattach-slot',(target?availableSlots(next,target):[]).map(s=>option(s.value,s.label)))
+  $('reattach-piece').disabled=!$('reattach-slot').options.length
+}
+// Keep historical comments, and drop only obsolete evidence links in saved data.
+function reviewForGuide(target){
+  const result=clone(review),ids=new Set(target.variants[target.defaultVariant].model.pieces.map(p=>p.id))
+  result.evidence.forEach(e=>{e.pieceIds=e.pieceIds.filter(id=>ids.has(id))})
+  return result
 }
 function photoStyle(){$('source').style.transform=`rotate(${photoRotation}deg)`;$('source').style.maxWidth=`${$('photo-zoom').value}%`;$('source').style.maxHeight=`${Math.max(100,$('source').parentElement.clientHeight-20)*Number($('photo-zoom').value)/100}px`}
 function showPhoto(resetView=true){const p=photos.find(p=>p.id===$('photo').value);$('source').hidden=!p;if(p){const src='/photo/'+encodeURIComponent(p.id);if($('source').getAttribute('src')!==src)$('source').src=src;$('photo-view').value=p.view;$('photo-notes').value=p.evidence}if(resetView){photoRotation=0;$('photo-zoom').value='100'}photoStyle();commentContext();navState()}
@@ -84,7 +146,7 @@ async function request(url,body){const res=await fetch(url,{method:'POST',header
 async function change(next,description){
   await request('/api/validate',{guide:next});syncFields();undo.push({guide:clone(guide),changes:[...changes]});guide=next;changes.push(description);markDirty();$('undo').disabled=false;populateSteps();fillPieces();if(ready)post({command:'replace-guide',guide});message(description+'。接続位置も確認してください。')
 }
-async function save(markReviewed){message('保存しています…');syncFields();const result=await request('/api/save',{baseVersion:data.version,guide,review,photos,changes,markReviewed});accept(result,true);if(!ready)$('viewer').src='/assemblies/viewer/index.html?id=draft&review=1&t='+Date.now()+'#phase=complete';message(markReviewed?'確認記録とガイドを保存しました。取り込み用に出力できます。':'変更を保存しました。前の状態は history に残しています。')}
+async function save(markReviewed){message('保存しています…');syncFields();const result=await request('/api/save',{baseVersion:data.version,guide,review:reviewForGuide(guide),photos,changes,markReviewed});accept(result,true);if(!ready)$('viewer').src='/assemblies/viewer/index.html?id=draft&review=1&t='+Date.now()+'#phase=complete';message(markReviewed?'確認記録とガイドを保存しました。取り込み用に出力できます。':'変更を保存しました。前の状態は history に残しています。')}
 // Saving and validation replace local state when they finish. Keep edits and
 // other requests out of that interval; inert preserves each control's own disabled state.
 async function runExclusive(callback){
@@ -99,12 +161,33 @@ function handle(id,callback){$(id).onclick=()=>runExclusive(callback)}
 // Comment actions save at once, so a comment is never left only in the page.
 async function saveReviewOnly(){
   message('コメントを保存しています…')
-  syncFields();const result=await request('/api/save',{baseVersion:data.version,guide:data.guide,review,photos,changes:[],markReviewed:false})
-  data=result;review=clone(data.review);photos=clone(data.manifest.photos);dirty=changes.length>0
+  syncFields();const pendingEvidence=clone(review.evidence);const result=await request('/api/save',{baseVersion:data.version,guide:data.guide,review:reviewForGuide(data.guide),photos,changes:[],markReviewed:false})
+  data=result;review=clone(data.review);if(changes.length)review.evidence=pendingEvidence;photos=clone(data.manifest.photos);dirty=changes.length>0
   $('state').textContent=dirty?'下書き · 未保存':review.status==='reviewed'?'確認済み':'下書き';$('save').disabled=!dirty;reviewLists()
 }
 async function commentSave(mutate,done){const before=clone(review.comments??[]);mutate();try{await saveReviewOnly();message(done);$('comment-status').textContent=done}catch(e){review.comments=before;reviewLists();message(e.message,true);$('comment-status').textContent=e.message}}
 $('color').replaceChildren(...['lavender','skyblue','pink','red','blue','yellow','green','lime','orange','purple','white','black','brown','gray','lightblue','transparent','clear'].map(color=>option(color,colorNames[color])))
+$('add-color').replaceChildren(...[...$('color').options].map(o=>option(o.value,o.textContent)))
+for(const id of ['flip-face','flip-viewer-face'])handle(id,async()=>{
+  const next=clone(guide),pieceId=$('piece').value
+  flipPlate(next,pieceId)
+  await change(next,`${pieceLabel(pieceId)}の表裏を反転`)
+  message('板の位置と接続を保って表裏を入れ替えました。「1つ戻す」で取り消せます。')
+})
+$('joint-orientation').onchange=orientationChoice
+handle('apply-orientation',()=>changeOrientation($('joint-orientation').value))
+for(const id of ['next-orientation','cycle-viewer-orientation'])handle(id,()=>{const index=orientationOptions.findIndex(item=>item.current);return changeOrientation(orientationOptions[(index+1)%orientationOptions.length]?.id)})
+$('attach-slot').onchange=attachLocation;$('reattach-target').onchange=reattachFields
+handle('attach-piece',async()=>{
+  const next=clone(guide),targetId=$('piece').value
+  const id=attachPiece(next,{targetId,targetSlot:Number($('attach-slot').value),partNo:Number($('add-part').value),color:$('add-color').value,id:'manual-'+crypto.randomUUID()})
+  await change(next,`${pieceLabel(targetId)}に No.${$('add-part').value} を追加`)
+  $('piece').value=id;$('scope').value='piece';selectPiece()
+  message('パーツをはめました。位置と重なりを確認し、「変更を保存」で保存してください。')
+})
+handle('replace-piece',()=>{const next=clone(guide),id=$('piece').value,no=Number($('replace-part').value);replacePiece(next,id,no);return change(next,`${pieceLabel(id)}を No.${no} に交換`)})
+handle('reattach-piece',async()=>{const next=clone(guide),id=$('piece').value;reattachPiece(next,{pieceId:id,targetId:$('reattach-target').value,targetSlot:Number($('reattach-slot').value)});await change(next,`${pieceLabel(id)}をつなぎ直し`);$('step').value='complete';showStep()})
+handle('delete-piece',async()=>{const next=clone(guide),id=$('piece').value,description=pieceLabel(id)+'を削除';deletePiece(next,id);await change(next,description);reviewLists();message('選択パーツを接続・手順から削除しました。「1つ戻す」で取り消せます。')})
 $('piece').onchange=()=>{$('scope').value='piece';selectPiece()};$('scope').onchange=selectPiece;$('step').onchange=showStep
 $('photo').onchange=showPhoto;$('photo-zoom').oninput=photoStyle;$('rotate-photo').onclick=()=>{photoRotation=(photoRotation+90)%360;photoStyle()}
 for(const id of ['reviewer','notes','physical','photo-view','photo-notes'])$(id).oninput=()=>{syncFields();markDirty()}

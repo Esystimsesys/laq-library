@@ -36,6 +36,7 @@
       if (event.data.command === 'replace-guide') {
         try { window.LaQLibraryViewer.replaceGuide(event.data.guide);send({type:'updated'}); } catch(error) {send({type:'error',message:error.message});}
       }
+      if (event.data.command === 'edit-marker' && params.get('review') === '1') window.LaQLibraryViewer.editMarker(event.data);
       if (event.data.command === 'select') window.LaQLibraryViewer.selectPieces(event.data.ids || []);
       if (event.data.command === 'show') {
         try {

@@ -98,3 +98,19 @@ it('keeps a manually oriented joint in place after its last plate is removed',()
   const connected=bounds({ports:[{port:0,piece:'plate',socket:0}]}),detached=bounds(null)
   connected.forEach((value,i)=>expect(detached[i]).toBeCloseTo(value,6))
 })
+
+it.each([1,2])('swaps the visible front and rear relief of No.%i while preserving its socket outline',partNo=>{
+  const vertices=partNo===1?[[-.5,-.5,0],[.5,-.5,0],[.5,.5,0],[-.5,.5,0]]:[[-.5,-Math.sqrt(3)/6,0],[.5,-Math.sqrt(3)/6,0],[0,Math.sqrt(3)/3,0]]
+  const material=new T.MeshStandardMaterial(),piece={partNo,pose:{vertices,normal:[0,0,1]}}
+  const before=parts.plate(T,piece,material),after=parts.plate(T,{...piece,pose:{...piece.pose,normal:[0,0,-1]}},material)
+  before.updateMatrixWorld(true);after.updateMatrixWorld(true)
+  const sample=partNo===1?new T.Vector3(.25,.25,0):new T.Vector3(0,Math.sqrt(3)/3*.71,0)
+  const positive=new T.Vector3(0,0,1),negative=new T.Vector3(0,0,-1)
+  const front=ray(before,sample,positive),rear=ray(before,sample,negative)
+  expect(front).toBeDefined();expect(rear).toBeDefined()
+  expect(Math.abs(front.distance-rear.distance)).toBeGreaterThan(.01)
+  expect(ray(after,sample,positive).distance).toBeCloseTo(rear.distance,6)
+  expect(ray(after,sample,negative).distance).toBeCloseTo(front.distance,6)
+  const a=new T.Box3().setFromObject(before),b=new T.Box3().setFromObject(after)
+  for(const axis of ['x','y']){expect(a.min[axis]).toBeCloseTo(b.min[axis],6);expect(a.max[axis]).toBeCloseTo(b.max[axis],6)}
+})

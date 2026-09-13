@@ -4,3 +4,9 @@
 .editing>details{margin-top:18px}
 .nav{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}.nav label{flex:1;min-width:180px}.nav button{margin:10px 0;white-space:nowrap}
 #apply-color{background:#256145;color:white}
+
+.piece-editor{padding:12px;background:#f0f6f1;border-radius:10px}.piece-editor h3{margin-top:0}#attach-piece{background:#256145;color:white}.danger{color:#a62e24;border-color:#d9a39d}#transform-panel>details{padding:12px}#attach-hint{min-height:1.7em}
+
+#orientation-panel{margin-bottom:14px}#next-orientation{background:#256145;color:white}#orientation-mapping{white-space:pre-line}
+
+#face-panel{margin-bottom:14px}#flip-face{background:#256145;color:white}

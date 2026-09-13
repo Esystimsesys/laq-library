@@ -12,7 +12,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const colors={yellow:0xf1ce22,black:0x262b32,red:0xd74b48,white:0xf6f2dc,skyblue:0x6ec3df,blue:0x1d6eb7,transparent:0xc3d7d7,clear:0xc3d7d7,lavender:0xc89ad0,pink:0xed9bbb,purple:0x975abb,orange:0xf39432,green:0x469956,lime:0xc2df30,brown:0x885a42,gray:0x999999,lightblue:0x6ec3df};
 const colorNames={yellow:'黄',black:'黒',red:'赤',white:'白',skyblue:'水色',blue:'青',transparent:'透明',clear:'透明',lavender:'薄紫',pink:'ピンク',purple:'紫',orange:'オレンジ',green:'緑',lime:'黄緑',brown:'茶',gray:'灰',lightblue:'水色'};
 let mode=data.defaultVariant,phase='catalog',selectedUnit=null,variant,members,sequence=[],labelMembers={},step=0,action=0,explode=0,zoom=1,yaw=defaultView.yaw,pitch=defaultView.pitch,model,by,current,actions=[],detailPoints,preview=null;
-let previewColor=null;
+let previewColor=null,editMarker=null;
 let detailsOpen=false,detailStageKey='';
 let explodeFrame=0,pinchDistance=0,separationOffsets=new Map();const stagePointers=new Map(),basePieceBounds=new Map(),pieceBounds=new Map();
 const root=new T.Group();root.rotation.x=-Math.PI/2;const scene=new T.Scene();scene.add(root);
@@ -66,7 +66,14 @@ function detachMainParts(){while(root.children.length)root.remove(root.children[
 function clearMainPartCache(){detachMainParts();for(const group of mainPartCache.values())dispose(group);mainPartCache.clear();}
 function socket(a){const p=by.get(a.piece),vs=p.pose.vertices.map(V),one=vs[a.socket],two=vs[(a.socket+1)%vs.length],mid=one.clone().add(two).multiplyScalar(.5);return {a:one,b:two,mid,axis:two.clone().sub(one).normalize(),inward:center(p).sub(mid).normalize(),normal:V(p.pose.normal)};}
 function fit(cam,box,host,y,p,z=1){const r=host.getBoundingClientRect();if(!r.width||!r.height)return;cam.aspect=r.width/r.height;const target=box.getCenter(new T.Vector3()),toward=new T.Vector3(Math.sin(y)*Math.cos(p),Math.sin(p),Math.cos(y)*Math.cos(p)),right=new T.Vector3(Math.cos(y),0,-Math.sin(y)),up=new T.Vector3().crossVectors(toward,right),vf=T.MathUtils.degToRad(cam.fov)/2,hf=Math.atan(Math.tan(vf)*cam.aspect);const labelled=host===$('stage')&&['unit','assembly'].includes(phase)&&preview===null,sideRoom=labelled?Math.max(.4,(r.width-Math.max(72,144-.2*r.width))/r.width):1;let d=0;for(const x of[box.min.x,box.max.x])for(const y of[box.min.y,box.max.y])for(const z of[box.min.z,box.max.z]){const v=new T.Vector3(x,y,z).sub(target);d=Math.max(d,v.dot(toward)+1.2*Math.abs(v.dot(right))/(Math.tan(hf)*sideRoom),v.dot(toward)+1.2*Math.abs(v.dot(up))/Math.tan(vf));}cam.position.copy(toward.multiplyScalar(Math.max(d,.2)/z).add(target));cam.lookAt(target);cam.updateProjectionMatrix();cam.updateMatrixWorld();}
-function render(){const r=$('stage').getBoundingClientRect();renderer.getSize(renderSize);if(renderSize.x!==r.width||renderSize.y!==r.height)renderer.setSize(r.width,r.height,false);fit(camera,bounds,$('stage'),yaw,pitch,zoom);renderer.render(scene,camera);drawGuide();drawUnitLabels();renderDetail();}
+function render(){const r=$('stage').getBoundingClientRect();renderer.getSize(renderSize);if(renderSize.x!==r.width||renderSize.y!==r.height)renderer.setSize(r.width,r.height,false);fit(camera,bounds,$('stage'),yaw,pitch,zoom);renderer.render(scene,camera);drawGuide();drawUnitLabels();drawEditMarker();renderDetail();}
+function drawEditMarker(){
+ if(!reviewMode||!editMarker?.marker||!groups.has(editMarker.pieceId))return;
+ const {position,label}=editMarker.marker;
+ if(!Array.isArray(position)||position.length!==3||!position.every(Number.isFinite))return;
+ const p=project(groups.get(editMarker.pieceId).localToWorld(V(position)),camera,$('stage'));
+ svg.innerHTML+=`<g class="edit-slot-marker">${mark(p,esc(label))}</g>`;
+}
 function project(v,cam,host){const p=v.clone().project(cam),r=host.getBoundingClientRect();return{x:(p.x+1)*r.width/2,y:(1-p.y)*r.height/2};}
 const defs=id=>`<defs><marker id="${id}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="${8*arrowScale}" markerHeight="${8*arrowScale}" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#bf5217"/></marker></defs>`;
 const line=(a,b,dash=false,arrow='')=>`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#bf5217" stroke-width="${3*arrowScale}" ${dash?`stroke-dasharray="${6*arrowScale} ${5*arrowScale}"`:''} ${arrow?`marker-end="url(#${arrow})"`:''}/>`;
@@ -261,6 +268,7 @@ $('fit').onclick=()=>{zoom=1;render();};$('zoom-in').onclick=()=>{zoom=Math.min(
    try{clearMainPartCache();for(const key of Object.keys(data))delete data[key];Object.assign(data,next,{photos:[],limits:[]});mode=data.defaultVariant;thumbs.clear();build();}
    catch(error){clearMainPartCache();for(const key of Object.keys(data))delete data[key];Object.assign(data,previous);mode=data.defaultVariant;build();throw error;}
   },
+  editMarker(request){if(!reviewMode)return;editMarker=request;render();},
   selectPieces(ids){
    for(const [id,g]of groups)g.traverse(o=>{if(o.isMesh&&o.material.emissive){o.material.emissive.setHex(ids.includes(id)?0x0066cc:0);o.material.emissiveIntensity=ids.includes(id)?.45:0;}});render();
   },
