@@ -81,6 +81,9 @@ node scripts/import-assembly.mjs \
 ガイドには `name`、`displayName`、`article` を補う。元記事の写真・試作の HTML・その他の
 調査資料はコピーしない。`photos` と写真位置を使う `limits` は空配列にする。
 
+共通ビューアーの初期表示と手順切替時は「まえ」（yaw 0、pitch 0.1ラジアン）を使う。
+「ななめ」などの方向プリセットとドラッグ回転は任意で選べる。モデルの姿勢・座標は変更しない。
+
 ## パーツ名と手順の順番
 
 任意の `content/assemblies/<name>.json` がある場合、ガイドの `reading` へ取り込む。
