@@ -7,10 +7,11 @@ const embeddedMode=new URLSearchParams(location.search).has('embedded');
 // Use the review room's compact arrows in both viewers.
 const arrowScale=.5;
 const minArrowLength=12;
+const defaultView={yaw:0,pitch:.1};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const colors={yellow:0xf1ce22,black:0x262b32,red:0xd74b48,white:0xf6f2dc,skyblue:0x6ec3df,blue:0x1d6eb7,transparent:0xc3d7d7,clear:0xc3d7d7,lavender:0xc89ad0,pink:0xed9bbb,purple:0x975abb,orange:0xf39432,green:0x469956,lime:0xc2df30,brown:0x885a42,gray:0x999999,lightblue:0x6ec3df};
 const colorNames={yellow:'黄',black:'黒',red:'赤',white:'白',skyblue:'水色',blue:'青',transparent:'透明',clear:'透明',lavender:'薄紫',pink:'ピンク',purple:'紫',orange:'オレンジ',green:'緑',lime:'黄緑',brown:'茶',gray:'灰',lightblue:'水色'};
-let mode=data.defaultVariant,phase='catalog',selectedUnit=null,variant,members,sequence=[],labelMembers={},step=0,action=0,explode=0,zoom=1,yaw=-.3,pitch=.35,model,by,current,actions=[],detailPoints,preview=null;
+let mode=data.defaultVariant,phase='catalog',selectedUnit=null,variant,members,sequence=[],labelMembers={},step=0,action=0,explode=0,zoom=1,yaw=defaultView.yaw,pitch=defaultView.pitch,model,by,current,actions=[],detailPoints,preview=null;
 let previewColor=null;
 let detailsOpen=false,detailStageKey='';
 let explodeFrame=0,pinchDistance=0,separationOffsets=new Map();const stagePointers=new Map(),basePieceBounds=new Map(),pieceBounds=new Map();
@@ -134,7 +135,7 @@ function drawUnitLabels(){
 function indexVariant(){variant=data.variants[mode];model=variant.model;by=new Map(model.pieces.map(p=>[p.id,p]));members={};for(const u of variant.units)members[u.id]=u.pieceIds;for(const s of variant.assembly)members[s.result]=s.visiblePieces;}
 function saveRoute(){const params=new URLSearchParams({mode,phase,step:String(step)});if(selectedUnit)params.set('unit',selectedUnit);history.replaceState(null,'','#'+params);}
 function go(nextPhase,unit=null,nextStep=0,focus=true){phase=nextPhase;selectedUnit=unit;step=nextStep;zoom=1;explode=reviewMode?1:phase==='assembly'?.65:0;$('explode').value=String(explode*100);build();saveRoute();if(focus)$('workspace').scrollIntoView({block:'start',behavior:'instant'});}
-function switchVariant(id,focus=false){mode=id;indexVariant();yaw=id==='train'?-.3:.3;pitch=.35;go('catalog',null,0,false);if(focus)$('catalog').scrollIntoView({block:'start',behavior:'instant'});}
+function switchVariant(id,focus=false){mode=id;indexVariant();yaw=defaultView.yaw;pitch=defaultView.pitch;go('catalog',null,0,false);if(focus)$('catalog').scrollIntoView({block:'start',behavior:'instant'});}
 function openUnit(unit){if(unit.recipe){switchVariant(unit.recipe.variant,true);return;}go('unit',unit.id);}
 const returnRoutes=[];
 function openReference(id){returnRoutes.push({mode,phase,selectedUnit,step,result:current.result});const unit=variant.units.find(u=>u.id===id);if(unit){openUnit(unit);return;}const i=variant.assembly.findIndex(s=>s.result===id);if(i>=0)go('assembly',null,i);}
@@ -238,7 +239,7 @@ $('finish-unit').onclick=()=>{if(phase==='assembly'){if(mode==='leader'||mode===
 $('back-assembly').onclick=()=>{const route=returnRoutes.pop();if(!route)return;mode=route.mode;go(route.phase,route.selectedUnit,route.step);};
 $('fit').onclick=()=>{zoom=1;render();};$('zoom-in').onclick=()=>{zoom=Math.min(3,zoom*1.2);render();};$('zoom-out').onclick=()=>{zoom=Math.max(.65,zoom/1.2);render();};$('explode').oninput=queueExplosion;$('explode').onchange=flushExplosion;$('xray').onchange=build;$('guide-prev').onclick=()=>chooseAction(action-1);$('guide-next').onclick=()=>chooseAction(action+1);$('return-guide').onclick=()=>{preview=null;$('return-guide').hidden=true;actionButtons();syncDetails();if(actions.length)chooseAction(action);else render();};
  $('show-connections').onclick=()=>{detailsOpen=!detailsOpen;preview=null;$('return-guide').hidden=true;syncDetails();actionButtons();if(detailsOpen)chooseAction(action);else render();};
- for(const [label,y,p]of[['ななめ',.3,.35],['まえ',0,.1],['よこ',Math.PI/2,.15],['うえ',.4,1.3],['した',.4,-1.3]]){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{yaw=y;pitch=p;zoom=1;render();};$('presets').append(b);}
+ for(const [label,y,p]of[['ななめ',.3,.35],['まえ',defaultView.yaw,defaultView.pitch],['よこ',Math.PI/2,.15],['うえ',.4,1.3],['した',.4,-1.3]]){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{yaw=y;pitch=p;zoom=1;render();};$('presets').append(b);}
  const ray=new T.Raycaster(),stage=$('stage');
  const pointerGap=()=>{const [a,b]=[...stagePointers.values()];return a&&b?Math.hypot(a.x-b.x,a.y-b.y):0;};
  stage.onpointerdown=e=>{stagePointers.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,tap:true});stage.setPointerCapture(e.pointerId);if(stagePointers.size>1){for(const point of stagePointers.values())point.tap=false;pinchDistance=pointerGap();}};
@@ -265,7 +266,7 @@ $('fit').onclick=()=>{zoom=1;render();};$('zoom-in').onclick=()=>{zoom=Math.min(
   },
   show(request){
    document.body.dataset.view=request.phase==='parts'?'part':'model';
-   previewColor=request.partColor||null;$('xray').checked=false;yaw=.3;pitch=.35;detailYaw=.4;detailPitch=.4;
+   previewColor=request.partColor||null;$('xray').checked=false;yaw=defaultView.yaw;pitch=defaultView.pitch;detailYaw=.4;detailPitch=.4;
    if(request.phase==='parts'){
     go('complete',null,0,false);preview=request.partNo||1;
     $('guide').hidden=false;$('actions').replaceChildren();$('return-guide').hidden=true;

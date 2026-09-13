@@ -181,11 +181,12 @@ export function validateSourceGuide(guide) {
   const variant = validateGuide(guide)
   const record = (value, label) => check(value && typeof value === 'object' && !Array.isArray(value), `${label} must be an object`)
   const byKey = stages(variant), unitIds = new Set(variant.units.map(unit => unit.id))
+  const groupIds = new Set([...unitIds, ...variant.assembly.map(stage => stage.result)])
   const reading = guide.reading
   if (reading !== undefined) {
     record(reading, 'reading')
     for (const field of ['unitNames', 'steps']) if (reading[field] !== undefined) record(reading[field], `reading.${field}`)
-    for (const [id, label] of Object.entries(reading.unitNames ?? {})) check(unitIds.has(id) && text(label), `invalid reading unit: ${id}`)
+    for (const [id, label] of Object.entries(reading.unitNames ?? {})) check(groupIds.has(id) && text(label), `invalid reading unit: ${id}`)
     ids(reading.combineUnits ?? [], unitIds, 'reading.combineUnits', true)
     for (const [key, copy] of Object.entries(reading.steps ?? {})) check(byKey.has(key) && text(copy?.title) && text(copy?.description), `invalid reading step: ${key}`)
     if (reading.sequence !== undefined) validateSequence(variant, reading.sequence)
@@ -289,7 +290,7 @@ export function importAssembly({ source, name = 'metamon', modelId, title, artic
     delete reading.steps
     check(reading && typeof reading === 'object' && !Array.isArray(reading), 'reading must be an object')
     if (reading.unitNames !== undefined) check(reading.unitNames && typeof reading.unitNames === 'object' && !Array.isArray(reading.unitNames), 'reading.unitNames must be an object')
-    for (const [id, label] of Object.entries(reading.unitNames ?? {})) check(variant.units.some((unit) => unit.id === id) && text(label), `invalid reading unit: ${id}`)
+    for (const [id, label] of Object.entries(reading.unitNames ?? {})) check((variant.units.some((unit) => unit.id === id) || variant.assembly.some(stage => stage.result === id)) && text(label), `invalid reading unit: ${id}`)
     const combined = ids(reading.combineUnits ?? [], new Set(variant.units.map((unit) => unit.id)), 'reading.combineUnits', true)
     for (const unit of variant.units) {
       // A reviewed source already contains its final steps. Do not reapply its historical combineUnits.

@@ -38,5 +38,15 @@
     "unitCount": 8,
     "pieceCount": 248,
     "guidePath": "assemblies/iwaparesu/guide.json"
+  },
+  {
+    "id": "negiganaito",
+    "modelId": "purimatu:negiganaito",
+    "title": "ネギガナイト",
+    "revision": 1,
+    "defaultVariant": "photo-v2",
+    "unitCount": 5,
+    "pieceCount": 205,
+    "guidePath": "assemblies/negiganaito/guide.json"
   }
 ]

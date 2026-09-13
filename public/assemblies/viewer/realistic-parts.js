@@ -329,6 +329,12 @@
       direction.addScaledVector(axis,-direction.dot(axis)).normalize();
       return {id:r.port,dir:direction,inset:Math.max(.075,Math.min(.23,r.mid.clone().sub(center).dot(r.dir)||defaultInset))};
     });
+    // Manual edits retain fork directions even after the last plate is removed.
+    for(const [port,stored] of Object.entries(piece.pose?.directions||{})){
+      const id=Number(port);if(dirs.some(d=>d.id===id)||id<0||id>=(piece.partNo===7?3:2))continue;
+      const dir=vec(T,stored);dir.addScaledVector(axis,-dir.dot(axis)).normalize();
+      dirs.push({id,dir,inset:defaultInset});
+    }
     if(!dirs.length) {const seed=Math.abs(axis.y)<.9?new T.Vector3(0,1,0):new T.Vector3(1,0,0);dirs.push({id:0,dir:seed.addScaledVector(axis,-seed.dot(axis)).normalize(),inset:defaultInset});}
     // An assembly stage may expose only one or two connected ports. Missing
     // ports still belong to the physical moulding, especially No.7's third fin.
@@ -340,8 +346,10 @@
       if(!existing(2))dirs.push({id:2,dir:new T.Vector3().crossVectors(axis,existing(0).dir).normalize(),inset:defaultInset});
     } else if(dirs.length===1) {
       const angle=(piece.partNo===6?90:piece.partNo===5?120:180)*Math.PI/180;
-      dirs.push({id:1,dir:dirs[0].dir.clone().applyAxisAngle(axis,angle),inset:defaultInset});
+      const missing=dirs[0].id===0?1:0;
+      dirs.push({id:missing,dir:dirs[0].dir.clone().applyAxisAngle(axis,missing===1?angle:-angle),inset:defaultInset});
     }
+    dirs.sort((a,b)=>a.id-b.id);
     const profile=JOINT_PROFILES[piece.partNo];
     if(profile&&piece.partNo===5)group.add(obtuseJoint(T,axis,dirs,center,profile,material));
     if(profile&&piece.partNo>=6)group.add(squareJoint(T,axis,dirs,center,profile,material));

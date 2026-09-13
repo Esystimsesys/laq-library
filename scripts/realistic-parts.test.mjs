@@ -85,3 +85,16 @@ describe('No.5 joined to two No.1 plates',()=>{
     }
   })
 })
+
+it('keeps a manually oriented joint in place after its last plate is removed',()=>{
+  const piece={id:'joint',partNo:6,pose:{center:[0,0,0],axis:[1,0,0],directions:{0:[0,0,1],1:[0,-1,0]}}}
+  const plate={id:'plate',partNo:1,pose:{vertices:[[-.5,0,.1],[.5,0,.1],[.5,0,1.1],[-.5,0,1.1]],normal:[0,-1,0]}}
+  const by=new Map([['plate',plate]]),material=new T.MeshStandardMaterial()
+  const bounds=connection=>{
+    const group=parts.joint(T,piece,connection,by,material);group.updateMatrixWorld(true)
+    const box=new T.Box3().setFromObject(group)
+    return [...box.min.toArray(),...box.max.toArray()]
+  }
+  const connected=bounds({ports:[{port:0,piece:'plate',socket:0}]}),detached=bounds(null)
+  connected.forEach((value,i)=>expect(detached[i]).toBeCloseTo(value,6))
+})

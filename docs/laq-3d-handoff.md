@@ -4,6 +4,8 @@
 
 ## 現在地
 
+- ネギガナイト（2026-09-13・完成確認）: 製作室43コメントと会話・手動修正を反映した205ピース・5まとまり・13手順を、ユーザーの完成承認により `purimatu:negiganaito` revision 1として本体へ取り込み。製作室reviewed・全コメントresolved、実物全体の試験はnot-performed。完成原本 `.local/assembly-work/negiganaito/guide.json` を生成器で上書きしない。[振り返り](NEGIGANAITO-RETROSPECTIVE.md) と [制作記録](NEGIGANAITO-3D.md) に記録。取り込み検証は `checks/final-import/`、本体画面は `/assembly/negiganaito`。commit・push・本番公開は未実施。
+
 - イワパレス（2026-09-13・完成確認）: 写真14枚・製作室16コメントと会話の補足を反映した248パーツ・8塊・18手順を、ユーザーの完成確認と手順統合指示により `purimatu:iwaparesu` revision 2として本体へ取り込み。製作室reviewed・全コメントresolved、実物はnot-performed。
   完成原本は `.local/assembly-work/iwaparesu/guide.json`。生成器は初回候補用なので上書きしない。初回取り込みは `checks/final-import/`、両腕・左右壁の合体統合と18手順の確認は `checks/grouped-assembly/`、[制作記録と振り返り](IWAPARESU-3D.md) と [次回の手順](AI-3D-WORKFLOW.md) に改善を記録。2026-09-13にユーザーが公開を指示。公開先では `/assembly/iwaparesu` から開く。
 
