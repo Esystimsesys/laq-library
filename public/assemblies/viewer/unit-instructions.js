@@ -2,12 +2,14 @@
 (function(){
 'use strict';const raw=document.getElementById('data').textContent,data=window.__LaQLibraryGuide??(raw.trim().startsWith('{')?JSON.parse(raw):null);if(!data){document.body.textContent='生成済みの metamon.html または tairetu.html を開いてください。';return;}
 const T=THREE,$=id=>document.getElementById(id),V=a=>new T.Vector3(...a);
+const special=p=>['mini-shaft','mini-wheel'].includes(p.partNo);
+const partName=no=>no==='mini-shaft'?'ミニシャフト':no==='mini-wheel'?'ミニホイール':`No.${no}`;
 const reviewMode=new URLSearchParams(location.search).get('review')==='1';
 const embeddedMode=new URLSearchParams(location.search).has('embedded');
 // Use the review room's compact arrows in both viewers.
 const arrowScale=.5;
 const minArrowLength=12;
-const defaultView={yaw:0,pitch:.1};
+const defaultView=reviewMode&&Object.values(data.variants).some(v=>v.model.pieces.some(special))?{yaw:.3,pitch:.65}:{yaw:0,pitch:.1};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const colors={yellow:0xf1ce22,black:0x262b32,red:0xd74b48,white:0xf6f2dc,skyblue:0x6ec3df,blue:0x1d6eb7,transparent:0xc3d7d7,clear:0xc3d7d7,lavender:0xc89ad0,pink:0xed9bbb,purple:0x975abb,orange:0xf39432,green:0x469956,lime:0xc2df30,brown:0x885a42,gray:0x999999,lightblue:0x6ec3df};
 const colorNames={yellow:'黄',black:'黒',red:'赤',white:'白',skyblue:'水色',blue:'青',transparent:'透明',clear:'透明',lavender:'薄紫',pink:'ピンク',purple:'紫',orange:'オレンジ',green:'緑',lime:'黄緑',brown:'茶',gray:'灰',lightblue:'水色'};
@@ -23,7 +25,7 @@ function setupRenderer(id,s){const r=new T.WebGLRenderer({alpha:true,antialias:t
 function overlay(id){const e=document.createElementNS('http://www.w3.org/2000/svg','svg');e.classList.add('overlay');$(id).append(e);return e;}
 function dispose(group){while(group.children.length){const c=group.children[0];group.remove(c);c.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});}}
 function center(p){return p.pose.center?V(p.pose.center):p.pose.vertices.map(V).reduce((a,v)=>a.add(v),new T.Vector3()).multiplyScalar(1/p.pose.vertices.length);}
-function part(p,added=false){const transparent=['transparent','clear'].includes(p.color),xray=$('xray').checked&&p.partNo<3;const m=new T.MeshStandardMaterial({color:colors[p.color]||0xb6c8aa,roughness:.46,transparent:transparent||xray,opacity:transparent?.4:xray?.24:1,depthWrite:!transparent&&!xray,emissive:added?0x8b6810:0,emissiveIntensity:added?.09:0});const c=model.connections.find(c=>c.joint===p.id);const g=p.partNo<3?LaQRealisticParts.plate(T,p,m):LaQRealisticParts.joint(T,p,c,by,m,c);g.userData.pieceId=p.id;addPartEdges(g,m);return m.opacity===1?batchPart(g,m):g;}
+function part(p,added=false){const transparent=['transparent','clear'].includes(p.color),xray=$('xray').checked&&p.partNo<3;const m=new T.MeshStandardMaterial({color:colors[p.color]||0xb6c8aa,roughness:.46,transparent:transparent||xray,opacity:transparent?.4:xray?.24:1,depthWrite:!transparent&&!xray,emissive:added?0x8b6810:0,emissiveIntensity:added?.09:0});const c=model.connections.find(c=>c.joint===p.id);const g=special(p)?LaQSpecialParts.create(T,p,m):p.partNo<3?LaQRealisticParts.plate(T,p,m):LaQRealisticParts.joint(T,p,c,by,m,c);g.userData.pieceId=p.id;if(special(p)){m.dispose();const wrapper=new T.Group();wrapper.userData.pieceId=p.id;wrapper.add(g);return wrapper;}addPartEdges(g,m);return m.opacity===1?batchPart(g,m):g;}
 // Subtle, depth-tested creases distinguish adjacent parts of the same colour.
 // Attach to each mesh so transforms, exploded views and disposal stay shared.
 function addPartEdges(group,material){
@@ -65,6 +67,13 @@ function mainPart(p,added){const key=`${mode}:${$('xray').checked?'xray':'solid'
 function detachMainParts(){while(root.children.length)root.remove(root.children[0]);groups.clear();}
 function clearMainPartCache(){detachMainParts();for(const group of mainPartCache.values())dispose(group);mainPartCache.clear();}
 function socket(a){const p=by.get(a.piece),vs=p.pose.vertices.map(V),one=vs[a.socket],two=vs[(a.socket+1)%vs.length],mid=one.clone().add(two).multiplyScalar(.5);return {a:one,b:two,mid,axis:two.clone().sub(one).normalize(),inward:center(p).sub(mid).normalize(),normal:V(p.pose.normal)};}
+function partFrame(p,c){
+ if(!special(p))return c?.ports?.length?socket(c.ports[0]):socket({piece:p.id,socket:0});
+ const normal=V(p.partNo==='mini-shaft'?p.pose.axleDirection:p.pose.axis).normalize();
+ const axis=p.partNo==='mini-shaft'?V(p.pose.axis).normalize():new T.Vector3(Math.abs(normal.x)<.9?1:0,Math.abs(normal.x)<.9?0:1,0);
+ axis.addScaledVector(normal,-axis.dot(normal)).normalize();
+ return {axis,inward:new T.Vector3().crossVectors(normal,axis).normalize(),normal,mid:center(p)};
+}
 function fit(cam,box,host,y,p,z=1){const r=host.getBoundingClientRect();if(!r.width||!r.height)return;cam.aspect=r.width/r.height;const target=box.getCenter(new T.Vector3()),toward=new T.Vector3(Math.sin(y)*Math.cos(p),Math.sin(p),Math.cos(y)*Math.cos(p)),right=new T.Vector3(Math.cos(y),0,-Math.sin(y)),up=new T.Vector3().crossVectors(toward,right),vf=T.MathUtils.degToRad(cam.fov)/2,hf=Math.atan(Math.tan(vf)*cam.aspect);const labelled=host===$('stage')&&['unit','assembly'].includes(phase)&&preview===null,sideRoom=labelled?Math.max(.4,(r.width-Math.max(72,144-.2*r.width))/r.width):1;let d=0;for(const x of[box.min.x,box.max.x])for(const y of[box.min.y,box.max.y])for(const z of[box.min.z,box.max.z]){const v=new T.Vector3(x,y,z).sub(target);d=Math.max(d,v.dot(toward)+1.2*Math.abs(v.dot(right))/(Math.tan(hf)*sideRoom),v.dot(toward)+1.2*Math.abs(v.dot(up))/Math.tan(vf));}cam.position.copy(toward.multiplyScalar(Math.max(d,.2)/z).add(target));cam.lookAt(target);cam.updateProjectionMatrix();cam.updateMatrixWorld();}
 function render(){const r=$('stage').getBoundingClientRect();renderer.getSize(renderSize);if(renderSize.x!==r.width||renderSize.y!==r.height)renderer.setSize(r.width,r.height,false);fit(camera,bounds,$('stage'),yaw,pitch,zoom);renderer.render(scene,camera);drawGuide();drawUnitLabels();drawEditMarker();renderDetail();}
 function drawEditMarker(){
@@ -95,6 +104,10 @@ function drawGuide(){
    const onPlate=plate.localToWorld(s.mid.clone()),onJoint=joint.localToWorld(s.mid.clone());
    const plateMoves=added.has(a.piece)&&!added.has(a.joint);
    start=plateMoves?onPlate:onJoint;end=plateMoves?onJoint:onPlate;
+  }else if(a.kind==='axle'){
+   const shaft=groups.get(a.shaft),wheel=groups.get(a.wheel);if(!shaft||!wheel)return;
+   const mid=center(by.get(a.wheel)),onWheel=wheel.localToWorld(mid.clone()),onShaft=shaft.localToWorld(mid.clone());
+   const wheelMoves=added.has(a.wheel)&&!added.has(a.shaft);start=wheelMoves?onWheel:onShaft;end=wheelMoves?onShaft:onWheel;
   }else{
    if(!a.moving?.some(id=>groups.has(id))||!a.support?.some(id=>groups.has(id)))return;
    start=mainPoint(a.moving);end=mainPoint(a.support);
@@ -107,9 +120,10 @@ function drawGuide(){
  });
 }
 function buildDetail(){dispose(detailRoot);detailPoints=null;const a=actions[action];
- if(preview!==null){const p=model.pieces.find(p=>p.partNo===preview&&(!previewColor||p.color===previewColor)),c=model.connections.find(c=>c.joint===p.id),s=c?socket(c.ports[0]):socket({piece:p.id,socket:0}),n=s.normal.clone();if(preview===7){const third=c?.ports.find(p=>p.port===2);if(third&&socket(third).inward.dot(n)<0)n.negate();}const matrix=new T.Matrix4().makeBasis(s.axis,s.inward,n).invert(),g=part(p);g.applyMatrix4(matrix);detailRoot.add(g);$('guide-title').textContent=`No.${preview} の形`;$('guide-description').textContent='ゆびで なぞって、かたちを 見てね。';$('guide-key').textContent='写真から近似した表示形状です。';}
+ if(preview!==null){const p=model.pieces.find(p=>p.partNo===preview&&(!previewColor||p.color===previewColor)),c=model.connections.find(c=>c.joint===p.id),s=partFrame(p,c),n=s.normal.clone();if(preview===7){const third=c?.ports.find(p=>p.port===2);if(third&&socket(third).inward.dot(n)<0)n.negate();}const matrix=new T.Matrix4().makeBasis(s.axis,s.inward,n).invert(),g=part(p);g.applyMatrix4(matrix);detailRoot.add(g);$('guide-title').textContent=`${partName(preview)} の形`;$('guide-description').textContent='ゆびで なぞって、かたちを 見てね。';$('guide-key').textContent='写真から近似した表示形状です。';}
  else if(a){$('guide-title').textContent=`つなぐところ　${action+1} / ${actions.length}`;$('guide-description').textContent='オレンジの やじるしの ところを つなごう。';
   if(a.kind==='port'){const s=socket(a),matrix=new T.Matrix4().makeBasis(s.axis,s.inward,s.normal).invert(),j=part(by.get(a.joint)),p=part(by.get(a.piece)),offset=s.inward.clone().multiplyScalar(.7);p.position.add(offset);j.applyMatrix4(matrix);p.applyMatrix4(matrix);detailRoot.add(j,p);detailPoints={start:s.mid.clone().add(offset).applyMatrix4(matrix),end:s.mid.clone().applyMatrix4(matrix)};$('guide-key').textContent='てんせんで ばしょを 見くらべて、やじるしの むきに あわせよう。';}
+  else if(a.kind==='axle'){const shaft=by.get(a.shaft),wheel=by.get(a.wheel),j=part(shaft),p=part(wheel),offset=V(shaft.pose.axleDirection).multiplyScalar(.7);p.position.add(offset);detailRoot.add(j,p);detailPoints={start:center(wheel).add(offset),end:center(wheel)};$('guide-key').textContent='ミニホイールの軸穴にミニシャフトの軸を差し込みます。';}
   else{const ids=[...new Set([...a.support,...a.moving])],offset=V(a.offset||[0,0,.9]);for(const id of ids){const g=part(by.get(id));if(a.moving.includes(id))g.position.add(offset);detailRoot.add(g);}detailRoot.rotation.x=-Math.PI/2;detailPoints={start:point(a.moving).add(offset),end:point(a.moving),world:true};$('guide-key').textContent=a.kind==='link'?'透明の部品を使って隊列をつなぐ配置です。':'載せる・挟む位置の対応です。離す方向と矢印は説明用で、実際の挿入経路は未検証です。';}
  }
  if(!detailPoints?.world)detailRoot.rotation.set(0,0,0);detailRoot.updateMatrixWorld(true);detailBounds.setFromObject(detailRoot);$('guide-prev').disabled=preview!==null||action===0;$('guide-next').disabled=preview!==null||action===actions.length-1;renderDetail();}
@@ -153,7 +167,7 @@ function createThumbnailScene(){
  if(!thumbRenderer){thumbRenderer=new T.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});thumbRenderer.setSize(400,260);}
  const ss=new T.Scene(),rr=new T.Group(),cc=new T.PerspectiveCamera(32,400/260,.01,200);rr.rotation.x=-Math.PI/2;ss.add(rr);ss.add(new T.HemisphereLight(0xffffff,0x98aaa0,1.8));const l=new T.DirectionalLight(0xffffff,2.2);l.position.set(-3,5,7);ss.add(l);return{ss,rr,cc};
 }
-function addThumbnailPiece(unit,rr,id){let p=by.get(id);if(unit.id.startsWith('part:')){const canonical=model.pieces.find(candidate=>candidate.partNo===p.partNo);p={...canonical,color:p.color};}const g=part(p);if(unit.id.startsWith('part:')){rr.rotation.x=0;const c=model.connections.find(c=>c.joint===p.id),s=c?socket(c.ports[0]):socket({piece:p.id,socket:0}),n=s.normal.clone();if(p.partNo===7){const third=c?.ports.find(p=>p.port===2);if(third&&socket(third).inward.dot(n)<0)n.negate();}g.applyMatrix4(new T.Matrix4().makeBasis(s.axis,s.inward,n).invert());}rr.add(g);}
+function addThumbnailPiece(unit,rr,id){let p=by.get(id);if(unit.id.startsWith('part:')){const canonical=model.pieces.find(candidate=>candidate.partNo===p.partNo);p={...canonical,color:p.color};}const g=part(p);if(unit.id.startsWith('part:')){rr.rotation.x=0;const c=model.connections.find(c=>c.joint===p.id),s=partFrame(p,c),n=s.normal.clone();if(p.partNo===7){const third=c?.ports.find(p=>p.port===2);if(third&&socket(third).inward.dot(n)<0)n.negate();}g.applyMatrix4(new T.Matrix4().makeBasis(s.axis,s.inward,n).invert());}rr.add(g);}
 function finishThumbnail(key,ss,rr,cc){ss.updateMatrixWorld(true);const box=new T.Box3().setFromObject(rr),host={getBoundingClientRect:()=>({width:400,height:260})};fit(cc,box,host,.35,.4);thumbRenderer.render(ss,cc);const url=thumbRenderer.domElement.toDataURL('image/png');dispose(rr);thumbs.set(key,url);return url;}
 function thumbnail(unit){const key=mode+':'+unit.id;if(thumbs.has(key))return thumbs.get(key);const{ss,rr,cc}=createThumbnailScene();for(const id of unit.pieceIds)addThumbnailPiece(unit,rr,id);return finishThumbnail(key,ss,rr,cc);
 }
@@ -171,6 +185,7 @@ function blockOffsets(fixedIds,movingGroups){
   const moving=new Set(ids),direction=new T.Vector3();
   for(const a of actions){
    if(a.kind==='port'&&moving.has(a.piece)!==moving.has(a.joint))direction.addScaledVector(socket(a).inward,moving.has(a.piece)?1:-1);
+   else if(a.kind==='axle'&&moving.has(a.wheel)!==moving.has(a.shaft))direction.addScaledVector(V(by.get(a.shaft).pose.axleDirection),moving.has(a.wheel)?1:-1);
    else if(a.kind!=='port'&&a.offset&&a.moving?.some(pid=>moving.has(pid)))direction.add(V(a.offset));
   }
   if(direction.lengthSq()<1e-8)direction.copy(point(ids).sub(point(fixedIds)));
@@ -194,10 +209,22 @@ function joinOffsets(visible,added){
  return blockOffsets(built,components);
 }
 // A combined authoring step can preserve the subassemblies that were prepared separately.
-// Earlier pieces remain fixed; every declared group moves without breaking apart.
+// Earlier pieces remain fixed; if everything is new, the first declared group is the anchor.
+// Every other declared group moves without breaking apart.
 function explicitGroupOffsets(visible,added,declared){
- const built=[...visible].filter(id=>!added.has(id));if(!built.length)return null;
- return blockOffsets(built,declared);
+ const built=[...visible].filter(id=>!added.has(id));
+ if(built.length)return blockOffsets(built,declared);
+ // When every block is a single part, use the normal per-part radial spread.
+ if(declared.every(ids=>ids.length===1))return null;
+ const fixed=[...declared[0]],result=new Map();
+ for(const ids of declared.slice(1)){
+  const next=blockOffsets(fixed,[ids]),offset=next.get(ids[0]),direction=offset.clone().normalize();
+  // Leave room for preceding blocks that have already moved in the same direction.
+  const travel=Math.max(0,...[...result.values()].map(v=>v.dot(direction)));
+  for(const [pid,v] of next)result.set(pid,v.addScaledVector(direction,travel));
+  fixed.push(...ids);
+ }
+ return result;
 }
 // Geometry and maximum travel are prepared once per step. A slider frame only
 // translates existing groups and their cached bounds; no mesh/DOM rebuild.
@@ -208,15 +235,16 @@ function applyExplosion(){
 }
 function flushExplosion(){if(explodeFrame)cancelAnimationFrame(explodeFrame);explodeFrame=0;applyExplosion();render();}
 function queueExplosion(){explode=Number($('explode').value)/100;if(!explodeFrame)explodeFrame=requestAnimationFrame(()=>{explodeFrame=0;applyExplosion();render();});}
-function build(){if(explodeFrame)cancelAnimationFrame(explodeFrame);explodeFrame=0;$('back-assembly').hidden=!returnRoutes.length;if(returnRoutes.length)$('back-assembly').textContent=`↩ ${displayLabel(returnRoutes[returnRoutes.length-1].result)} の合体手順に戻る`;indexVariant();selectedUnit=variant.unitAliases?.[selectedUnit]||selectedUnit;const unit=variant.units.find(u=>u.id===selectedUnit);
+function build(){if(explodeFrame)cancelAnimationFrame(explodeFrame);explodeFrame=0;$('back-assembly').hidden=!returnRoutes.length;if(returnRoutes.length)$('back-assembly').textContent=`↩ ${displayLabel(returnRoutes[returnRoutes.length-1].result)} の合体手順に戻る`;indexVariant();selectedUnit=variant.unitAliases?.[selectedUnit]||selectedUnit;const unit=selectedUnit?.startsWith('group:')?window.LaQStepGroups?.combinedStepView(data,selectedUnit.slice(6)):variant.units.find(u=>u.id===selectedUnit);
  if(phase==='unit'&&(!unit||unit.recipe)){phase='catalog';selectedUnit=null;}
  sequence=phase==='unit'?unit.steps:phase==='assembly'?variant.assembly:[{title:`${displayLabel(variant.finished)} ${data.displayName}の${mode==='train'?'完成した隊列':'完成形'}`,description:'完成形を回して確認できます。「塊を作る」で各IDの作り方、「塊をつなぐ」で合体手順を開けます。',visiblePieces:model.pieces.map(p=>p.id),newPieces:[],actions:[]}];
- step=Math.max(0,Math.min(step,sequence.length-1));current=sequence[step];const key=[mode,phase,selectedUnit,step].join(':');if(key!==detailStageKey){detailStageKey=key;detailsOpen=false;}actions=current.actions||[];if(phase==='unit'&&current.presentation==='join'){const addedIds=new Set(current.newPieces);actions=actions.filter(a=>a.kind!=='port'||addedIds.has(a.joint)!==addedIds.has(a.piece));}action=0;preview=null;$('return-guide').hidden=true;detachMainParts();const visible=new Set(current.visiblePieces),added=new Set(current.newPieces);
- labelMembers=phase==='assembly'?Object.fromEntries(current.inputs.map(id=>[id,members[id]])):phase==='unit'?{[unit.id]:unit.pieceIds}:{[variant.finished]:model.pieces.map(p=>p.id)};
- const separationMembers=phase==='assembly'?labelMembers:phase==='unit'?Object.fromEntries([...visible].map(id=>[id,[id]])):Object.fromEntries(variant.units.map(u=>[u.id,u.pieceIds]));
+ step=Math.max(0,Math.min(step,sequence.length-1));current=sequence[step];const key=[mode,phase,selectedUnit,step].join(':');if(key!==detailStageKey){detailStageKey=key;detailsOpen=false;}actions=current.actions||[];if(phase==='unit'&&current.presentation==='join'){const addedIds=new Set(current.newPieces);actions=actions.filter(a=>a.kind==='axle'?addedIds.has(a.shaft)!==addedIds.has(a.wheel):a.kind!=='port'||addedIds.has(a.joint)!==addedIds.has(a.piece));}action=0;preview=null;$('return-guide').hidden=true;detachMainParts();const visible=new Set(current.visiblePieces),added=new Set(current.newPieces);
+ labelMembers=phase==='unit'&&unit.labelMembers?unit.labelMembers:phase==='assembly'?Object.fromEntries(current.inputs.map(id=>[id,members[id]])):phase==='unit'?{[unit.id]:unit.pieceIds}:{[variant.finished]:model.pieces.map(p=>p.id)};
+ const completeBlocks=phase==='complete'&&data.reading?.stepGroups?.length?window.LaQStepGroups.completeExplodeGroups({...data,defaultVariant:mode}):null;
+ const separationMembers=completeBlocks?Object.fromEntries(completeBlocks.map((ids,i)=>[i,ids])):phase==='assembly'?labelMembers:phase==='unit'?Object.fromEntries([...visible].map(id=>[id,[id]])):Object.fromEntries(variant.units.map(u=>[u.id,u.pieceIds]));
  // Scale each displacement by its distance from the centre. Equal-length radial
  // offsets leave neighbours on the same ray stuck together (e.g. A1 sides).
- const offsets=new Map(),overall=point([...visible]);let n=0;for(const ids of Object.values(separationMembers)){const v=point(ids).sub(overall);if(phase!=='unit'&&v.length()<.08)v.set(n%2?1:-1,0,.7);if(phase==='unit')v.multiplyScalar(2.5);else v.normalize().multiplyScalar(1.55);for(const pid of ids)offsets.set(pid,v);n++;}
+ const offsets=new Map(),overall=point([...visible]);let n=0;for(const ids of Object.values(separationMembers)){const v=point(ids).sub(overall);if(phase!=='unit'&&!completeBlocks&&v.length()<.08)v.set(n%2?1:-1,0,.7);if(phase==='unit'||completeBlocks)v.multiplyScalar(2.5);else v.normalize().multiplyScalar(1.55);for(const pid of ids)offsets.set(pid,v);n++;}
  for(const p of model.pieces.filter(p=>visible.has(p.id))){const g=mainPart(p,added.has(p.id));root.add(g);groups.set(p.id,g);}scene.updateMatrixWorld(true);
  basePieceBounds.clear();pieceBounds.clear();for(const [id,g]of groups){const box=new T.Box3().setFromObject(g);basePieceBounds.set(id,box);pieceBounds.set(id,box.clone());}
  separationOffsets=phase==='assembly'?assemblyOffsets():phase==='unit'&&current.explodeGroups?.length?(explicitGroupOffsets(visible,added,current.explodeGroups)??offsets):phase==='unit'&&current.presentation==='join'?(joinOffsets(visible,added)??offsets):offsets;applyExplosion();
@@ -235,7 +263,7 @@ function build(){if(explodeFrame)cancelAnimationFrame(explodeFrame);explodeFrame
  syncDetails();actionButtons();if(actions.length)chooseAction(0);
  const source=data.photos.find(p=>p.id===current.photo)||data.photos[0];if(source){$('source-photo').src=source.file;$('source-title').textContent=source.title;}$('source-caption').textContent='照合用の元写真です。塊の形と合体手順は復元モデルの接続に基づきます。';
  const inventoryPieces=phase==='unit'?unit.pieceIds.map(id=>by.get(id)):model.pieces;$('inventory-title').textContent=`${phase==='unit'?displayLabel(unit.id)+' '+unit.label:variant.label}：1組に ${inventoryPieces.length} 個。${(unit?.quantity||variant.quantity||1)>1?'同じものを5組用意します。':''}`;
- const counts=new Map();for(const p of inventoryPieces){const k=p.partNo+':'+p.color;counts.set(k,(counts.get(k)||0)+1);}$('inventory').replaceChildren();for(const [key,count]of [...counts].sort((a,b)=>parseInt(a[0])-parseInt(b[0]))){const [no,col]=key.split(':'),tr=document.createElement('tr');tr.innerHTML=`<td>No.${no}</td><td><span class="swatch" style="background:#${(colors[col]||0xaaaaaa).toString(16).padStart(6,'0')}"></span>${colorNames[col]||col}</td><td>${count}</td><td><button class="part-button">3Dで確認</button></td>`;tr.querySelector('button').onclick=()=>{preview=Number(no);$('guide').hidden=false;$('actions').replaceChildren();$('return-guide').hidden=false;buildDetail();render();$('guide').scrollIntoView({behavior:'instant',block:'center'});};$('inventory').append(tr);}
+ const counts=new Map();for(const p of inventoryPieces){const k=p.partNo+':'+p.color;counts.set(k,(counts.get(k)||0)+1);}$('inventory').replaceChildren();for(const [key,count]of [...counts].sort((a,b)=>parseInt(a[0])-parseInt(b[0]))){const [no,col]=key.split(':'),tr=document.createElement('tr');tr.innerHTML=`<td>${esc(partName(/^\d+$/.test(no)?Number(no):no))}</td><td><span class="swatch" style="background:#${(colors[col]||0xaaaaaa).toString(16).padStart(6,'0')}"></span>${colorNames[col]||col}</td><td>${count}</td><td><button class="part-button">3Dで確認</button></td>`;tr.querySelector('button').onclick=()=>{preview=/^\d+$/.test(no)?Number(no):no;$('guide').hidden=false;$('actions').replaceChildren();$('return-guide').hidden=false;buildDetail();render();$('guide').scrollIntoView({behavior:'instant',block:'center'});};$('inventory').append(tr);}
  render();window.__renderComplete=true;
 }
 function actionButtons(){$('actions').replaceChildren();actions.forEach((_a,i)=>{const b=button(`${i+1}`,()=>chooseAction(i));b.setAttribute('aria-label',`つなぐところ ${i+1}`);$('actions').append(b);});}
@@ -251,7 +279,7 @@ $('fit').onclick=()=>{zoom=1;render();};$('zoom-in').onclick=()=>{zoom=Math.min(
  const pointerGap=()=>{const [a,b]=[...stagePointers.values()];return a&&b?Math.hypot(a.x-b.x,a.y-b.y):0;};
  stage.onpointerdown=e=>{stagePointers.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,tap:true});stage.setPointerCapture(e.pointerId);if(stagePointers.size>1){for(const point of stagePointers.values())point.tap=false;pinchDistance=pointerGap();}};
  stage.onpointermove=e=>{const point=stagePointers.get(e.pointerId);if(!point)return;const dx=e.clientX-point.x,dy=e.clientY-point.y;point.x=e.clientX;point.y=e.clientY;if(Math.hypot(point.x-point.sx,point.y-point.sy)>=5)point.tap=false;if(stagePointers.size>1){const next=pointerGap();if(pinchDistance>0&&next>0){zoom=Math.max(.65,Math.min(3,zoom*next/pinchDistance));render();}pinchDistance=next;return;}yaw-=dx*.008;pitch=Math.max(-1.5,Math.min(1.5,pitch+dy*.008));render();};
- const endPointer=(e,select)=>{const point=stagePointers.get(e.pointerId);if(select&&stagePointers.size===1&&point?.tap){const b=stage.getBoundingClientRect();ray.setFromCamera(new T.Vector2((e.clientX-b.left)/b.width*2-1,1-(e.clientY-b.top)/b.height*2),camera);let hit=ray.intersectObject(root,true).find(h=>h.object.isMesh)?.object;while(hit&&!hit.userData.pieceId)hit=hit.parent;if(hit){const p=by.get(hit.userData.pieceId);$('selected').textContent=`No.${p.partNo}・${colorNames[p.color]||p.color}`;window.dispatchEvent(new CustomEvent('laq-piece-selected',{detail:{id:p.id}}));}}stagePointers.delete(e.pointerId);pinchDistance=stagePointers.size>1?pointerGap():0;};
+ const endPointer=(e,select)=>{const point=stagePointers.get(e.pointerId);if(select&&stagePointers.size===1&&point?.tap){const b=stage.getBoundingClientRect();ray.setFromCamera(new T.Vector2((e.clientX-b.left)/b.width*2-1,1-(e.clientY-b.top)/b.height*2),camera);let hit=ray.intersectObject(root,true).find(h=>h.object.isMesh)?.object;while(hit&&!hit.userData.pieceId)hit=hit.parent;if(hit){const p=by.get(hit.userData.pieceId);$('selected').textContent=`${partName(p.partNo)}・${colorNames[p.color]||p.color}`;window.dispatchEvent(new CustomEvent('laq-piece-selected',{detail:{id:p.id}}));}}stagePointers.delete(e.pointerId);pinchDistance=stagePointers.size>1?pointerGap():0;};
  stage.onpointerup=e=>endPointer(e,true);stage.onpointercancel=e=>endPointer(e,false);stage.onwheel=e=>{e.preventDefault();zoom=Math.max(.65,Math.min(3,zoom*Math.exp(-e.deltaY*.001)));render();};
  $('detail-stage').onpointerdown=e=>{detailDrag={x:e.clientX,y:e.clientY};$('detail-stage').setPointerCapture(e.pointerId);};$('detail-stage').onpointermove=e=>{if(!detailDrag)return;detailYaw-=(e.clientX-detailDrag.x)*.009;detailPitch=Math.max(-1.4,Math.min(1.4,detailPitch+(e.clientY-detailDrag.y)*.009));detailDrag={x:e.clientX,y:e.clientY};renderDetail();};$('detail-stage').onpointerup=$('detail-stage').onpointercancel=()=>detailDrag=null;
  for(const p of data.photos){const b=document.createElement('button'),img=document.createElement('img');img.src=p.file;img.alt=p.title;b.append(img,document.createTextNode(p.title));b.onclick=()=>{$('large-photo').src=p.file;$('photo-dialog').showModal();};$('photos').append(b);}$('close-photo').onclick=()=>$('photo-dialog').close();for(const text of data.limits){const li=document.createElement('li');li.textContent=text;$('limits').append(li);}
@@ -279,7 +307,7 @@ $('fit').onclick=()=>{zoom=1;render();};$('zoom-in').onclick=()=>{zoom=Math.min(
     go('complete',null,0,false);preview=request.partNo||1;
     $('guide').hidden=false;$('actions').replaceChildren();$('return-guide').hidden=true;
     buildDetail();render();
-   }else{go(['unit','assembly'].includes(request.phase)?request.phase:'complete',request.unit||null,request.step||0,false);}
+   }else if(request.phase==='group'){go('unit',`group:${request.unit}`,0,false);}else{go(['unit','assembly'].includes(request.phase)?request.phase:'complete',request.unit||null,request.step||0,false);}
   },
   images(){
    const images={};

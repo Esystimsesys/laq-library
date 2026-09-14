@@ -32,6 +32,12 @@
   object-fit: cover;
 }
 
+.thumbOriginal {
+  object-fit: contain;
+  padding: 4px;
+  background: #f9f4fc;
+}
+
 /* 画像がまだ届いていないとき（オフラインの初回など）の place holder。
    斜めのしましまで「ここに写真が入る」ことだけ伝える。 */
 .noThumb {

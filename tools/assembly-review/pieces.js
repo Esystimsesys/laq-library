@@ -16,10 +16,14 @@ const variantOf = guide => guide.variants[guide.defaultVariant]
 const stagesOf = variant => [...variant.units.flatMap(unit => unit.steps), ...variant.assembly]
 const isPlate = piece => piece.partNo <= 2
 // No.5 has two physical forks; the legacy source validator also accepts port 2.
-const slotCount = partNo => partNo === 1 ? 4 : partNo === 2 || partNo === 7 ? 3 : 2
+const isShaft = piece => piece.partNo === 'mini-shaft'
+const isWheel = piece => piece.partNo === 'mini-wheel'
+export const WHEEL_CENTER_OFFSET = .32
+export const partLabel = no => no === 'mini-shaft' ? 'ミニシャフト' : no === 'mini-wheel' ? 'ミニホイール' : `No.${no}`
+const slotCount = partNo => partNo === 'mini-shaft' ? 4 : partNo === 'mini-wheel' ? 1 : partNo === 1 ? 4 : partNo === 2 || partNo === 7 ? 3 : 2
 const inset = partNo => partNo === 4 ? .195 : partNo === 5 ? (4 + 3.5 * .5) / (2 * Math.sin(Math.PI / 3)) / 17 : .1
 function requirePart(partNo) {
-  if (!Number.isInteger(partNo) || partNo < 1 || partNo > 7) throw new Error('パーツ番号は No.1〜No.7 から選んでください。')
+  if (![1,2,3,4,5,6,7,'mini-shaft','mini-wheel'].includes(partNo)) throw new Error('パーツ番号・種類は一覧から選んでください。')
 }
 function findPiece(guide, id) {
   const piece = variantOf(guide).model.pieces.find(piece => piece.id === id)
@@ -36,18 +40,33 @@ function occupiedSlots(guide, piece, exceptId) {
       if (!isPlate(piece) && connection.joint === piece.id) occupied.add(port.port)
     }
   }
+  for (const connection of variantOf(guide).model.axleConnections ?? []) {
+    if (connection.shaft === exceptId || connection.wheel === exceptId) continue
+    if (connection.shaft === piece.id) occupied.add(3)
+    if (connection.wheel === piece.id) occupied.add(0)
+  }
   return occupied
 }
 function requireSlot(guide, piece, slot, exceptId) {
   if (!Number.isInteger(slot) || slot < 0 || slot >= slotCount(piece.partNo)) throw new Error('接続先の辺・差し込み口を選んでください。')
   if (occupiedSlots(guide, piece, exceptId).has(slot)) throw new Error('選んだ辺・差し込み口は使用中です。空いている場所を選んでください。')
 }
-export function availableSlots(guide, id) {
-  const piece = findPiece(guide, id), occupied = occupiedSlots(guide, piece)
-  return Array.from({ length: slotCount(piece.partNo) }, (_, value) => ({ value, label: `${isPlate(piece) ? '辺' : '差し込み口'} ${value + 1}` })).filter(slot => !occupied.has(slot.value))
+function slotLabel(piece, value) {
+  return isShaft(piece) && value === 3 ? 'ホイール用の軸' : isWheel(piece) ? 'シャフト用の軸穴' : `${isPlate(piece) ? '辺' : '差し込み口'} ${value + 1}`
+}
+export function attachmentParts(guide, id, slot) {
+  const piece = findPiece(guide, id)
+  if (isWheel(piece)) return ['mini-shaft']
+  if (isShaft(piece) && slot === 3) return ['mini-wheel']
+  return isPlate(piece) ? [3,4,5,6,7,'mini-shaft'] : [1,2]
+}
+export function availableSlots(guide, id, exceptId) {
+  const piece = findPiece(guide, id), occupied = occupiedSlots(guide, piece, exceptId)
+  return Array.from({ length: slotCount(piece.partNo) }, (_, value) => ({ value, label: slotLabel(piece, value) })).filter(slot => !occupied.has(slot.value))
 }
 export function replacementParts(guide, id) {
   const piece = findPiece(guide, id), occupied = occupiedSlots(guide, piece)
+  if (isShaft(piece) || isWheel(piece)) return [piece.partNo]
   return (isPlate(piece) ? [1, 2] : [3, 4, 5, 6, 7]).filter(partNo => [...occupied].every(slot => slot < slotCount(partNo)))
 }
 function edgeFrame(piece, socket) {
@@ -56,6 +75,7 @@ function edgeFrame(piece, socket) {
   return { axis, mid, dir: project(sub(mean(vs), mid), axis) }
 }
 function jointDirections(guide, joint) {
+  if (isWheel(joint)) return {}
   const axis = normalize(joint.pose.axis), directions = {}
   for (const connection of variantOf(guide).model.connections.filter(connection => connection.joint === joint.id)) {
     for (const port of connection.ports) directions[port.port] = edgeFrame(findPiece(guide, port.piece), port.socket).dir
@@ -73,11 +93,14 @@ function jointDirections(guide, joint) {
     directions[0] ??= rotate(directions[1] ?? directions[2], axis, -angle)
     directions[1] ??= rotate(directions[0], axis, angle)
   }
+  if (isShaft(joint)) directions[2] = scale(normalize(joint.pose.axleDirection), -1)
   return directions
 }
 export function slotMarker(guide, id, slot) {
   const piece = findPiece(guide, id)
   requireSlot(guide, piece, slot)
+  if (isWheel(piece)) return { position: piece.pose.center, label: slotLabel(piece, slot) }
+  if (isShaft(piece) && slot === 3) return { position: add(piece.pose.center, scale(normalize(piece.pose.axleDirection), WHEEL_CENTER_OFFSET)), label: slotLabel(piece, slot) }
   return { position: isPlate(piece) ? edgeFrame(piece, slot).mid : add(piece.pose.center, scale(jointDirections(guide, piece)[slot], .45)), label: `${isPlate(piece) ? '辺' : '差し込み口'} ${slot + 1}` }
 }
 function platePose(partNo, mid, axis, dir, normal = cross(axis, dir)) {
@@ -85,15 +108,33 @@ function platePose(partNo, mid, axis, dir, normal = cross(axis, dir)) {
   return { vertices: partNo === 1 ? [a, b, add(b, dir), add(a, dir)] : [a, b, add(mid, scale(dir, Math.sqrt(3) / 2))], normal: normalize(normal) }
 }
 function attachment(guide, target, targetSlot, piece) {
+  if (!attachmentParts(guide, target.id, targetSlot).includes(piece.partNo)) throw new Error('この接続口に合うパーツを組み合わせてください。')
+  if (isShaft(target) && isWheel(piece)) return {
+    pose: { center: add(target.pose.center, scale(normalize(target.pose.axleDirection), WHEEL_CENTER_OFFSET)), axis: normalize(target.pose.axleDirection) },
+    action: { kind: 'axle', shaft: target.id, wheel: piece.id },
+  }
+  if (isWheel(target) && isShaft(piece)) {
+    const axleDirection = normalize(target.pose.axis)
+    const axis = project(Math.abs(axleDirection[0]) < .9 ? [1,0,0] : [0,1,0], axleDirection)
+    const dir = normalize(cross(axleDirection, axis))
+    return { pose: { center: sub(target.pose.center, scale(axleDirection, WHEEL_CENTER_OFFSET)), axis, directions: {0: dir, 1: scale(dir, -1), 2: scale(axleDirection, -1)}, axleDirection }, action: { kind: 'axle', shaft: piece.id, wheel: target.id } }
+  }
   if (isPlate(target) === isPlate(piece)) throw new Error('基本パーツとジョイントを組み合わせてください。')
   if (isPlate(target)) {
     const { axis, mid, dir } = edgeFrame(target, targetSlot)
-    return { pose: { center: sub(mid, scale(dir, inset(piece.partNo))), axis, directions: { 0: dir } }, action: { kind: 'port', joint: piece.id, port: 0, piece: target.id, socket: targetSlot } }
+    return { pose: { center: sub(mid, scale(dir, inset(piece.partNo))), axis, directions: isShaft(piece) ? {0: dir, 1: scale(dir, -1), 2: scale(normalize(cross(axis, dir)), -1)} : { 0: dir }, ...(isShaft(piece) ? { axleDirection: normalize(cross(axis, dir)) } : {}) }, action: { kind: 'port', joint: piece.id, port: 0, piece: target.id, socket: targetSlot } }
   }
   const dir = jointDirections(guide, target)[targetSlot], axis = normalize(target.pose.axis)
   return { pose: platePose(piece.partNo, add(target.pose.center, scale(dir, inset(target.partNo))), axis, dir), action: { kind: 'port', joint: target.id, port: targetSlot, piece: piece.id, socket: 0 } }
 }
 function registerConnection(variant, action, stage) {
+  if (action.kind === 'axle') {
+    variant.model.axleConnections ??= []
+    variant.model.axleConnections.push({shaft: action.shaft, wheel: action.wheel})
+    stage.actions ??= []
+    stage.actions.push(action)
+    return
+  }
   let connection = variant.model.connections.find(connection => connection.joint === action.joint)
   if (!connection) { connection = { joint: action.joint, ports: [] }; variant.model.connections.push(connection) }
   connection.ports.push({ port: action.port, piece: action.piece, socket: action.socket })
@@ -107,7 +148,8 @@ function firstCommonStage(variant, a, b) {
 }
 function unlinkPiece(variant, id) {
   variant.model.connections = variant.model.connections.filter(connection => connection.joint !== id).map(connection => ({ ...connection, ports: connection.ports.filter(port => port.piece !== id) })).filter(connection => connection.ports.length)
-  for (const stage of stagesOf(variant)) stage.actions = (stage.actions ?? []).filter(action => action.joint !== id && action.piece !== id)
+  if (variant.model.axleConnections) variant.model.axleConnections = variant.model.axleConnections.filter(c => c.shaft !== id && c.wheel !== id)
+  for (const stage of stagesOf(variant)) stage.actions = (stage.actions ?? []).filter(action => action.joint !== id && action.piece !== id && action.shaft !== id && action.wheel !== id)
 }
 function captureAffectedJoints(guide, id) {
   return [...new Set(variantOf(guide).model.connections.filter(connection => connection.joint === id || connection.ports.some(port => port.piece === id)).map(connection => connection.joint))]
@@ -126,7 +168,7 @@ export function attachPiece(guide, { targetId, targetSlot, partNo, color, id }) 
   }
   if (typeof id !== 'string' || !id.trim() || variant.model.pieces.some(piece => piece.id === id)) throw new Error('パーツ ID が空か、すでに使われています。')
   if (color !== undefined && (typeof color !== 'string' || !color.trim())) throw new Error('色を選んでください。')
-  const piece = { id, partNo, color: color ?? target.color }
+  const piece = { id, partNo, color: isShaft({partNo}) || isWheel({partNo}) ? 'black' : color ?? target.color }
   const { pose, action } = attachment(guide, target, targetSlot, piece)
   const unit = variant.units.find(unit => unit.pieceIds.includes(target.id))
   const first = unit?.steps.find(stage => stage.visiblePieces.includes(target.id))
@@ -152,10 +194,11 @@ export function reattachPiece(guide, { pieceId, targetId, targetSlot }) {
   const variant = variantOf(guide), piece = findPiece(guide, pieceId), target = findPiece(guide, targetId)
   if (pieceId === targetId) throw new Error('別のパーツを接続先に選んでください。')
   requireSlot(guide, target, targetSlot, pieceId)
+  // Removing a previous link may free the same axle; compatibility is unchanged.
   const { pose, action } = attachment(guide, target, targetSlot, piece)
   const stage = firstCommonStage(variant, pieceId, targetId)
   // Freeze the target's existing inferred orientation before removing its old links.
-  const directions = !isPlate(target) ? jointDirections(guide, target) : null
+  const directions = !isPlate(target) && !isWheel(target) ? jointDirections(guide, target) : null
   const affected = captureAffectedJoints(guide, pieceId)
   freezeDirections(affected)
   unlinkPiece(variant, pieceId)

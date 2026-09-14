@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import source from './sources/laq-official.json'
+import originalSource from './sources/original.json'
 import purimatuSource from './sources/purimatu.json'
 import { categories, models, modelById, sourceOf, sources } from './index'
 import type { SourceFile } from './types'
 
 const file = source as SourceFile
 const purimatu = purimatuSource as SourceFile
+const original = originalSource as SourceFile
 
 describe('取り込んだ作品データ', () => {
   it('公式ギャラリーの件数ぶんある', () => {
@@ -15,6 +17,13 @@ describe('取り込んだ作品データ', () => {
 
   it('id が重複していない', () => {
     expect(modelById.size).toBe(models.length)
+  })
+
+  it('オリジナル作品を「さがす」の先頭に置く', () => {
+    expect(models[0].id).toBe('original:giant-hornet')
+    expect(models[0].level).toBe('intermediate')
+    expect(models[0].thumbnail).toBe('model-images/original/giant-hornet.png')
+    expect(models[0].mainImage).toBe(models[0].thumbnail)
   })
 
   it('表示に要るものが全部そろっている', () => {
@@ -30,7 +39,8 @@ describe('取り込んだ作品データ', () => {
   it('出典表記は画面に固定で書かず、ソース情報から引ける', () => {
     for (const s of sources) {
       expect(s.rightsHolder, s.source).not.toBe('')
-      expect(s.sourceLinkLabel, s.source).not.toBe('')
+      if (s.sourceUrl) expect(s.sourceLinkLabel, s.source).not.toBe('')
+      else expect(s.sourceLinkLabel, s.source).toBe('')
       // 一覧のカードに出す短い名前。長いとカードからはみ出す
       expect(s.shortLabel, s.source).not.toBe('')
       expect(s.shortLabel.length, s.source).toBeLessThanOrEqual(6)
@@ -43,10 +53,16 @@ describe('取り込んだ作品データ', () => {
     expect(missing.map((m) => m.title)).toEqual([])
   })
 
-  it('画像と PDF は、その作品の出典サイトの URL を指している（複製していない）', () => {
+  it('外部作品の画像は出典ホスト、オリジナルの画像は安全なローカルパスを指す', () => {
     // これは方針の歯止め。オフライン対応のためにローカルへ落としたくなっても、
-    // ここが落ちることで「複製しない」という決めごとを思い出せる。
+    // 外部作品は複製せず、制作者自身のオリジナルだけ3D完成図を同梱できる。
     for (const m of models) {
+      if (!m.sourceUrl) {
+        for (const url of [m.thumbnail, m.mainImage, m.pdfUrl, ...m.stepImages]) {
+          if (url) expect(url, m.id).toMatch(/^[a-z0-9][a-z0-9/_-]*\.[a-z0-9]+$/i)
+        }
+        continue
+      }
       const host = new URL(m.sourceUrl).host
       for (const url of [m.thumbnail, m.mainImage, m.pdfUrl, ...m.stepImages]) {
         if (url) expect(new URL(url).host, `${m.id} ${url}`).toBe(host)
@@ -64,7 +80,7 @@ describe('取り込んだ作品データ', () => {
 
   it('ぷりまつラボも取り込めている', () => {
     expect(purimatu.models.length).toBeGreaterThan(1000)
-    expect(models.length).toBe(file.models.length + purimatu.models.length)
+    expect(models.length).toBe(file.models.length + purimatu.models.length + original.models.length)
     // 手順の写真は持たず、本家の記事へ送る方針
     expect(purimatu.models.every((m) => m.stepImages.length === 0)).toBe(true)
   })
@@ -90,7 +106,11 @@ describe('取り込んだ作品データ', () => {
   })
 
   it('カテゴリは、そのソースの並び順の定義に載っているものだけ', () => {
-    const orders = { [file.source]: file.categoryOrder, [purimatu.source]: purimatu.categoryOrder }
+    const orders = {
+      [file.source]: file.categoryOrder,
+      [purimatu.source]: purimatu.categoryOrder,
+      [original.source]: original.categoryOrder,
+    }
     for (const m of models) {
       for (const c of m.categories) {
         expect(orders[m.source], m.id).toContain(c)
@@ -117,6 +137,6 @@ describe('取り込んだ作品データ', () => {
 
   it('id はソースをまたいで衝突しない', () => {
     const bySource = new Set(models.map((m) => m.id.split(':')[0]))
-    expect([...bySource].sort()).toEqual(['laq-official', 'purimatu'])
+    expect([...bySource].sort()).toEqual(['laq-official', 'original', 'purimatu'])
   })
 })

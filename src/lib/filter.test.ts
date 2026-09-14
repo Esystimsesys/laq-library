@@ -3,7 +3,7 @@ import { models } from '../data'
 import type { Model } from '../data/types'
 import { emptyState } from '../store/storage'
 import type { UserState } from '../store/types'
-import { filterModels } from './filter'
+import { allModels, filterModels } from './filter'
 import { emptyFilters } from './search'
 
 const sample: Model[] = [
@@ -58,6 +58,20 @@ const user: UserState = {
 }
 
 describe('filterModels', () => {
+  it('端末で登録した冊子があっても公開オリジナルを先頭に保つ', () => {
+    const withBooklet: UserState = {
+      ...emptyState,
+      booklets: [{
+        id: 'my-booklet:test', title: '手元の作品', booklet: '', page: '', level: null,
+        categories: ['むし'], note: '', photoCount: 0, createdAt: '2026-09-15T00:00:00.000Z',
+      }],
+    }
+    expect(allModels(withBooklet).slice(0, 2).map((model) => model.id)).toEqual([
+      'original:giant-hornet',
+      'my-booklet:test',
+    ])
+  })
+
   it('なにも指定しなければ全部返す', () => {
     expect(ids(filterModels(sample, emptyFilters, emptyState))).toEqual([
       'test:1',

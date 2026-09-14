@@ -1,4 +1,5 @@
 import laqOfficial from './sources/laq-official.json'
+import original from './sources/original.json'
 import purimatu from './sources/purimatu.json'
 import type { Model, SourceFile, SourceId, SourceInfo } from './types'
 
@@ -6,9 +7,16 @@ import type { Model, SourceFile, SourceId, SourceInfo } from './types'
 const SOURCE_FILES: SourceFile[] = [
   laqOfficial as SourceFile,
   purimatu as SourceFile,
+  original as SourceFile,
 ]
 
-export const models: Model[] = SOURCE_FILES.flatMap((f) => f.models)
+const sourceModels = SOURCE_FILES.flatMap((f) => f.models)
+
+/** 「さがす」では、制作者から登録されたオリジナル作品を先頭に置く。 */
+export const models: Model[] = [
+  ...sourceModels.filter((model) => model.source === 'original'),
+  ...sourceModels.filter((model) => model.source !== 'original'),
+]
 
 export const modelById: ReadonlyMap<string, Model> = new Map(
   models.map((m) => [m.id, m]),
@@ -43,6 +51,13 @@ export function sourceOf(model: Model): SourceInfo {
   const info = sourceInfoById.get(model.source)
   if (!info) throw new Error(`知らないソースです: ${model.source}`)
   return info
+}
+
+/** 外部URLはそのまま、public内の作品画像は配信先のベースパス付きで返す。 */
+export function modelImageUrl(url: string): string {
+  return /^https?:\/\//.test(url)
+    ? url
+    : `${import.meta.env.BASE_URL}${url.replace(/^\/+/, '')}`
 }
 
 /**

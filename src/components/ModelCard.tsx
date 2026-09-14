@@ -2,7 +2,7 @@ import { assemblyForModel } from '../assemblies/catalog'
 import { memo } from 'react'
 import { Link, useLocation } from 'react-router'
 import type { Model } from '../data/types'
-import { LEVEL_KANA, sourceOf } from '../data'
+import { LEVEL_KANA, modelImageUrl, sourceOf } from '../data'
 import { isMyBooklet } from '../lib/myModels'
 import PhotoImage from './PhotoImage'
 import RemoteImage from './RemoteImage'
@@ -36,8 +36,8 @@ function ModelCard({ model, isFavorite, isMade, onToggleFavorite }: Props) {
             />
           ) : model.thumbnail ? (
             <RemoteImage
-              className={styles.thumb}
-              src={model.thumbnail}
+              className={model.source === 'original' ? `${styles.thumb} ${styles.thumbOriginal}` : styles.thumb}
+              src={modelImageUrl(model.thumbnail)}
               alt={`${model.title} のしゃしん`}
             />
           ) : (

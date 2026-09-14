@@ -9,11 +9,11 @@ import { createReviewServer } from './review-assembly.mjs'
 import { transformPieces } from '../tools/assembly-review/transforms.js'
 const cleanup=[]
 afterEach(async()=>{for(const fn of cleanup.splice(0).reverse())await fn()})
-async function setup(){
+async function setup(options={}){
  const dir=mkdtempSync(path.join(tmpdir(),'laq-review-'));cleanup.push(()=>rmSync(dir,{recursive:true,force:true}))
  const photo=path.join(dir,'photo.jpg');writeFileSync(photo,'original photo')
  const workspace=path.join(dir,'work');initWorkspace({workspace,slug:'sample',modelId:'purimatu:sample',title:'Sample',article:'https://example.com/',photos:[photo],fromGuide:'public/assemblies/metamon/guide.json'})
- const server=createReviewServer({workspace});server.listen(0,'127.0.0.1');await once(server,'listening');cleanup.push(()=>new Promise(resolve=>{server.closeAllConnections();server.close(resolve)}))
+ const server=createReviewServer({workspace,...options});server.listen(0,'127.0.0.1');await once(server,'listening');cleanup.push(()=>new Promise(resolve=>{server.closeAllConnections();server.close(resolve)}))
  const origin=`http://127.0.0.1:${server.address().port}`
  const get=()=>fetch(origin+'/api/workspace').then(r=>r.json())
  const post=(body,headers={})=>fetch(origin+'/api/save',{method:'POST',headers:{origin,'Content-Type':'application/json',...headers},body:JSON.stringify(body)})
@@ -58,4 +58,15 @@ it('moves a group in millimetres while preserving its distances and rotates norm
  transformPieces(guide,ids,[0,0,0],[90,0,0])
  const normal=v.model.pieces.find(p=>p.id===vector.id).pose.normal
  expect(normal[0]).toBeCloseTo(vector.pose.normal[0]);expect(normal[1]).toBeCloseTo(-vector.pose.normal[2]);expect(normal[2]).toBeCloseTo(vector.pose.normal[1])
+})
+
+it('permits the explicitly configured HTTPS proxy origin and rejects other hosts and origins',async()=>{
+ const externalOrigin='https://review.example.ts.net'
+ const {origin,post,body}=await setup({externalOrigin})
+ const getHost=host=>new Promise((resolve,reject)=>httpGet(origin+'/api/workspace',{headers:{host}},res=>{res.resume();resolve(res.statusCode)}).on('error',reject))
+ expect(await getHost('review.example.ts.net')).toBe(200)
+ expect(await getHost('other.example.ts.net')).toBe(403)
+ expect((await post(body,{origin:'https://other.example.ts.net'})).status).toBe(403)
+ expect((await post(body,{origin:''})).status).toBe(403)
+ expect((await post(body,{origin:externalOrigin})).status).toBe(200)
 })

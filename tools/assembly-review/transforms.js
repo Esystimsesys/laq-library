@@ -38,7 +38,7 @@ export function transformPieces(guide, ids, translationMm, rotationDeg) {
   for(const p of pieces){
     if(p.pose.center)p.pose.center=move(p.pose.center)
     if(p.pose.vertices)p.pose.vertices=p.pose.vertices.map(move)
-    for(const key of ['normal','axis'])if(p.pose[key])p.pose[key]=rotate(p.pose[key])
+    for(const key of ['normal','axis','axleDirection'])if(p.pose[key])p.pose[key]=rotate(p.pose[key])
     if(p.pose.directions)for(const key of Object.keys(p.pose.directions))p.pose.directions[key]=rotate(p.pose.directions[key])
   }
   return guide

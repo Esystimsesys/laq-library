@@ -2,7 +2,7 @@ import { listReturnTo } from '../lib/returnTo'
 import { assemblyForModel } from '../assemblies/catalog'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
-import { LEVEL_KANA, LEVEL_LABELS, sourceOf } from '../data'
+import { LEVEL_KANA, LEVEL_LABELS, modelImageUrl, sourceOf } from '../data'
 import { useLookup } from '../lib/lookup'
 import { isMyBooklet } from '../lib/myModels'
 import { photoKeys } from '../lib/photos'
@@ -55,6 +55,7 @@ function DetailContent({ modelId }: { modelId: string }) {
 
   const source = sourceOf(model)
   const mine = isMyBooklet(model)
+  const original = model.source === 'original'
   // つくり方の図を持っているのは公式ぶんだけ。ぷりまつラボは本家の記事へ送る
   const hasSteps = model.stepImages.length > 0
   const assembly = assemblyForModel(model.id)
@@ -96,10 +97,10 @@ function DetailContent({ modelId }: { modelId: string }) {
         {!mine && model.mainImage && (
           <RemoteImage
             className={styles.main}
-            src={model.mainImage}
+            src={modelImageUrl(model.mainImage)}
             alt={`${model.title} の かんせいひん`}
             loading="eager"
-            fallbackText="しゃしんは インターネットに つながると 出ます"
+            fallbackText={original ? '3Dの かんせい図を 表示できません' : 'しゃしんは インターネットに つながると 出ます'}
           />
         )}
 
@@ -258,7 +259,7 @@ function DetailContent({ modelId }: { modelId: string }) {
                   <span className={styles.stepNo}>{i + 1}</span>
                   <RemoteImage
                     className={styles.stepImage}
-                    src={src}
+                    src={modelImageUrl(src)}
                     alt={`${model.title} のつくり方 ${i + 1}まいめ`}
                     fallbackText="つくり方の図は インターネットに つながると 出ます"
                   />
@@ -292,23 +293,25 @@ function DetailContent({ modelId }: { modelId: string }) {
                 つくり方PDF（印刷用）
               </a>
             )}
-            <a
-              className={styles.linkBtn}
-              href={model.sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <LinkIcon size={22} />
-              {source.sourceLinkLabel}
-            </a>
+            {model.sourceUrl && source.sourceLinkLabel && (
+              <a
+                className={styles.linkBtn}
+                href={model.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <LinkIcon size={22} />
+                {source.sourceLinkLabel}
+              </a>
+            )}
           </div>
 
           {/* 出しどころの断りは、まずリンクへ行けるようにしてから最後に置く */}
-          <p className={styles.note}>
+          {!original && <p className={styles.note}>
             {hasSteps ? 'しゃしんと 図は' : 'しゃしんは'} {source.sourceLabel} から
             よみこんでいます。インターネットに つながっていないと
             出ないことがあります。
-          </p>
+          </p>}
         </section>
         )}
 
@@ -318,6 +321,8 @@ function DetailContent({ modelId }: { modelId: string }) {
               これは じぶんで とうろくした さくひんです。
               しゃしんも きろくも この たんまつの なかだけに あります。
             </>
+          ) : original ? (
+            <>これは オリジナルの さくひんです。</>
           ) : (
             <>
               出典: {source.sourceLabel}（{source.rightsHolder}）。
@@ -330,7 +335,7 @@ function DetailContent({ modelId }: { modelId: string }) {
 
       {zoomIndex !== null && (
         <ImageViewer
-          images={mine ? pagePhotos : model.stepImages}
+          images={mine ? pagePhotos : model.stepImages.map(modelImageUrl)}
           local={mine}
           index={zoomIndex}
           title={model.title}

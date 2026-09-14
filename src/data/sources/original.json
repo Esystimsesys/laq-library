@@ -1,0 +1,29 @@
+{
+  "source": "original",
+  "sourceLabel": "オリジナル",
+  "shortLabel": "オリジナル",
+  "rightsHolder": "制作者",
+  "sourceLinkLabel": "",
+  "sourceUrl": "",
+  "fetchedAt": "2026-09-14T00:00:00.000Z",
+  "categoryOrder": [
+    "むし"
+  ],
+  "models": [
+    {
+      "id": "original:giant-hornet",
+      "source": "original",
+      "sourceUrl": "",
+      "title": "オオスズメバチ",
+      "description": "",
+      "level": "intermediate",
+      "categories": [
+        "むし"
+      ],
+      "thumbnail": "model-images/original/giant-hornet.png",
+      "mainImage": "model-images/original/giant-hornet.png",
+      "stepImages": [],
+      "pdfUrl": null
+    }
+  ]
+}
