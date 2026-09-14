@@ -1,6 +1,7 @@
 import { transformPieces } from './transforms.js'
-import { attachPiece, reattachPiece, replacePiece, deletePiece, availableSlots, replacementParts, slotMarker, plateFaceState, flipPlate } from './pieces.js'
+import { attachPiece, reattachPiece, replacePiece, deletePiece, availableSlots, replacementParts, slotMarker, plateFaceState, flipPlate, attachmentParts, partLabel } from './pieces.js'
 import { jointOrientations, applyJointOrientation } from './orientations.js'
+import { groupedSequence } from '/assemblies/viewer/step-groups.js'
 const $=id=>document.getElementById(id), clone=value=>structuredClone(value)
 let data, guide, review, photos, undo=[], changes=[], ready=false, dirty=false, photoRotation=0, showResolved=false, busy=false
 const message=(text,error=false)=>{$('message').textContent=text;$('message').classList.toggle('error',error)}
@@ -10,8 +11,9 @@ const option=(value,text)=>{const o=document.createElement('option');o.value=val
 const selectedIds=()=>{const id=$('piece').value;return $('scope').value==='unit'?(variant().units.find(u=>u.pieceIds.includes(id))?.pieceIds??[id]):[id]}
 const label=id=>data.displayLabels?.[id]??guide.displayLabels?.[id]??variant().units.find(u=>u.id===id)?.label??'まとまり'
 const groupName=id=>guide.reading?.unitNames?.[id]??variant().units.find(u=>u.id===id)?.label??(id===variant().finished?'できあがり':'からだ')
+const specialPart=no=>['mini-shaft','mini-wheel'].includes(no)
 const colorNames={yellow:'黄',black:'黒',red:'赤',white:'白',skyblue:'水色',blue:'青',transparent:'透明',clear:'透明',lavender:'薄紫',pink:'ピンク',purple:'紫',orange:'オレンジ',green:'緑',lime:'黄緑',brown:'茶',gray:'灰',lightblue:'水色'}
-const pieceLabel=id=>{const p=variant().model.pieces.find(p=>p.id===id);if(!p)return '削除済みのパーツ';const u=variant().units.find(u=>u.pieceIds.includes(id));return `${u?label(u.id)+'のパーツ'+(u.pieceIds.indexOf(id)+1):'パーツ'} · No.${p.partNo} · ${colorNames[p.color]??'色未設定'}`}
+const pieceLabel=id=>{const p=variant().model.pieces.find(p=>p.id===id);if(!p)return '削除済みのパーツ';const u=variant().units.find(u=>u.pieceIds.includes(id));return `${u?label(u.id)+'のパーツ'+(u.pieceIds.indexOf(id)+1):'パーツ'} · ${partLabel(p.partNo)} · ${colorNames[p.color]??'色未設定'}`}
 const authorText={human:'人',ai:'AI'},confidenceText={observed:'写真で確認できる',inferred:'推測を含む',unknown:'わからない'}
 const el=(tag,className,text)=>{const e=document.createElement(tag);if(className)e.className=className;if(text!==undefined)e.textContent=text;return e}
 const when=value=>new Date(value).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})
@@ -25,32 +27,36 @@ function syncFields(){
 }
 function populateSteps(){
   const previous=$('step').value, steps=[['complete','完成形']]
-  const keys=guide.sequence??[...variant().units.flatMap(u=>u.steps.map((_,i)=>`unit:${u.id}:${i}`)),...variant().assembly.map((_,i)=>`assembly:${i}`)]
-  for(const key of keys){const [phase,id]=key.split(':');const group=phase==='unit'?id:variant().assembly[Number(id)]?.result;steps.push([key,`${steps.length}. ${label(group)} ${groupName(group)}`])}
+  const keys=groupedSequence(guide)
+  for(const key of keys){const [phase,id]=key.split(':');if(phase==='group'){steps.push([key,`${steps.length}. ${guide.reading.stepGroups.find(g=>g.id===id).title}`]);continue}const stage=phase==='assembly'?variant().assembly[Number(id)]:null;const group=phase==='unit'?id:stage?.result;steps.push([key,`${steps.length}. ${stage?.title||`${label(group)} ${groupName(group)}`}`])}
   $('step').replaceChildren(...steps.map(([key,text])=>option(key,text)));if(steps.some(([key])=>key===previous))$('step').value=previous;navState()
 }
 function navState(){for(const id of ['photo','step']){const s=$(id);$(id+'-prev').disabled=s.selectedIndex<=0;$(id+'-next').disabled=s.selectedIndex<0||s.selectedIndex>=s.options.length-1}}
-function showStep(){commentContext();navState();if(!ready)return;const [phase,id,index]=$('step').value.split(':');post({command:'show',phase,unit:phase==='unit'?id:null,step:phase==='unit'?Number(index):Number(id)||0});selectPiece()}
+function showStep(){commentContext();navState();if(!ready)return;const [phase,id,index]=$('step').value.split(':');post({command:'show',phase,unit:phase==='unit'||phase==='group'?id:null,step:phase==='unit'?Number(index):Number(id)||0});selectPiece()}
 function fillPieces(){const previous=$('piece').value;$('piece').replaceChildren(...variant().model.pieces.map(p=>option(p.id,pieceLabel(p.id))));if(variant().model.pieces.some(p=>p.id===previous))$('piece').value=previous;selectPiece()}
 function selectPiece(){
   const p=variant()?.model.pieces.find(p=>p.id===$('piece').value);if(!p)return
-  const unit=variant().units.find(u=>u.pieceIds.includes(p.id));$('piece-info').textContent=`No.${p.partNo} / まとまり ${unit?label(unit.id):'なし'} / 選択 ${selectedIds().length} パーツ`
+  const unit=variant().units.find(u=>u.pieceIds.includes(p.id));$('piece-info').textContent=`${partLabel(p.partNo)} / まとまり ${unit?label(unit.id):'なし'} / 選択 ${selectedIds().length} パーツ`
   $('color').value=p.color
+  const colorEditable=variant().model.pieces.some(piece=>selectedIds().includes(piece.id)&&!specialPart(piece.partNo))
+  $('color').disabled=!colorEditable;$('apply-color').disabled=!colorEditable
   const connections=variant().model.connections.filter(c=>c.joint===p.id||c.ports.some(port=>port.piece===p.id))
   $('connections').textContent='接続: '+(connections.map(c=>`${pieceLabel(c.joint)} → ${c.ports.map(port=>`${pieceLabel(port.piece)} (辺${port.socket+1}・差し込み口${port.port+1})`).join(', ')}`).join(' / ')||'なし')
+  const axles=(variant().model.axleConnections??[]).filter(c=>c.shaft===p.id||c.wheel===p.id)
+  if(axles.length)$('connections').textContent+=' / '+axles.map(c=>`${pieceLabel(c.shaft)} → ${pieceLabel(c.wheel)} (軸・軸穴)`).join(' / ')
   if(ready)post({command:'select',ids:selectedIds()})
   editorFields(p)
   commentContext()
 }
 const partNames={1:'四角',2:'三角',3:'平面（細）',4:'平面（幅広）',5:'120°',6:'90°',7:'3方向'}
-const partOption=no=>option(no,`No.${no} · ${partNames[no]}`)
+const partOption=no=>option(no,`${partLabel(no)}${partNames[no]?' · '+partNames[no]:''}`)
+const parsePart=value=>/^\d+$/.test(value)?Number(value):value
 function setOptions(id,items){const previous=$(id).value;$(id).replaceChildren(...items);if(items.some(o=>o.value===previous))$(id).value=previous}
 function editorFields(piece){
   setOptions('attach-slot',availableSlots(guide,piece.id).map(s=>option(s.value,s.label)))
-  setOptions('add-part',(piece.partNo<=2?[3,4,5,6,7]:[1,2]).map(partOption))
   setOptions('replace-part',replacementParts(guide,piece.id).map(partOption))
   $('replace-piece').disabled=!$('replace-part').options.length
-  setOptions('reattach-target',variant().model.pieces.filter(p=>p.id!==piece.id&&(p.partNo<=2)!==(piece.partNo<=2)).map(p=>option(p.id,pieceLabel(p.id))))
+  setOptions('reattach-target',variant().model.pieces.filter(p=>p.id!==piece.id&&availableSlots(guide,p.id,piece.id).some(slot=>attachmentParts(guide,p.id,slot.value).includes(piece.partNo))).map(p=>option(p.id,pieceLabel(p.id))))
   attachLocation();reattachFields();orientationFields(piece)
   const face=plateFaceState(guide,piece.id)
   $('flip-face').disabled=!face.canFlip;$('flip-viewer-face').disabled=!face.canFlip
@@ -83,16 +89,21 @@ async function changeOrientation(id){
 }
 function attachLocation(){
   const hasSlot=$('attach-slot').options.length>0
+  setOptions('add-part',hasSlot?attachmentParts(guide,$('piece').value,Number($('attach-slot').value)).map(partOption):[])
+  addColorState()
   $('attach-piece').disabled=!hasSlot
   $('attach-hint').textContent=hasSlot?'図のオレンジの印がはめる場所です。追加後に形と重なりを確認してください。':'空いている辺・差し込み口がありません。別のパーツを選んでください。'
   if(ready)post({command:'edit-marker',pieceId:$('piece').value,marker:hasSlot?slotMarker(guide,$('piece').value,Number($('attach-slot').value)):null})
 }
+function addColorState(){const fixed=specialPart($('add-part').value);$('add-color').disabled=fixed;if(fixed)$('add-color').value='black'}
 function reattachFields(){
   const target=$('reattach-target').value
   // The selected piece's old links will be removed before snapping.
   const next=clone(guide),model=next.variants[next.defaultVariant].model,id=$('piece').value
   model.connections=model.connections.filter(c=>c.joint!==id).map(c=>({...c,ports:c.ports.filter(p=>p.piece!==id)})).filter(c=>c.ports.length)
-  setOptions('reattach-slot',(target?availableSlots(next,target):[]).map(s=>option(s.value,s.label)))
+  if(model.axleConnections)model.axleConnections=model.axleConnections.filter(c=>c.shaft!==id&&c.wheel!==id)
+  const partNo=model.pieces.find(p=>p.id===id).partNo
+  setOptions('reattach-slot',(target?availableSlots(next,target):[]).filter(slot=>attachmentParts(next,target,slot.value).includes(partNo)).map(s=>option(s.value,s.label)))
   $('reattach-piece').disabled=!$('reattach-slot').options.length
 }
 // Keep historical comments, and drop only obsolete evidence links in saved data.
@@ -139,14 +150,14 @@ function accept(result,preserveView=false){
     $('scope').value=view.scope;$('photo-zoom').value=view.zoom;photoRotation=view.rotation;$('comment-context').checked=view.commentContext;$('comment-pieces').checked=view.commentPieces
     photoStyle();$('source').parentElement.scrollLeft=view.scrollLeft;$('source').parentElement.scrollTop=view.scrollTop;selectPiece();navState()
   }
-  $('export-command').textContent=`取り込み用に出力: node scripts/author-assembly.mjs export --workspace ${JSON.stringify(data.workspace)} --out <新しい出力先>`
+  $('export-command').textContent=variant().model.pieces.some(p=>specialPart(p.partNo))?'スペシャルパーツは制作室で利用できます。公開ガイドへの取り込みは未対応です。':`取り込み用に出力: node scripts/author-assembly.mjs export --workspace ${JSON.stringify(data.workspace)} --out <新しい出力先>`
   message(data.validation==='OK'?'データの参照・手順は整合しています。実物との一致は写真と照合してください。':'未完成データ: '+data.validation,data.validation!=='OK')
 }
 async function request(url,body){const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const value=await res.json();if(!res.ok)throw new Error(value.error);return value}
 async function change(next,description){
   await request('/api/validate',{guide:next});syncFields();undo.push({guide:clone(guide),changes:[...changes]});guide=next;changes.push(description);markDirty();$('undo').disabled=false;populateSteps();fillPieces();if(ready)post({command:'replace-guide',guide});message(description+'。接続位置も確認してください。')
 }
-async function save(markReviewed){message('保存しています…');syncFields();const result=await request('/api/save',{baseVersion:data.version,guide,review:reviewForGuide(guide),photos,changes,markReviewed});accept(result,true);if(!ready)$('viewer').src='/assemblies/viewer/index.html?id=draft&review=1&t='+Date.now()+'#phase=complete';message(markReviewed?'確認記録とガイドを保存しました。取り込み用に出力できます。':'変更を保存しました。前の状態は history に残しています。')}
+async function save(markReviewed){message('保存しています…');syncFields();const result=await request('/api/save',{baseVersion:data.version,guide,review:reviewForGuide(guide),photos,changes,markReviewed});accept(result,true);if(!ready)$('viewer').src='/assemblies/viewer/index.html?id=draft&review=1&t='+Date.now()+'#phase=complete';message(markReviewed?'確認記録とガイドを保存しました。':'変更を保存しました。前の状態は history に残しています。')}
 // Saving and validation replace local state when they finish. Keep edits and
 // other requests out of that interval; inert preserves each control's own disabled state.
 async function runExclusive(callback){
@@ -177,22 +188,23 @@ for(const id of ['flip-face','flip-viewer-face'])handle(id,async()=>{
 $('joint-orientation').onchange=orientationChoice
 handle('apply-orientation',()=>changeOrientation($('joint-orientation').value))
 for(const id of ['next-orientation','cycle-viewer-orientation'])handle(id,()=>{const index=orientationOptions.findIndex(item=>item.current);return changeOrientation(orientationOptions[(index+1)%orientationOptions.length]?.id)})
+$('add-part').onchange=addColorState
 $('attach-slot').onchange=attachLocation;$('reattach-target').onchange=reattachFields
 handle('attach-piece',async()=>{
   const next=clone(guide),targetId=$('piece').value
-  const id=attachPiece(next,{targetId,targetSlot:Number($('attach-slot').value),partNo:Number($('add-part').value),color:$('add-color').value,id:'manual-'+crypto.randomUUID()})
-  await change(next,`${pieceLabel(targetId)}に No.${$('add-part').value} を追加`)
+  const id=attachPiece(next,{targetId,targetSlot:Number($('attach-slot').value),partNo:parsePart($('add-part').value),color:$('add-color').value,id:'manual-'+crypto.randomUUID()})
+  await change(next,`${pieceLabel(targetId)}に ${partLabel(parsePart($('add-part').value))} を追加`)
   $('piece').value=id;$('scope').value='piece';selectPiece()
   message('パーツをはめました。位置と重なりを確認し、「変更を保存」で保存してください。')
 })
-handle('replace-piece',()=>{const next=clone(guide),id=$('piece').value,no=Number($('replace-part').value);replacePiece(next,id,no);return change(next,`${pieceLabel(id)}を No.${no} に交換`)})
+handle('replace-piece',()=>{const next=clone(guide),id=$('piece').value,no=parsePart($('replace-part').value);replacePiece(next,id,no);return change(next,`${pieceLabel(id)}を ${partLabel(no)} に交換`)})
 handle('reattach-piece',async()=>{const next=clone(guide),id=$('piece').value;reattachPiece(next,{pieceId:id,targetId:$('reattach-target').value,targetSlot:Number($('reattach-slot').value)});await change(next,`${pieceLabel(id)}をつなぎ直し`);$('step').value='complete';showStep()})
 handle('delete-piece',async()=>{const next=clone(guide),id=$('piece').value,description=pieceLabel(id)+'を削除';deletePiece(next,id);await change(next,description);reviewLists();message('選択パーツを接続・手順から削除しました。「1つ戻す」で取り消せます。')})
 $('piece').onchange=()=>{$('scope').value='piece';selectPiece()};$('scope').onchange=selectPiece;$('step').onchange=showStep
 $('photo').onchange=showPhoto;$('photo-zoom').oninput=photoStyle;$('rotate-photo').onclick=()=>{photoRotation=(photoRotation+90)%360;photoStyle()}
 for(const id of ['reviewer','notes','physical','photo-view','photo-notes'])$(id).oninput=()=>{syncFields();markDirty()}
 handle('apply-transform',()=>{const next=clone(guide),ids=selectedIds(),d=['dx','dy','dz'].map(id=>Number($(id).value)),r=['rx','ry','rz'].map(id=>Number($(id).value));transformPieces(next,ids,d,r);return change(next,`${ids.map(pieceLabel).join(', ')}: 移動 ${d.join('/')} mm、回転 ${r.join('/')} 度`)})
-handle('apply-color',async()=>{const next=clone(guide),ids=selectedIds(),color=$('color').value,description=`${ids.map(pieceLabel).join(', ')}: 色 ${colorNames[color]}`;for(const p of next.variants[next.defaultVariant].model.pieces)if(ids.includes(p.id))p.color=color;await change(next,description);message(`${ids.map(pieceLabel).join(', ')}を${colorNames[color]}に反映しました。保存ボタンを押すと保存されます。`)})
+handle('apply-color',async()=>{const next=clone(guide),ids=selectedIds().filter(id=>!specialPart(variant().model.pieces.find(p=>p.id===id).partNo)),color=$('color').value,description=`${ids.map(pieceLabel).join(', ')}: 色 ${colorNames[color]}`;for(const p of next.variants[next.defaultVariant].model.pieces)if(ids.includes(p.id))p.color=color;await change(next,description);message(`${ids.map(pieceLabel).join(', ')}を${colorNames[color]}に反映しました。保存ボタンを押すと保存されます。`)})
 handle('undo',()=>{const item=undo.pop();if(!item)return;guide=item.guide;changes=item.changes;markDirty();populateSteps();fillPieces();post({command:'replace-guide',guide});$('undo').disabled=!undo.length;message('直前の3D編集を戻しました。')})
 handle('save',()=>save(false));handle('review',()=>save(true))
 $('toggle-resolved').onclick=()=>{showResolved=!showResolved;reviewLists()}

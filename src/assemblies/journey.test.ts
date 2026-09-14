@@ -1,11 +1,13 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import guideData from '../../public/assemblies/metamon/guide.json'
+import hornetData from '../../public/assemblies/giant-hornet/guide.json'
 import { assemblies } from './catalog'
 import { inventory, journey, stepIndex, routeIndex } from './journey'
 import { clearAssemblyProgress, loadProgress, saveProgress, progressKey } from './progress'
 import type { Guide } from './types'
 const guide = guideData as Guide
 const route = journey(guide)
+const hornetGuide = hornetData as Guide
 afterEach(() => vi.unstubAllGlobals())
 describe('assembly journey', () => {
   it('prepares, builds every grouped step, merges in order and reaches the complete model', () => {
@@ -25,6 +27,19 @@ describe('assembly journey', () => {
     expect(route.find(s=>s.key==='unit:A1:0')).toMatchObject({ title: 'まえの からだ', description: '' })
     expect(route.find(s=>s.key==='assembly:0')).toMatchObject({ title: 'からだ', description: '' })
     expect(route.find(s=>s.key==='assembly:7')).toMatchObject({ title: 'できあがり', description: '' })
+  })
+  it('shows the original giant hornet in the six reviewed display steps', () => {
+    const hornet = journey(hornetGuide)
+    expect(hornet.filter(step => step.source).map(step => step.key)).toEqual([
+      'group:body-eyes',
+      'group:front-wings',
+      'group:back-wings',
+      'assembly:4',
+      'unit:D1:0',
+      'assembly:5',
+    ])
+    expect(hornet.find(step => step.key === 'group:body-eyes')?.source?.visiblePieces).toHaveLength(28)
+    expect(hornet[routeIndex(new URLSearchParams('step=unit:B2:0'), hornetGuide, hornet)].key).toBe('group:front-wings')
   })
   it('counts parts without merging different colours or duplicating pieces', () => {
     const counts = inventory(guide.variants[guide.defaultVariant].model.pieces)

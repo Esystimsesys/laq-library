@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useParams, useSearchParams } from 'react-router'
+import { modelById, sourceOf } from '../data'
 import { listReturnTo } from '../lib/returnTo'
 import { assemblyById } from './catalog'
-import { colorWords, groupLabel, groupName, inventory, journey, routeIndex } from './journey'
+import { colorWords, groupLabel, groupName, inventory, journey, partName, routeIndex } from './journey'
 import { loadProgress, saveProgress, type Progress } from './progress'
 import type { AssemblyEntry, Guide } from './types'
 import AssemblyViewer from './AssemblyViewer'
@@ -39,6 +40,9 @@ function Journey({ entry, guide }: { entry: AssemblyEntry; guide: Guide }) {
   const [mapOpen, setMapOpen] = useState(false)
   const heading = useRef<HTMLHeadingElement>(null)
   const { state, actions } = useApp()
+  const model = modelById.get(entry.modelId)
+  const source = model ? sourceOf(model) : null
+  const original = model?.source === 'original'
   const label = (id: string) => groupLabel(guide, id)
   const unitName = (id: string) => groupName(guide, id)
   const counts = useMemo(() => inventory(variant.model.pieces), [variant])
@@ -46,8 +50,8 @@ function Journey({ entry, guide }: { entry: AssemblyEntry; guide: Guide }) {
   const taskIndex = tasks.findIndex(s => s.key === current.key)
   const totalTasks = tasks.length
   const progressStep = current.phase === 'welcome' ? 0 : current.phase === 'done' ? totalTasks : taskIndex + 1
-  const currentGroup = current.unit ?? current.source?.result
-  const stageInventory = current.phase === 'unit' ? inventory(variant.model.pieces.filter(p => current.source?.visiblePieces.includes(p.id))) : null
+  const currentGroup = current.phase === 'group' ? undefined : current.unit ?? current.source?.result
+  const stageInventory = ['unit', 'group'].includes(current.phase) ? inventory(variant.model.pieces.filter(p => current.source?.visiblePieces.includes(p.id))) : null
   useEffect(() => {
     if (at === 0) return
     const next = { ...loadProgress(entry, steps.map(s => s.key)), at }
@@ -92,14 +96,17 @@ function Journey({ entry, guide }: { entry: AssemblyEntry; guide: Guide }) {
     </section>}
     {current.phase === 'welcome' && <section className={styles.partsReference} aria-label="つかう パーツの めやす">
       <h2>つかう パーツの めやす</h2><p>ぜんぶで {entry.pieceCount}こ。つくりながら、ひつような パーツを えらんでね。</p>
-      <ul className={styles.parts}>{counts.map(p => <li key={`${p.partNo}:${p.color}`} aria-label={`No.${p.partNo} ${colorWords[p.color] ?? p.color} ${p.count}こ`}>
-        {images[`part:${p.partNo}:${p.color}`] && <img src={images[`part:${p.partNo}:${p.color}`]} alt="" />}<b>No.{p.partNo}</b><span>{colorWords[p.color] ?? p.color}</span><strong>{p.count}こ</strong>
+      <ul className={styles.parts}>{counts.map(p => <li key={`${p.partNo}:${p.color}`} aria-label={`${partName(p.partNo)} ${colorWords[p.color] ?? p.color} ${p.count}こ`}>
+        {images[`part:${p.partNo}:${p.color}`] && <img src={images[`part:${p.partNo}:${p.color}`]} alt="" />}<b>{partName(p.partNo)}</b><span>{colorWords[p.color] ?? p.color}</span><strong>{p.count}こ</strong>
       </li>)}</ul>
     </section>}
-    {stageInventory && <details className={styles.stageParts}><summary>この図の パーツを見る（{current.source?.visiblePieces.length}こ）</summary><ul>{stageInventory.map(p => <li key={`${p.partNo}:${p.color}`}>No.{p.partNo} / {colorWords[p.color] ?? p.color} <b>{p.count}こ</b></li>)}</ul></details>}
+    {stageInventory && <details className={styles.stageParts}><summary>この図の パーツを見る（{current.source?.visiblePieces.length}こ）</summary><ul>{stageInventory.map(p => <li key={`${p.partNo}:${p.color}`}>{partName(p.partNo)} / {colorWords[p.color] ?? p.color} <b>{p.count}こ</b></li>)}</ul></details>}
 
     {current.phase === 'done' && <section className={styles.finish}><h2>つくれたら、きろくしよう！</h2><p>さいごまで よく がんばったね。</p><button className={styles.primary} disabled={Boolean(state.made[entry.modelId])} onClick={() => { if (!state.made[entry.modelId]) actions.toggleMade(entry.modelId) }}>{state.made[entry.modelId] ? '✓ つくった！ きろくずみ' : '★ つくった！を きろく'}</button><Link to={`/model/${encodeURIComponent(entry.modelId)}`} state={{ returnTo }}>さくひんの ページへ</Link></section>}
-    <footer className={styles.source}><a href={guide.article} target="_blank" rel="noreferrer">ぷりまつラボの 元のつくりかた ↗</a><p role="note" aria-label="この図について">写真から作った おためしの3D組み立て図です。実物での差し込み・組みやすさは確認中です。うまく はまらないときは、むりに おさず おとなと 見てね。</p></footer>
+    <footer className={styles.source}>
+      {!original && source?.sourceLinkLabel && <a href={guide.article} target="_blank" rel="noreferrer">{source.sourceLinkLabel} ↗</a>}
+      <p role="note" aria-label="この図について">{original ? 'オリジナル作品を写真から3Dにした組み立て図です。3Dの図どおりの再組み立ては未確認です。' : '写真から作った おためしの3D組み立て図です。実物での差し込み・組みやすさは確認中です。'}うまく はまらないときは、むりに おさず おとなと 見てね。</p>
+    </footer>
     <nav className={styles.bottom} aria-label="てじゅんを すすめる">
       {at > 0 && <button className={styles.secondary} onClick={() => go(at - 1)}>← まえへ</button>}
       {current.phase === 'welcome' && progress.at > 0 && <button className={styles.secondary} onClick={() => go(progress.at)}>つづきから</button>}

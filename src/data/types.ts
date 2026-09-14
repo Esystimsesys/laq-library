@@ -13,7 +13,7 @@
  * 'my-booklet' だけは取り込みではなく、使う人が自分で登録したもの。
  * 端末の中にしかなく、リポジトリには入らない。
  */
-export type SourceId = 'laq-official' | 'purimatu' | 'my-booklet'
+export type SourceId = 'laq-official' | 'purimatu' | 'original' | 'my-booklet'
 
 export type Level = 'beginner' | 'intermediate' | 'advanced'
 
@@ -21,13 +21,13 @@ export type Model = {
   /** '<source>:<そのソースでの id>'。取り込み直しても変わらない */
   id: string
   source: SourceId
-  /** 出典ページ。詳細画面から必ずここへリンクする */
+  /** 出典ページ。ユーザーオリジナルなど外部ページが無い作品は空文字 */
   sourceUrl: string
   title: string
   description: string
   level: Level | null
   categories: string[]
-  /** 画像と PDF は複製せず、出典サイトの URL をそのまま参照する */
+  /** 外部作品は出典URL、オリジナル作品はpublic内の3Dレンダリング画像を参照する */
   thumbnail: string | null
   mainImage: string | null
   stepImages: string[]
@@ -48,9 +48,9 @@ export type SourceInfo = {
   shortLabel: string
   /** 画像・図・PDF の権利者。詳細画面の出典表記に出す */
   rightsHolder: string
-  /** 出典ページへ飛ぶボタンの文言 */
+  /** 出典ページへ飛ぶボタンの文言。外部ページが無いソースは空文字 */
   sourceLinkLabel: string
-  /** そのソースのトップページ */
+  /** そのソースのトップページ。外部ページが無いソースは空文字 */
   sourceUrl: string
 }
 

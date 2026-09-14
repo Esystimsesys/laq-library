@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
+import { groupedSequence } from '../public/assemblies/viewer/step-groups.js'
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const readJson = (file) => JSON.parse(readFileSync(file, 'utf8'))
@@ -19,7 +20,14 @@ const ids = (values, allowed, label, allowEmpty = false) => {
 }
 const same = (a, b) => a.size === b.size && [...a].every((id) => b.has(id))
 const vector = (v) => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite)
+const direction = (v) => vector(v) && Math.hypot(...v) > 1e-9
+const cosine = (a, b) => a.reduce((sum, value, index) => sum + value * b[index], 0) / Math.hypot(...a) / Math.hypot(...b)
+const perpendicular = (a, b) => Math.abs(cosine(a, b)) < 1e-5
+const standardPart = partNo => Number.isInteger(partNo) && partNo >= 1 && partNo <= 7
+const platePart = partNo => partNo === 1 || partNo === 2
+const specialPart = partNo => partNo === 'mini-shaft' || partNo === 'mini-wheel'
 const portKey = (a) => `${a.joint}:${a.port}:${a.piece}:${a.socket}`
+const axleKey = (a) => `axle:${JSON.stringify([a.shaft, a.wheel])}`
 const stages = (variant) => new Map([
   ...variant.units.flatMap((unit) => unit.steps.map((stage, index) => [`unit:${unit.id}:${index}`, { stage, unit, index }])),
   ...variant.assembly.map((stage, index) => [`assembly:${index}`, { stage }]),
@@ -83,11 +91,20 @@ export function validateGuide(guide) {
   const pieceMap = new Map()
   for (const piece of pieces) {
     check(text(piece.id) && !pieceMap.has(piece.id), `invalid or duplicate piece: ${piece.id}`)
-    check(Number.isInteger(piece.partNo) && piece.partNo >= 1 && piece.partNo <= 7, `${piece.id}: invalid partNo`)
+    check(standardPart(piece.partNo) || specialPart(piece.partNo), `${piece.id}: invalid partNo`)
     const pose = piece.pose
     check(pose && (piece.partNo <= 2
       ? Array.isArray(pose.vertices) && pose.vertices.length === (piece.partNo === 1 ? 4 : 3) && pose.vertices.every(vector) && vector(pose.normal)
       : vector(pose.center) && vector(pose.axis)), `${piece.id}: invalid geometry`)
+    if (specialPart(piece.partNo)) check(direction(pose.axis), `${piece.id}: invalid axis direction`)
+    if (piece.partNo === 'mini-shaft') {
+      const d0 = pose.directions?.[0], d1 = pose.directions?.[1]
+      check(direction(d0) && direction(d1) && direction(pose.axleDirection), `${piece.id}: shaft directions and axleDirection are required`)
+      check(cosine(d0, d1) < -1 + 1e-5 && perpendicular(pose.axis, d0) && perpendicular(pose.axis, d1), `${piece.id}: shaft plate directions must oppose each other and be perpendicular to axis`)
+      check(perpendicular(pose.axleDirection, pose.axis) && perpendicular(pose.axleDirection, d0) && perpendicular(pose.axleDirection, d1), `${piece.id}: axleDirection must be perpendicular to axis and plate directions`)
+      // Older two-port drafts omit the rear direction; it is fixed opposite the axle.
+      if (pose.directions[2] !== undefined) check(direction(pose.directions[2]) && cosine(pose.directions[2], pose.axleDirection) < -1 + 1e-5, `${piece.id}: third plate direction must oppose axleDirection`)
+    }
     pieceMap.set(piece.id, piece)
   }
   const connections = new Set()
@@ -95,11 +112,11 @@ export function validateGuide(guide) {
   const ports = new Set()
   for (const connection of array(variant.model.connections, 'model.connections', true)) {
     const joint = pieceMap.get(connection.joint)
-    check(joint && joint.partNo >= 3, `connection: unknown joint ${connection.joint}`)
+    check(joint && ((standardPart(joint.partNo) && joint.partNo >= 3) || joint.partNo === 'mini-shaft'), `connection: unknown joint ${connection.joint}`)
     for (const port of array(connection.ports, `${connection.joint}.ports`)) {
       const piece = pieceMap.get(port.piece)
-      check(piece && piece.partNo <= 2, `connection: unknown plate ${port.piece}`)
-      check(Number.isInteger(port.port) && port.port >= 0 && port.port < ([5, 7].includes(joint.partNo) ? 3 : 2), 'connection: invalid port')
+      check(piece && platePart(piece.partNo), `connection: unknown plate ${port.piece}`)
+      check(Number.isInteger(port.port) && port.port >= 0 && port.port < ([5, 7, 'mini-shaft'].includes(joint.partNo) ? 3 : 2), 'connection: invalid port')
       check(Number.isInteger(port.socket) && port.socket >= 0 && port.socket < piece.pose.vertices.length, 'connection: invalid socket')
       const pk = `${joint.id}:${port.port}`
       const sk = `${piece.id}:${port.socket}`
@@ -107,6 +124,14 @@ export function validateGuide(guide) {
       ports.add(pk); sockets.add(sk)
       connections.add(portKey({ joint: joint.id, ...port }))
     }
+  }
+  const shafts = new Set(), wheels = new Set()
+  for (const connection of array(variant.model.axleConnections === undefined ? [] : variant.model.axleConnections, 'model.axleConnections', true)) {
+    check(connection && pieceMap.get(connection.shaft)?.partNo === 'mini-shaft', `axle connection: unknown shaft ${connection?.shaft}`)
+    check(pieceMap.get(connection.wheel)?.partNo === 'mini-wheel', `axle connection: unknown wheel ${connection.wheel}`)
+    check(!shafts.has(connection.shaft) && !wheels.has(connection.wheel), 'axle connection: duplicate shaft/wheel')
+    shafts.add(connection.shaft); wheels.add(connection.wheel)
+    connections.add(axleKey(connection))
   }
   const usedConnections = new Set()
   const stepIds = new Set()
@@ -127,9 +152,10 @@ export function validateGuide(guide) {
       check(same(grouped, added), `${stage.id}.explodeGroups: must group every new piece`)
     }
     for (const action of array(stage.actions, `${stage.id}.actions`, true)) {
-      check(action.kind === 'port', `${stage.id}: unsupported action kind`)
-      check(visible.has(action.joint) && visible.has(action.piece), `${stage.id}: action references invisible piece`)
-      const key = portKey(action)
+      check(action.kind === 'port' || action.kind === 'axle', `${stage.id}: unsupported action kind`)
+      const isAxle = action.kind === 'axle'
+      check(isAxle ? visible.has(action.shaft) && visible.has(action.wheel) : visible.has(action.joint) && visible.has(action.piece), `${stage.id}: action references invisible piece`)
+      const key = isAxle ? axleKey(action) : portKey(action)
       check(connections.has(key), `${stage.id}: action does not match a connection`)
       check(!usedConnections.has(key), `${stage.id}: duplicate action`)
       usedConnections.add(key)
@@ -179,6 +205,7 @@ export function validateGuide(guide) {
 /** Validate finalized source presentation too; shared by local review and source-reading import. */
 export function validateSourceGuide(guide) {
   const variant = validateGuide(guide)
+  groupedSequence(guide)
   const record = (value, label) => check(value && typeof value === 'object' && !Array.isArray(value), `${label} must be an object`)
   const byKey = stages(variant), unitIds = new Set(variant.units.map(unit => unit.id))
   const groupIds = new Set([...unitIds, ...variant.assembly.map(stage => stage.result)])
@@ -254,6 +281,7 @@ export function runtimeGuide(source) {
 export function importAssembly({ source, name = 'metamon', modelId, title, article, revision, root = projectRoot, updateRuntime = false, useSourceReading = false }) {
   check(text(source), '--source is required')
   check(/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name), '--name must be a lowercase slug')
+  const requestedArticle = article
   source = path.resolve(source)
   const sourceGuide = readJson(path.join(source, 'models', name, 'unit-guide.json'))
   const variant = useSourceReading ? validateSourceGuide(sourceGuide) : validateGuide(sourceGuide)
@@ -267,9 +295,9 @@ export function importAssembly({ source, name = 'metamon', modelId, title, artic
   check(model, 'Cannot find library model; provide --model-id for an existing model')
   modelId = model.id
   title ??= model.title
-  article ??= model.sourceUrl
+  article = requestedArticle ?? model.sourceUrl ?? article
   check(text(title), 'title is required')
-  check(/^https?:\/\//.test(article), 'article must be an HTTP(S) URL')
+  check(article === '' || /^https?:\/\//.test(article), 'article must be empty or an HTTP(S) URL')
   const manifestPath = path.join(root, 'src/data/assemblies.json')
   const manifest = existsSync(manifestPath) ? readJson(manifestPath) : []
   array(manifest, 'assemblies manifest', true)

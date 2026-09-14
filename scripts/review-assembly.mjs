@@ -53,16 +53,23 @@ function save(workspace, body) {
   }
   return snapshot(workspace)
 }
-export function createReviewServer({ workspace }) {
+export function createReviewServer({ workspace, externalOrigin }) {
+  let external
+  if (externalOrigin !== undefined) {
+    external = new URL(externalOrigin)
+    if (external.protocol !== 'https:' || external.origin !== externalOrigin) throw new Error('externalOrigin must be an HTTPS origin without a path')
+  }
   workspace = snapshot(workspace).workspace
   return createServer(async (req,res) => {
     const send = (status, value, type='application/json') => { res.writeHead(status, { 'Content-Type':type+'; charset=utf-8', 'Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff', 'Referrer-Policy':'no-referrer', 'Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'none'" }); res.end(type==='application/json'?json(value):value) }
     try {
       const authority = `127.0.0.1:${req.socket.localPort}`
-      if (req.headers.host !== authority || (req.headers.origin && req.headers.origin !== `http://${authority}`)) return send(403,{error:'Same-origin loopback access only'})
+      const hosts = new Set([authority, `localhost:${req.socket.localPort}`, ...(external ? [external.host] : [])])
+      const origins = new Set([`http://${authority}`, `http://localhost:${req.socket.localPort}`, ...(external ? [external.origin] : [])])
+      if (!hosts.has(req.headers.host) || (req.headers.origin && !origins.has(req.headers.origin))) return send(403,{error:'Configured host and origin required'})
       const url = new URL(req.url, `http://${authority}`)
       if (req.method === 'POST' && ['/api/save','/api/validate'].includes(url.pathname)) {
-        if (req.headers.origin !== `http://${authority}` || req.headers['content-type']?.split(';')[0] !== 'application/json') return send(403,{error:'Same-origin JSON required'})
+        if (!origins.has(req.headers.origin) || req.headers['content-type']?.split(';')[0] !== 'application/json') return send(403,{error:'Same-origin JSON required'})
         let size=0; const chunks=[]
         for await (const chunk of req) { size+=chunk.length; if(size>8*1024*1024) throw new Error('Request too large'); chunks.push(chunk) }
         const body=JSON.parse(Buffer.concat(chunks).toString())
@@ -83,7 +90,7 @@ export function createReviewServer({ workspace }) {
       } else {
         const assets = new Map([
           ['/','tools/assembly-review/index.html'], ['/review.js','tools/assembly-review/review.js'], ['/review.css','tools/assembly-review/review.css'], ['/transforms.js','tools/assembly-review/transforms.js'], ['/pieces.js','tools/assembly-review/pieces.js'], ['/orientations.js','tools/assembly-review/orientations.js'],
-          ...['index.html','boot.js','unit-instructions.js','realistic-parts.js','unit-instructions.css','library.css'].map(name=>[`/assemblies/viewer/${name}`,`public/assemblies/viewer/${name}`]),
+          ...['index.html','boot.js','unit-instructions.js','step-groups.js','realistic-parts.js','special-parts.js','unit-instructions.css','library.css'].map(name=>[`/assemblies/viewer/${name}`,`public/assemblies/viewer/${name}`]),
           ['/assemblies/vendor/three.min.js','public/assemblies/vendor/three.min.js'],
         ])
         if (!assets.has(url.pathname)) return send(404,{error:'Not found'})
@@ -95,9 +102,9 @@ export function createReviewServer({ workspace }) {
 }
 if(process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   try {
-    const {values}=parseArgs({options:{workspace:{type:'string'},port:{type:'string',default:'5180'}}})
+    const {values}=parseArgs({options:{workspace:{type:'string'},port:{type:'string',default:'5180'},'external-origin':{type:'string'}}})
     const port=Number(values.port)
     if(!Number.isInteger(port)||port<1024||port>65535)throw new Error('Port must be 1024–65535')
-    createReviewServer({workspace:values.workspace}).listen(port,'127.0.0.1',()=>console.log(`写真と3Dの確認・修正: http://127.0.0.1:${port}/`)).on('error',e=>{console.error(e.message);process.exitCode=1})
+    createReviewServer({workspace:values.workspace,externalOrigin:values['external-origin']}).listen(port,'127.0.0.1',()=>console.log(`写真と3Dの確認・修正: http://127.0.0.1:${port}/`)).on('error',e=>{console.error(e.message);process.exitCode=1})
   }catch(e){console.error(e.message);process.exitCode=1}
 }

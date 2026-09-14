@@ -19,6 +19,7 @@
       return response.json();
     })();
     window.__LaQLibraryGuide = guide;
+    window.LaQStepGroups = await import('./step-groups.js');
     await new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.src = 'unit-instructions.js';script.onload = resolve;script.onerror = reject;document.body.append(script);

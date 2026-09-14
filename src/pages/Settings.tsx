@@ -231,19 +231,22 @@ export default function Settings() {
         <ul className={styles.sources}>
           {sources.map((s) => (
             <li key={s.source} className={styles.source}>
-              <a href={s.sourceUrl} target="_blank" rel="noreferrer">
-                {s.sourceLabel}
-              </a>
+              {s.sourceUrl ? (
+                <a href={s.sourceUrl} target="_blank" rel="noreferrer">
+                  {s.sourceLabel}
+                </a>
+              ) : <span>{s.sourceLabel}</span>}
               <span className={styles.note}>
-                {s.count} こ / とりこみ日 {formatDate(s.fetchedAt)}
+                {s.count} こ / こうしん日 {formatDate(s.fetchedAt)}
               </span>
             </li>
           ))}
         </ul>
         <p className={styles.note}>
           ぜんぶで {models.length} この さくひんを のせています。
-          しゃしん・つくり方の図・PDF は 出典サイトの ものを そのまま
+          出典サイトの しゃしん・つくり方の図・PDF は そのまま
           よみこんで います（このアプリには ふくまれていません）。
+          オリジナル作品の 3Dモデルは このアプリに あります。
           著作権は {sources.map((s) => s.rightsHolder).join('・')}に あります。
         </p>
       </section>

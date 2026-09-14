@@ -48,5 +48,15 @@
     "unitCount": 5,
     "pieceCount": 205,
     "guidePath": "assemblies/negiganaito/guide.json"
+  },
+  {
+    "id": "giant-hornet",
+    "modelId": "original:giant-hornet",
+    "title": "オオスズメバチ",
+    "revision": 1,
+    "defaultVariant": "photo-draft",
+    "unitCount": 8,
+    "pieceCount": 68,
+    "guidePath": "assemblies/giant-hornet/guide.json"
   }
 ]

@@ -6,6 +6,7 @@
 
 - [3Dガイドの仕様・取り込み](ASSEMBLIES.md)：登録データ、表示用設定、共通ビューアー、進捗保存。
 - [写真から3Dガイドを作る手順](AI-3D-WORKFLOW.md)：制作室での修正・確認・出力。
+- [ミニシャフト・ミニホイール](MINI-PARTS.md)：制作室での使い方、形状の根拠、完成確認と検証範囲。
 - [No.5の形状と接続位置](NO5-GEOMETRY.md)：部品形状と配置の判断根拠。
 
 ## 作品ごとの制作記録
@@ -16,6 +17,7 @@
 | デスカーン | [制作と修正の記録](DESUKAN-RETROSPECTIVE.md) | 同左 |
 | イワパレス | [制作記録と振り返り](IWAPARESU-3D.md) | 同左 |
 | ネギガナイト | [制作記録](NEGIGANAITO-3D.md) | [振り返り](NEGIGANAITO-RETROSPECTIVE.md) |
+| オオスズメバチ（オリジナル） | [制作記録](GIANT-HORNET-3D.md) | [振り返り](GIANT-HORNET-RETROSPECTIVE.md) |
 
 メタモンの取り込み設定は [3Dガイドの仕様](ASSEMBLIES.md) に記載する。
 作品ごとの原本・承認履歴は制作記録からたどる。完成原本を初回候補の生成器で上書きしない。
