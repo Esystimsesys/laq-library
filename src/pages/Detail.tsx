@@ -104,7 +104,8 @@ function DetailContent({ modelId }: { modelId: string }) {
           />
         )}
 
-        {bookletEntry && (
+        {/* どちらも未入力なら、空の情報カードだけを残さない */}
+        {bookletEntry && (bookletEntry.booklet || bookletEntry.page) && (
           <dl className={styles.bookletInfo}>
             {bookletEntry.booklet && (
               <>

@@ -133,6 +133,12 @@ test('手元の冊子から自分で登録し、一覧と検索に出る', { tag
   await page.getByRole('link', { name: /じぶんで とうろく/ }).click()
   await page.getByRole('button', { name: 'とうろくする' }).click()
   await expect(page.getByRole('alert')).toContainText('なまえを 入れてください')
+
+  // 冊子名とページは任意。どちらも空なら、詳細の上側に空の白い枠を残さない
+  await page.getByLabel('なまえ（かならず）').fill('なまえだけの作品')
+  await page.getByRole('button', { name: 'とうろくする' }).click()
+  await expect(page.getByRole('heading', { name: 'なまえだけの作品' })).toBeVisible()
+  await expect(page.locator('main dl')).toHaveCount(0)
 })
 
 test('写真つきの登録が、書き出し→ぜんぶ消す→よみこみ で戻る', async ({ page }) => {
