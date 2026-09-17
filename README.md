@@ -51,7 +51,7 @@ npm run dev        # http://localhost:5173
 |---|---|---|---|
 | LaQ公式 つくり方ギャラリー | 245 | 手順の図 + PDF をアプリ内で表示 | `npm run fetch:gallery` |
 | ぷりまつラボ（ポケモン） | 1,227 | 完成写真だけ持ち、手順は本家の記事へリンク | `npm run fetch:purimatu` |
-| オリジナル | 1 | アプリ内の3D組み立て図 | 制作者の承認後に登録 |
+| オリジナル | 2 | アプリ内の3D組み立て図 | 制作者の承認後に登録 |
 
 ### LaQ公式 つくり方ギャラリー
 
@@ -280,6 +280,11 @@ thumbnail なし: 0
 [制作記録](docs/GIANT-HORNET-3D.md)と[振り返り](docs/GIANT-HORNET-RETROSPECTIVE.md)を参照。
 完成図は `node scripts/capture-assembly-image.mjs --id giant-hornet --out public/model-images/original/giant-hornet.png`
 で公開3Dビューアーから再生成できる。
+
+へびは `/assembly/hebi`。ユーザーオリジナルの54パーツ・6まとまりを、確認済みの4表示手順で作る（revision 1）。
+あたま／からだ／からだのつづき／あたまとからだをつける、の4画面で54パーツを重複なく分ける。
+制作室のコメントを反映した完成確認版で、実物の組み立ては未確認。とぐろと胴体の重なりは、
+ユーザーが確認した柔軟性の表示近似として板厚1枚分ずらしてある。[制作記録](docs/HEBI-3D.md)を参照。
 
 登録リストとJSONを追加すれば同じ画面を再利用できる。
 [追加手順・データ形式](docs/ASSEMBLIES.md) を参照。
