@@ -18,6 +18,7 @@
 | イワパレス | [制作記録と振り返り](IWAPARESU-3D.md) | 同左 |
 | ネギガナイト | [制作記録](NEGIGANAITO-3D.md) | [振り返り](NEGIGANAITO-RETROSPECTIVE.md) |
 | オオスズメバチ（オリジナル） | [制作記録](GIANT-HORNET-3D.md) | [振り返り](GIANT-HORNET-RETROSPECTIVE.md) |
+| へび（オリジナル） | [制作記録](HEBI-3D.md) | 同左 |
 
 メタモンの取り込み設定は [3Dガイドの仕様](ASSEMBLIES.md) に記載する。
 作品ごとの原本・承認履歴は制作記録からたどる。完成原本を初回候補の生成器で上書きしない。

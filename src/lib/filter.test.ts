@@ -66,8 +66,9 @@ describe('filterModels', () => {
         categories: ['むし'], note: '', photoCount: 0, createdAt: '2026-09-15T00:00:00.000Z',
       }],
     }
-    expect(allModels(withBooklet).slice(0, 2).map((model) => model.id)).toEqual([
+    expect(allModels(withBooklet).slice(0, 3).map((model) => model.id)).toEqual([
       'original:giant-hornet',
+      'original:hebi',
       'my-booklet:test',
     ])
   })

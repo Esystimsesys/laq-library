@@ -58,5 +58,15 @@
     "unitCount": 8,
     "pieceCount": 68,
     "guidePath": "assemblies/giant-hornet/guide.json"
+  },
+  {
+    "id": "hebi",
+    "modelId": "original:hebi",
+    "title": "へび",
+    "revision": 1,
+    "defaultVariant": "cobra-photo-v1",
+    "unitCount": 6,
+    "pieceCount": 54,
+    "guidePath": "assemblies/hebi/guide.json"
   }
 ]

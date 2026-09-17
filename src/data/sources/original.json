@@ -7,7 +7,8 @@
   "sourceUrl": "",
   "fetchedAt": "2026-09-14T00:00:00.000Z",
   "categoryOrder": [
-    "むし"
+    "むし",
+    "どうぶつ"
   ],
   "models": [
     {
@@ -22,6 +23,21 @@
       ],
       "thumbnail": "model-images/original/giant-hornet.png",
       "mainImage": "model-images/original/giant-hornet.png",
+      "stepImages": [],
+      "pdfUrl": null
+    },
+    {
+      "id": "original:hebi",
+      "source": "original",
+      "sourceUrl": "",
+      "title": "へび",
+      "description": "",
+      "level": "beginner",
+      "categories": [
+        "どうぶつ"
+      ],
+      "thumbnail": "model-images/original/hebi.png",
+      "mainImage": "model-images/original/hebi.png",
       "stepImages": [],
       "pdfUrl": null
     }
