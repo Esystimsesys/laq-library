@@ -58,7 +58,7 @@ const user: UserState = {
 }
 
 describe('filterModels', () => {
-  it('端末で登録した冊子があっても公開オリジナルを先頭に保つ', () => {
+  it('端末で登録した冊子を公開オリジナルより先頭に置く', () => {
     const withBooklet: UserState = {
       ...emptyState,
       booklets: [{
@@ -67,10 +67,24 @@ describe('filterModels', () => {
       }],
     }
     expect(allModels(withBooklet).slice(0, 3).map((model) => model.id)).toEqual([
+      'my-booklet:test',
       'original:giant-hornet',
       'original:hebi',
-      'my-booklet:test',
     ])
+  })
+
+  it('新しい登録を先に出し、元の記録や取り込み順を変更しない', () => {
+    const booklet = { id: 'my-booklet:old', title: '前の作品', booklet: '', page: '', level: null,
+      categories: [], note: '', photoCount: 0, createdAt: '2026-09-01T00:00:00.000Z' }
+    const state: UserState = { ...emptyState, booklets: [booklet,
+      { ...booklet, id: 'my-booklet:new', createdAt: '2026-10-01T00:00:00.000Z' }] }
+    const before = structuredClone(state)
+    const all = allModels(state)
+    expect(ids(all).slice(0, 2)).toEqual(['my-booklet:new', 'my-booklet:old'])
+    expect(all.slice(2)).toEqual(models)
+    expect(allModels(state)).toBe(all)
+    expect(state).toEqual(before)
+    expect(allModels(emptyState)).toBe(models)
   })
 
   it('なにも指定しなければ全部返す', () => {

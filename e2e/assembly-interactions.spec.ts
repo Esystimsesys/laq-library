@@ -167,7 +167,7 @@ for(const width of [390,1240]) test(`分解スライダーを連続ドラッグ�
     for(const key of ['plate','joint']){const original=w.LaQRealisticParts[key];w.LaQRealisticParts[key]=(...args:unknown[])=>{w.__createdDuringDrag++;return original(...args)}}
   })
   const box=(await slider.boundingBox())!
-  expect(box.height).toBeGreaterThanOrEqual(44);expect(box.width).toBeGreaterThanOrEqual(110)
+  expect(box.height).toBeGreaterThanOrEqual(48);expect(box.width).toBeGreaterThanOrEqual(180)
   await page.mouse.move(box.x+8,box.y+box.height/2);await page.mouse.down()
   await page.mouse.move(box.x+box.width*.5,box.y+box.height/2,{steps:12})
   const middle=await slider.inputValue();expect(Number(middle)).toBeGreaterThan(25);expect(Number(middle)).toBeLessThan(75)
@@ -181,6 +181,7 @@ for(const width of [390,1240]) test(`分解スライダーを連続ドラッグ�
   // Coalesce many input events and still apply the last value on the next frame.
   const final=await frame.evaluate(async()=>{const slider=document.getElementById('explode') as HTMLInputElement;for(let value=90;value>=0;value-=10){slider.value=String(value);slider.dispatchEvent(new Event('input',{bubbles:true}))}await new Promise(requestAnimationFrame);const w=window as any;return{created:w.__createdDuringDrag,view:w.__unitGuide()}})
   expect(final.created).toBe(0);expect(final.view.explode).toBe(0);expect(final.view.pieceScreens.every((p:any)=>p.offset.every((n:number)=>Math.abs(n)<1e-8))).toBe(true)
+
 })
 
 test('No.5の外側に段差がなく、左右の差し込み溝と両端のくぼみが残る', async ({page}) => {

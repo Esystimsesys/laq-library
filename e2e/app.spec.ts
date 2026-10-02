@@ -461,3 +461,62 @@ test('作った記録をお気に入りへ統合し、件数・旧リンク・�
   expect(saved.favorites).toEqual(['purimatu:metamon']);expect(Object.keys(saved.made)).toHaveLength(2)
   await page.screenshot({path:'test-results/favorites-unified-mobile.png'})
 })
+
+
+test('自分で登録した作品を新しい順で先頭に表示する', async ({ page }) => {
+  await page.goto('./')
+  await page.evaluate(() => localStorage.setItem('laq-library:v1', JSON.stringify({
+    version: 1, favorites: ['original:hebi', 'my-booklet:old', 'my-booklet:new'], made: {},
+    booklets: [
+      { id: 'my-booklet:old', title: '前の登録', createdAt: '2026-09-01T00:00:00.000Z' },
+      { id: 'my-booklet:new', title: '新しい登録', createdAt: '2026-10-01T00:00:00.000Z' },
+    ].map(b => ({ ...b, booklet: '', page: '', level: null, categories: [], note: '', photoCount: 0 })),
+  })))
+  await page.reload()
+  const cards = page.locator('a[href*="/model/"]')
+  await expect(cards.nth(0)).toContainText('新しい登録')
+  await expect(cards.nth(1)).toContainText('前の登録')
+  await page.getByRole('searchbox').fill('登録')
+  await expect(cards).toHaveCount(2)
+  await expect(cards.first()).toContainText('新しい登録')
+  await page.goto('./favorites')
+  await expect(cards).toHaveCount(3)
+  await expect(cards.nth(0)).toContainText('新しい登録')
+  await expect(cards.nth(1)).toContainText('前の登録')
+})
+
+test('スクロールで自動追加し、詳細から戻る位置と絞り込みを維持する', { tag: '@smoke' }, async ({ page }) => {
+  await page.goto('./')
+  const cards = page.locator('a[href*="/model/"]')
+  await expect(cards).toHaveCount(24)
+  await expect(page.getByRole('button', { name: /もっと見る/ })).toHaveCount(0)
+  await cards.last().scrollIntoViewIfNeeded()
+  await expect(cards).toHaveCount(48)
+  await cards.last().scrollIntoViewIfNeeded()
+  await expect(cards).toHaveCount(72)
+  await cards.nth(40).scrollIntoViewIfNeeded()
+  const scrollBefore = await page.evaluate(() => scrollY)
+  await cards.nth(40).click()
+  await page.getByRole('button', { name: 'もどる', exact: true }).click()
+  await expect(cards).toHaveCount(72)
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(scrollBefore, 0)
+  await page.getByRole('searchbox').fill('存在しない作品テスト')
+  await expect(cards).toHaveCount(0)
+  await expect(page.getByText('みつかりませんでした')).toBeVisible()
+  await page.getByRole('searchbox').fill('')
+  await expect(cards).toHaveCount(24)
+  await page.getByRole('button', { name: '3Dで つくれる', exact: true }).click()
+  const assemblyCount = JSON.parse(await readFile(new URL('../src/data/assemblies.json', import.meta.url), 'utf8')).length
+  await expect(cards).toHaveCount(assemblyCount)
+  await cards.last().scrollIntoViewIfNeeded()
+  await expect(page.getByRole('status')).toHaveText(`${assemblyCount} / ${assemblyCount} こ`)
+})
+
+test('自動読み込みが使えない環境ではボタンで続きが表示できる', async ({ page }) => {
+  await page.addInitScript(() => { Object.defineProperty(window, 'IntersectionObserver', { value: undefined }) })
+  await page.goto('./')
+  const cards = page.locator('a[href*="/model/"]')
+  await expect(cards).toHaveCount(24)
+  await page.getByRole('button', { name: /もっと見る/ }).click()
+  await expect(cards).toHaveCount(48)
+})

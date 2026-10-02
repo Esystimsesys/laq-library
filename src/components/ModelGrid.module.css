@@ -34,3 +34,15 @@
   transform: translate(3px, 3px);
   box-shadow: var(--shadow-press);
 }
+
+.progress {
+  margin-top: var(--gap-l);
+  padding: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.progress span {
+  display: block;
+  margin-top: 4px;
+}

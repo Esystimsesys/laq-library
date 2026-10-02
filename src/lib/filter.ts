@@ -19,18 +19,16 @@ const searchIndex = new Map(models.map((m) => [m.id, searchIndexOf(m)]))
 */
 let cachedBooklets: UserState['booklets'] | null = null
 let cachedAll: Model[] = models
-const originalModels = models.filter((model) => model.source === 'original')
-const otherSourceModels = models.filter((model) => model.source !== 'original')
 
 /**
  * 取り込んだ作品と、自分で登録した冊子の作品をあわせた一覧。
- * 公開オリジナルを先頭、その次に端末で登録した冊子を置く。
+ * 端末で登録した冊子を新しい順に先頭へ置く。
  */
 export function allModels(user: UserState): Model[] {
   if (user.booklets.length === 0) return models
   if (user.booklets !== cachedBooklets) {
     cachedBooklets = user.booklets
-    cachedAll = [...originalModels, ...user.booklets.map(toModel), ...otherSourceModels]
+    cachedAll = [...user.booklets].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(toModel).concat(models)
   }
   return cachedAll
 }
