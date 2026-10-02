@@ -10,7 +10,7 @@ import { emptyFilters, type Filters } from './search'
  */
 type BrowseState = {
   filters: Filters
-  /** 「もっと見る」で開いている件数 */
+  /** スクロールで追加表示した件数 */
   shown: number
   scrollY: number
 }

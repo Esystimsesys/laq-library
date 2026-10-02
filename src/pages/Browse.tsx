@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useState } from 'react'
 import { models } from '../data'
 import { allModels, filterModels } from '../lib/filter'
 import { getBrowseState, setBrowseState } from '../lib/browseState'
@@ -36,7 +36,8 @@ export default function Browse() {
     if (scrollY > 0) window.scrollTo(0, scrollY)
   }, [])
 
-  useEffect(() => {
+  // 詳細へ切り替わって画面が縮む前に解除し、一覧の位置の上書きを防ぐ。
+  useLayoutEffect(() => {
     const onScroll = () => setBrowseState({ scrollY: window.scrollY })
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
