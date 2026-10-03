@@ -25,7 +25,7 @@ test('板の表裏を入れ替え、接続を維持して戻す・保存・再�
       const plate=v.model.pieces.find((p:any)=>p.partNo===partNo)
       await page.locator('#piece').selectOption(plate.id)
       // The face action is always one plate, even with unit scope selected.
-      await page.locator('#scope').selectOption('unit')
+      await page.locator('#scope').check()
       await page.locator('#flip-viewer-face').click()
       await expect(page.locator('#message')).toContainText('板の位置と接続を保って表裏')
       await page.locator('#undo').click();await expect(page.locator('#message')).toContainText('直前の3D編集を戻しました')

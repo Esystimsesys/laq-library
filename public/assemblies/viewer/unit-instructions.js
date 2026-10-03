@@ -77,16 +77,22 @@ function partFrame(p,c){
 function fit(cam,box,host,y,p,z=1){const r=host.getBoundingClientRect();if(!r.width||!r.height)return;cam.aspect=r.width/r.height;const target=box.getCenter(new T.Vector3()),toward=new T.Vector3(Math.sin(y)*Math.cos(p),Math.sin(p),Math.cos(y)*Math.cos(p)),right=new T.Vector3(Math.cos(y),0,-Math.sin(y)),up=new T.Vector3().crossVectors(toward,right),vf=T.MathUtils.degToRad(cam.fov)/2,hf=Math.atan(Math.tan(vf)*cam.aspect);const labelled=host===$('stage')&&['unit','assembly'].includes(phase)&&preview===null,sideRoom=labelled?Math.max(.4,(r.width-Math.max(72,144-.2*r.width))/r.width):1;let d=0;for(const x of[box.min.x,box.max.x])for(const y of[box.min.y,box.max.y])for(const z of[box.min.z,box.max.z]){const v=new T.Vector3(x,y,z).sub(target);d=Math.max(d,v.dot(toward)+1.2*Math.abs(v.dot(right))/(Math.tan(hf)*sideRoom),v.dot(toward)+1.2*Math.abs(v.dot(up))/Math.tan(vf));}cam.position.copy(toward.multiplyScalar(Math.max(d,.2)/z).add(target));cam.lookAt(target);cam.updateProjectionMatrix();cam.updateMatrixWorld();}
 function render(){const r=$('stage').getBoundingClientRect();renderer.getSize(renderSize);if(renderSize.x!==r.width||renderSize.y!==r.height)renderer.setSize(r.width,r.height,false);fit(camera,bounds,$('stage'),yaw,pitch,zoom);renderer.render(scene,camera);drawGuide();drawUnitLabels();drawEditMarker();renderDetail();}
 function drawEditMarker(){
- if(!reviewMode||!editMarker?.marker||!groups.has(editMarker.pieceId))return;
- const {position,label}=editMarker.marker;
- if(!Array.isArray(position)||position.length!==3||!position.every(Number.isFinite))return;
- const p=project(groups.get(editMarker.pieceId).localToWorld(V(position)),camera,$('stage'));
- svg.innerHTML+=`<g class="edit-slot-marker">${mark(p,esc(label))}</g>`;
+ if(!reviewMode)return;
+ // A relink names an edge on each side, so the editor may send several markers at once.
+ let drawn=0;
+ for(const item of editMarker?.markers??(editMarker?.marker?[editMarker]:[])){
+  if(!item?.marker||!groups.has(item.pieceId))continue;
+  const {position,label}=item.marker;
+  if(!Array.isArray(position)||position.length!==3||!position.every(Number.isFinite))continue;
+  const p=project(groups.get(item.pieceId).localToWorld(V(position)),camera,$('stage'));
+  svg.innerHTML+=`<g class="edit-slot-marker">${mark(p,esc(label),drawn++%2===1)}</g>`;
+ }
 }
 function project(v,cam,host){const p=v.clone().project(cam),r=host.getBoundingClientRect();return{x:(p.x+1)*r.width/2,y:(1-p.y)*r.height/2};}
 const defs=id=>`<defs><marker id="${id}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="${8*arrowScale}" markerHeight="${8*arrowScale}" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#bf5217"/></marker></defs>`;
 const line=(a,b,dash=false,arrow='')=>`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#bf5217" stroke-width="${3*arrowScale}" ${dash?`stroke-dasharray="${6*arrowScale} ${5*arrowScale}"`:''} ${arrow?`marker-end="url(#${arrow})"`:''}/>`;
-const mark=(p,t)=>`<circle cx="${p.x}" cy="${p.y}" r="6" fill="white" stroke="#bf5217" stroke-width="3"/><text x="${p.x+10}" y="${p.y-9}" fill="#8e3a10" font-size="12" font-weight="bold" stroke="white" stroke-width="4" paint-order="stroke">${t}</text>`;
+// Two marked slots of one connection sit almost on top of each other, so alternate the label side.
+const mark=(p,t,below=false)=>`<circle cx="${p.x}" cy="${p.y}" r="6" fill="white" stroke="#bf5217" stroke-width="3"/><text x="${p.x+10}" y="${p.y+(below?19:-9)}" fill="#8e3a10" font-size="12" font-weight="bold" stroke="white" stroke-width="4" paint-order="stroke">${t}</text>`;
 function prepareSvg(s,host){const r=host.getBoundingClientRect();s.setAttribute('viewBox',`0 0 ${r.width} ${r.height}`);s.innerHTML='';}
 function point(ids){const ps=ids.map(id=>by.get(id)).filter(Boolean);return ps.map(center).reduce((s,v)=>s.add(v),new T.Vector3()).multiplyScalar(1/Math.max(1,ps.length));}
 function mainPoint(ids){const ps=ids.filter(id=>groups.has(id));return ps.map(id=>groups.get(id).localToWorld(center(by.get(id)))).reduce((s,v)=>s.add(v),new T.Vector3()).multiplyScalar(1/Math.max(1,ps.length));}
