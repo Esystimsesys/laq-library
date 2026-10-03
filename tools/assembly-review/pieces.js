@@ -96,9 +96,10 @@ function jointDirections(guide, joint) {
   if (isShaft(joint)) directions[2] = scale(normalize(joint.pose.axleDirection), -1)
   return directions
 }
-export function slotMarker(guide, id, slot) {
+export function slotMarker(guide, id, slot, allowUsed = false) {
   const piece = findPiece(guide, id)
-  requireSlot(guide, piece, slot)
+  if (allowUsed) { if (!Number.isInteger(slot) || slot < 0 || slot >= slotCount(piece.partNo)) throw new Error('接続先の辺・差し込み口を選んでください。') }
+  else requireSlot(guide, piece, slot)
   if (isWheel(piece)) return { position: piece.pose.center, label: slotLabel(piece, slot) }
   if (isShaft(piece) && slot === 3) return { position: add(piece.pose.center, scale(normalize(piece.pose.axleDirection), WHEEL_CENTER_OFFSET)), label: slotLabel(piece, slot) }
   return { position: isPlate(piece) ? edgeFrame(piece, slot).mid : add(piece.pose.center, scale(jointDirections(guide, piece)[slot], .45)), label: `${isPlate(piece) ? '辺' : '差し込み口'} ${slot + 1}` }
@@ -190,21 +191,158 @@ export function attachPiece(guide, { targetId, targetSlot, partNo, color, id }) 
   registerConnection(variant, action, first)
   return id
 }
-export function reattachPiece(guide, { pieceId, targetId, targetSlot }) {
+/** One identity per connection, so a reviewer can release exactly the one they picked. */
+export const connectionKey = link => link.kind === 'axle' ? `axle:${link.shaft}:${link.wheel}` : `port:${link.joint}:${link.port}:${link.piece}:${link.socket}`
+
+export function pieceConnections(guide, id) {
+  const piece = findPiece(guide, id), variant = variantOf(guide), links = []
+  for (const connection of variant.model.connections) for (const port of connection.ports) {
+    const isJoint = connection.joint === id
+    if (!isJoint && port.piece !== id) continue
+    links.push({ kind: 'port', joint: connection.joint, port: port.port, piece: port.piece, socket: port.socket,
+      slot: isJoint ? port.port : port.socket, partner: isJoint ? port.piece : connection.joint, partnerSlot: isJoint ? port.socket : port.port })
+  }
+  for (const connection of variant.model.axleConnections ?? []) {
+    const isShaft = connection.shaft === id
+    if (!isShaft && connection.wheel !== id) continue
+    links.push({ kind: 'axle', shaft: connection.shaft, wheel: connection.wheel,
+      slot: isShaft ? 3 : 0, partner: isShaft ? connection.wheel : connection.shaft, partnerSlot: isShaft ? 0 : 3 })
+  }
+  return links.map(link => ({ ...link, key: connectionKey(link),
+    slotText: slotLabel(piece, link.slot), partnerSlotText: slotLabel(findPiece(guide, link.partner), link.partnerSlot) }))
+}
+
+function releaseLinks(variant, released) {
+  variant.model.connections = variant.model.connections
+    .map(connection => ({ ...connection, ports: connection.ports.filter(port => !released.has(connectionKey({ kind: 'port', joint: connection.joint, ...port }))) }))
+    .filter(connection => connection.ports.length)
+  if (variant.model.axleConnections) variant.model.axleConnections = variant.model.axleConnections.filter(connection => !released.has(connectionKey({ kind: 'axle', ...connection })))
+  for (const stage of stagesOf(variant)) stage.actions = (stage.actions ?? []).filter(action => !released.has(connectionKey(action)))
+}
+
+/** Everything still held to the piece once the chosen connections are released. */
+function connectedPieces(guide, startId, released) {
+  const variant = variantOf(guide), neighbours = new Map()
+  const join = (a, b) => { neighbours.set(a, (neighbours.get(a) ?? new Set()).add(b)); neighbours.set(b, (neighbours.get(b) ?? new Set()).add(a)) }
+  for (const connection of variant.model.connections) for (const port of connection.ports) {
+    if (!released.has(connectionKey({ kind: 'port', joint: connection.joint, ...port }))) join(connection.joint, port.piece)
+  }
+  for (const connection of variant.model.axleConnections ?? []) {
+    if (!released.has(connectionKey({ kind: 'axle', ...connection }))) join(connection.shaft, connection.wheel)
+  }
+  const found = new Set([startId]), queue = [startId]
+  while (queue.length) for (const next of neighbours.get(queue.pop()) ?? []) if (!found.has(next)) { found.add(next); queue.push(next) }
+  return found
+}
+
+// Where one plate edge or one socket mates, as a right-handed frame: the edge/socket
+// direction, the plate's inward direction and their normal. Two pieces are connected
+// exactly when the frames of the mating slots coincide, so a relink is the rigid
+// motion that takes one frame onto the other.
+function mateFrame(guide, piece, slot) {
+  if (isPlate(piece)) {
+    const { axis, mid, dir } = edgeFrame(piece, slot)
+    return { origin: mid, basis: [axis, dir, cross(axis, dir)] }
+  }
+  if (isWheel(piece)) {
+    const axis = normalize(piece.pose.axis), dir = project(Math.abs(axis[0]) < .9 ? [1, 0, 0] : [0, 1, 0], axis)
+    return { origin: piece.pose.center, basis: [axis, dir, cross(axis, dir)], axle: true }
+  }
+  if (isShaft(piece) && slot === 3) {
+    const axis = normalize(piece.pose.axleDirection), dir = project(piece.pose.axis, axis)
+    return { origin: add(piece.pose.center, scale(axis, WHEEL_CENTER_OFFSET)), basis: [axis, dir, cross(axis, dir)], axle: true }
+  }
+  const axis = normalize(piece.pose.axis), dir = jointDirections(guide, piece)[slot]
+  if (!dir) throw new Error('差し込み口の向きを計算できません。形状を確認してください。')
+  return { origin: add(piece.pose.center, scale(dir, inset(piece.partNo))), basis: [axis, dir, cross(axis, dir)] }
+}
+const applyMatrix = (matrix, vector) => matrix.map(row => dot(row, vector))
+const frameRotation = (from, to) => [0,1,2].map(i => [0,1,2].map(j => [0,1,2].reduce((sum, k) => sum + to.basis[k][i] * from.basis[k][j], 0)))
+const turnOf = rotation => Math.acos(Math.max(-1, Math.min(1, (rotation[0][0] + rotation[1][1] + rotation[2][2] - 1) / 2)))
+function rotationAbout(axis, angle) {
+  const cos = Math.cos(angle), sin = Math.sin(angle), rest = 1 - cos, [x, y, z] = axis
+  return [[rest*x*x+cos, rest*x*y-sin*z, rest*x*z+sin*y], [rest*x*y+sin*z, rest*y*y+cos, rest*y*z-sin*x], [rest*x*z-sin*y, rest*y*z+sin*x, rest*z*z+cos]]
+}
+// A plate edge fits a socket either way round, and a wheel is free to spin on its axle.
+// Both stay valid, so take the one that moves the attached pieces least.
+function alignment(from, to) {
+  const flip = frame => ({ ...frame, basis: [scale(frame.basis[0], -1), frame.basis[1], scale(frame.basis[2], -1)] })
+  let candidates
+  if (from.axle || to.axle) {
+    const axis = cross(from.basis[0], to.basis[0]), sine = Math.hypot(...axis), cosine = dot(from.basis[0], to.basis[0])
+    candidates = [sine < 1e-9
+      ? cosine > 0 ? [[1,0,0],[0,1,0],[0,0,1]] : rotationAbout(from.basis[1], Math.PI)
+      : rotationAbout(scale(axis, 1 / sine), Math.atan2(sine, cosine))]
+  } else candidates = [frameRotation(from, to), frameRotation(from, flip(to))]
+  return candidates.reduce((best, candidate) => turnOf(candidate) < turnOf(best) ? candidate : best)
+}
+function moveRigid(pieces, rotation, from, to) {
+  const point = value => add(to.origin, applyMatrix(rotation, sub(value, from.origin)))
+  for (const piece of pieces) {
+    if (piece.pose.center) piece.pose.center = point(piece.pose.center)
+    if (piece.pose.vertices) piece.pose.vertices = piece.pose.vertices.map(point)
+    for (const key of ['normal', 'axis', 'axleDirection']) if (piece.pose[key]) piece.pose[key] = applyMatrix(rotation, piece.pose[key])
+    if (piece.pose.directions) for (const key of Object.keys(piece.pose.directions)) piece.pose.directions[key] = applyMatrix(rotation, piece.pose.directions[key])
+  }
+}
+function mateAction(piece, pieceSlot, target, targetSlot) {
+  if (isWheel(piece) || isWheel(target)) return { kind: 'axle', shaft: isWheel(piece) ? target.id : piece.id, wheel: isWheel(piece) ? piece.id : target.id }
+  return { kind: 'port', joint: isPlate(piece) ? target.id : piece.id, port: isPlate(piece) ? targetSlot : pieceSlot, piece: isPlate(piece) ? piece.id : target.id, socket: isPlate(piece) ? pieceSlot : targetSlot }
+}
+const mateSlot = (piece, target) => isShaft(piece) && isWheel(target) ? 3 : 0
+
+/** The slots a relink can actually use: everything still attached moves, so it cannot be the target. */
+export function relinkTargets(guide, { pieceId, releaseKey, carry = true }) {
+  const piece = findPiece(guide, pieceId), links = pieceConnections(guide, pieceId)
+  const released = new Set(carry ? (links.some(link => link.key === releaseKey) ? [releaseKey] : []) : links.map(link => link.key))
+  const free = structuredClone(guide)
+  releaseLinks(variantOf(free), released)
+  const branch = carry ? connectedPieces(guide, pieceId, released) : new Set([pieceId])
+  const fits = (id, slot) => attachmentParts(free, id, slot.value).includes(piece.partNo)
+  return {
+    released: [...released], branch: [...branch], ownSlots: availableSlots(free, pieceId),
+    targets: variantOf(free).model.pieces.filter(item => !branch.has(item.id) && availableSlots(free, item.id).some(slot => fits(item.id, slot)))
+      .map(item => ({ id: item.id, slots: availableSlots(free, item.id).filter(slot => fits(item.id, slot)) })),
+  }
+}
+
+/**
+ * Move one connection of a piece to another slot, keeping the piece's remaining
+ * connections by carrying everything still attached to it as one rigid body.
+ * Geometry only: overlap and physical assembly order are still for the reviewer to judge.
+ */
+export function relinkConnection(guide, { pieceId, releaseKey, targetId, targetSlot, pieceSlot, carry = true }) {
   const variant = variantOf(guide), piece = findPiece(guide, pieceId), target = findPiece(guide, targetId)
   if (pieceId === targetId) throw new Error('別のパーツを接続先に選んでください。')
-  requireSlot(guide, target, targetSlot, pieceId)
-  // Removing a previous link may free the same axle; compatibility is unchanged.
-  const { pose, action } = attachment(guide, target, targetSlot, piece)
+  const links = pieceConnections(guide, pieceId)
+  const release = releaseKey === undefined ? null : links.find(link => link.key === releaseKey)
+  if (releaseKey !== undefined && !release) throw new Error('外す接続が見つかりません。選び直してください。')
+  // Moving a connection keeps using the same edge or socket on this piece unless asked otherwise.
+  pieceSlot ??= release?.slot ?? mateSlot(piece, target)
+  if (carry && !release && links.length) throw new Error('外す接続を選んでください。')
+  const released = new Set(carry ? (release ? [release.key] : []) : links.map(link => link.key))
+  // Check on a copy with the released connections gone: their slots are the ones being reused.
+  const free = structuredClone(guide)
+  releaseLinks(variantOf(free), released)
+  requireSlot(free, findPiece(free, targetId), targetSlot)
+  requireSlot(free, findPiece(free, pieceId), pieceSlot)
+  if (!attachmentParts(free, targetId, targetSlot).includes(piece.partNo) || !attachmentParts(free, pieceId, pieceSlot).includes(target.partNo)) throw new Error('この接続口に合うパーツを組み合わせてください。')
+  const branch = carry ? connectedPieces(guide, pieceId, released) : new Set([pieceId])
+  if (branch.has(targetId)) throw new Error('付け替え先は外す接続と同じ側につながっています。別の接続を外すか、つながったパーツを動かさない設定にしてください。')
+  const from = mateFrame(guide, piece, pieceSlot), to = mateFrame(guide, target, targetSlot)
+  const rotation = alignment(from, to)
   const stage = firstCommonStage(variant, pieceId, targetId)
-  // Freeze the target's existing inferred orientation before removing its old links.
-  const directions = !isPlate(target) && !isWheel(target) ? jointDirections(guide, target) : null
-  const affected = captureAffectedJoints(guide, pieceId)
-  freezeDirections(affected)
-  unlinkPiece(variant, pieceId)
-  piece.pose = pose
-  if (directions) target.pose.directions = directions
+  const action = mateAction(piece, pieceSlot, target, targetSlot)
+  // Every check is done; freeze inferred fork directions so released joints keep their pose.
+  freezeDirections(captureAffectedJoints(guide, pieceId))
+  releaseLinks(variant, released)
+  moveRigid(variant.model.pieces.filter(item => branch.has(item.id)), rotation, from, to)
   registerConnection(variant, action, stage)
+  return { moved: [...branch], released: [...released] }
+}
+
+export function reattachPiece(guide, { pieceId, targetId, targetSlot, pieceSlot }) {
+  relinkConnection(guide, { pieceId, targetId, targetSlot, pieceSlot, carry: false })
   return guide
 }
 export function replacePiece(guide, id, partNo) {
@@ -247,13 +385,13 @@ export function deletePiece(guide, id) {
 
 export function plateFaceState(guide, id) {
   const piece = variantOf(guide).model.pieces.find(piece => piece.id === id)
-  if (!piece || ![1, 2].includes(piece.partNo)) return { canFlip: false, reason: '表裏の切り替えは No.1（四角）・No.2（三角）を選んでください。' }
+  if (!piece || ![1, 2].includes(piece.partNo)) return { canFlip: false, reason: '表裏を変えられるのは No.1（四角）・No.2（三角）だけです。' }
   const { normal, vertices } = piece.pose ?? {}
   const vector = value => Array.isArray(value) && value.length === 3 && value.every(Number.isFinite)
   if (!vector(normal) || Math.hypot(...normal) < 1e-9 || !Array.isArray(vertices) || vertices.length !== (piece.partNo === 1 ? 4 : 3) || !vertices.every(vector)) return { canFlip: false, reason: '表裏の向きを計算できません。板の形状を確認してください。' }
   const n = normalize(normal)
   if (vertices.some(v => Math.abs(dot(sub(v, vertices[0]), n)) > .001)) return { canFlip: false, reason: '表裏の向きが板の面と合っていません。板の形状を確認してください。' }
-  return { canFlip: true, reason: '板の位置・接続する辺を保ち、表面と裏面だけを入れ替えます。' }
+  return { canFlip: true, reason: '位置と接続する辺は変わりません。' }
 }
 export function flipPlate(guide, id) {
   const state = plateFaceState(guide, id)

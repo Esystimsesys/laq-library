@@ -15,6 +15,20 @@ const project = (v, axis) => normalize(sub(v, scale(axis, dot(v, axis))))
 const rotate = (v, axis, angle) => add(add(scale(v, Math.cos(angle)), scale(cross(axis, v), Math.sin(angle))), scale(axis, dot(axis, v) * (1-Math.cos(angle))))
 const angleOf = n => (n === 6 ? 90 : n === 5 ? 120 : 180) * Math.PI / 180
 const insetOf = n => n === 4 ? .195 : n === 5 ? 5.75 / (2*Math.sin(Math.PI/3)) / 17 : .1
+const EDGE_MM = 17, PLATE_THICKNESS_MM = 3.5
+// Socket depths are assumptions, not measurements: a No.7 socket in the hebi guide sits 0.1038
+// from the joint centre against the assumed 0.1, and an approved fix may offset a plate by half
+// its thickness. Turning a joint moves no plate, so that gap is measured and reported instead of
+// blocking the switch; the direction and axis of every connected edge still have to match exactly.
+export const SEATING_SLACK = PLATE_THICKNESS_MM / 2 / EDGE_MM
+export const asMm = value => `${(value * EDGE_MM).toFixed(2)} mm`
+const asDegrees = chord => `${(2 * Math.asin(Math.min(1, chord / 2)) * 180 / Math.PI).toFixed(1)}度`
+const partLabel = n => `No.${n}（${n === 3 ? '平面（細）' : n === 4 ? '平面（幅広）' : n === 5 ? '120°' : n === 6 ? '90°' : '3方向'}）`
+function seating(frame, center, direction, inset) {
+  const offset = sub(frame.mid, center)
+  const along = dot(offset, direction)
+  return { along, gap: Math.max(Math.abs(along - inset), Math.hypot(...sub(offset, scale(direction, along)))) }
+}
 const stagesOf = variant => [...variant.units.flatMap(unit => unit.steps), ...variant.assembly]
 const socketKey = port => JSON.stringify([port.piece, port.socket])
 const signature = directions => Object.values(directions).map(dir => dir.map(x => Math.round(x * 1e6) || 0).join(',')).sort().join(';')
@@ -83,21 +97,40 @@ export function jointOrientations(guide, jointId) {
     const records = ports.map(port => ({ port, frame: edgeFrame(variant.model.pieces.find(piece => piece.id === port.piece), port.socket) }))
     const current = currentDirections(joint, records, axis), options = []
     const currentConnectionsFit = records.every(({ port, frame }) => close(current[port.port], frame.dir))
+    // Why nothing fits is the only thing a reviewer can act on, so keep the closest near miss.
+    let skewedAxis = false, nearestTurn = null, nearestGap = null
     for (const candidateAxis of [axis, scale(axis, -1)]) for (const mapping of assignments(ports.length, Array.from({ length: count }, (_, i) => i))) {
       const directions = canonical(joint.partNo, candidateAxis, project(records[0].frame.dir, candidateAxis), mapping[0])
-      if (!records.every(({ frame }, index) => Math.hypot(...cross(frame.axis, candidateAxis)) <= EPS && close(frame.dir, directions[mapping[index]]) && close(frame.mid, add(joint.pose.center, scale(directions[mapping[index]], insetOf(joint.partNo)))))) continue
+      let turn = 0, gap = 0, seated = true
+      for (const [index, record] of records.entries()) {
+        const direction = directions[mapping[index]]
+        turn = Math.max(turn, Math.hypot(...sub(record.frame.dir, direction)))
+        const fit = seating(record.frame, joint.pose.center, direction, insetOf(joint.partNo))
+        gap = Math.max(gap, fit.gap)
+        if (fit.along <= 0) seated = false
+      }
+      if (!records.every(({ frame }) => Math.hypot(...cross(frame.axis, candidateAxis)) <= EPS)) { skewedAxis = true; continue }
+      // The fork angle is fixed by the physical part, so a turn always has to match it exactly.
+      if (turn > EPS) { nearestTurn = Math.min(nearestTurn ?? Infinity, turn); continue }
+      if (!seated || gap > SEATING_SLACK + EPS) { nearestGap = Math.min(nearestGap ?? Infinity, gap); continue }
       const isCurrent = currentConnectionsFit && sameShape(current, directions)
       const mapped = records.map(({ port }, i) => ({ piece: port.piece, socket: port.socket, port: mapping[i] }))
       const used = [...mapping].sort(), free = Array.from({ length: count }, (_, i) => i).filter(i => !used.includes(i))
-      const option = { id: `orientation:${signature(directions)}`, label: `接続する口 ${used.map(i => i+1).join('・')}${free.length ? ` / 空く口 ${free.map(i => i+1).join('・')}` : '（すべて接続）'}`, pose: { center: [...joint.pose.center], axis: candidateAxis, directions }, ports: mapped, current: isCurrent }
+      const option = { id: `orientation:${signature(directions)}`, label: `接続する口 ${used.map(i => i+1).join('・')}${free.length ? ` / 空く口 ${free.map(i => i+1).join('・')}` : '（すべて接続）'}`, gap, pose: { center: [...joint.pose.center], axis: candidateAxis, directions }, ports: mapped, current: isCurrent }
       const existing = options.findIndex(other => sameShape(other.pose.directions, directions))
       const unchangedMapping = mapping.every((port, i) => port === ports[i].port)
       if (existing < 0) options.push(option)
       else if (unchangedMapping && !options[existing].ports.every((port, i) => port.port === ports[i].port)) options[existing] = option
     }
-    return { options, reason: options.length ? options.length === 1 ? '接続した基本パーツを動かさずに使える向きは、この1通りです。' : '' : '接続した基本パーツの位置・角度に合う向きがありません。形状と接続を確認してください。' }
-  } catch {
-    return { options: [], reason: 'パーツの形状または接続に矛盾があります。形状と接続を確認してください。' }
+    if (options.length) return { options, reason: options.length === 1 ? '接続した基本パーツを動かさずに使える向きは、この1通りです。' : '' }
+    // A wrong port assignment always fails the turn check, so the seating gap of an
+    // otherwise matching assignment is the more specific answer when both are present.
+    if (nearestGap !== null) return { options: [], reason: `接続した板が差し込み口から ${asMm(nearestGap)} ずれています（許容 ${asMm(SEATING_SLACK)}）。板かジョイントの位置を直すと切り替えられます。` }
+    if (nearestTurn !== null) return { options: [], reason: `接続した板の向きが差し込み口と ${asDegrees(nearestTurn)} ちがいます。${partLabel(joint.partNo)}の開き角は変えられないので、板かジョイントの角度を直すと切り替えられます。` }
+    if (skewedAxis) return { options: [], reason: '接続した板の辺がジョイントの軸と平行ではありません。位置・向きを直すと切り替えられます。' }
+    return { options: [], reason: '接続した基本パーツの角度に合う向きがありません。形状と接続を確認してください。' }
+  } catch (error) {
+    return { options: [], reason: error.message || 'パーツの形状または接続に矛盾があります。形状と接続を確認してください。' }
   }
 }
 

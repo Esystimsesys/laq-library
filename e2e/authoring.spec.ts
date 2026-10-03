@@ -124,7 +124,8 @@ test('写真と3Dを照合し、色・位置を修正、戻す、保存して再
   await page.locator('#comment-text').fill('色の保存前に残すコメント');await page.locator('#add-comment').click();await expect(page.locator('#comment-status')).toContainText('コメントを保存しました')
   expect(JSON.parse(readFileSync(path.join(workspace,'guide.json'),'utf8')).variants[before.defaultVariant].model.pieces.find((p:{id:string})=>p.id===piece.id).color).toBe(piece.color)
   await expect(page.locator('#save')).toBeEnabled()
-  await page.locator('#scope').selectOption('unit');await page.locator('#dx').fill('1');await page.locator('#apply-transform').click();await expect(page.locator('#message')).toContainText('移動 1/0/0')
+  await page.locator('#transform-numbers summary').click()
+  await page.locator('#transform-scope').check();await page.locator('#dx').fill('1');await page.locator('#apply-transform').click();await expect(page.locator('#message')).toContainText('移動 1/0/0')
   await page.locator('#evidence-panel summary').click();await page.locator('#observation').fill('写真の端と照合');await page.locator('#interpretation').fill('位置を1mm修正');await page.locator('#add-evidence').click()
   await page.locator('#save').click();await expect(page.locator('#message')).toContainText('変更を保存しました')
   const saved=JSON.parse(readFileSync(path.join(workspace,'guide.json'),'utf8')),savedPiece=saved.variants[saved.defaultVariant].model.pieces[0]
@@ -133,10 +134,11 @@ test('写真と3Dを照合し、色・位置を修正、戻す、保存して再
   const savedVariant=saved.variants[saved.defaultVariant],unitIds=new Set(savedVariant.units.find((u:{id:string})=>u.id==='A1').pieceIds)
   const linked=savedVariant.model.connections.find((c:{joint:string;ports:{piece:string}[]})=>unitIds.has(c.joint)&&c.ports.some(port=>unitIds.has(port.piece)&&port.piece!==piece.id))!
   const single=savedVariant.model.pieces.find((p:{id:string})=>p.id===linked.ports.find((port:{piece:string})=>unitIds.has(port.piece)&&port.piece!==piece.id)!.piece)!
-  await page.locator('#scope').selectOption('unit')
+  await page.locator('#scope').check()
   const viewerFrame=page.frames().find(frame=>frame.url().includes('/assemblies/viewer/'))!
   await viewerFrame.evaluate(id=>window.parent.postMessage({channel:'laq-assembly',type:'selected',id},location.origin),single.id)
-  await expect(page.locator('#piece')).toHaveValue(single.id);await expect(page.locator('#scope')).toHaveValue('piece')
+  await expect(page.locator('#piece')).toHaveValue(single.id)
+  for(const scope of ['#scope','#transform-scope'])await expect(page.locator(scope)).not.toBeChecked()
   const jointBoundsBefore=await viewerFrame.evaluate(id=>(window as any).__unitGuide().pieceScreens.find((p:{id:string})=>p.id===id).worldBounds,linked.joint)
   await page.locator('#dx').fill('0');await page.locator('#rz').fill('15');await page.locator('#apply-transform').click()
   await expect.poll(()=>viewerFrame.evaluate(id=>(window as any).__unitGuide().pieceScreens.find((p:{id:string})=>p.id===id).worldBounds,linked.joint)).toEqual(jointBoundsBefore)

@@ -53,6 +53,7 @@ test('No.7の接続する2つの口を切り替え、板の位置と手順を保
     await page.locator('#orientation-panel').screenshot({path:'test-results/joint-orientation-mobile.png'})
     expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(391)
     // A freely displaced joint no longer has a geometrically valid orientation.
+    await page.locator('#transform-numbers summary').click()
     await page.locator('#dx').fill('17');await page.locator('#apply-transform').click()
     await expect(page.locator('#next-orientation')).toBeDisabled()
     await expect(page.locator('#joint-orientation option')).toHaveCount(0)

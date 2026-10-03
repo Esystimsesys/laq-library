@@ -132,7 +132,7 @@ describe('joint orientation editing with fixed connected plates', () => {
   })
 
   it.each([
-    guide => { piece(guide,'j').pose.center[0] += .01 },
+    guide => { piece(guide,'j').pose.center[0] += .2 },
     guide => { piece(guide,'j').pose.axis = [0,1,0] },
     guide => { piece(guide,'j').pose.axis = [0,0,0] },
     guide => { piece(guide,'p').pose.vertices[0][0] = NaN },
@@ -169,6 +169,33 @@ describe('joint orientation editing with fixed connected plates', () => {
     const before = structuredClone(guide)
     expect(() => applyJointOrientation(guide,'j','forged')).toThrow()
     expect(guide).toEqual(before)
+  })
+
+  it('still switches a joint whose sockets sit off the assumed depth, and reports the gap', () => {
+    const guide = fixture(), plates = fixedParts(guide)
+    // Measured No.7 sockets sit about .0038 deeper than the assumed .1; half a plate thickness is the limit.
+    piece(guide,'j').pose.center[0] += .01
+    const { options, reason } = jointOrientations(guide,'j')
+    expect(options).toHaveLength(2)
+    expect(options.filter(option => option.current)).toHaveLength(1)
+    for (const option of options) expect(option.gap).toBeCloseTo(.01, 8)
+    expect(reason).toBe('')
+    const option = options.find(option => !option.current)
+    applyJointOrientation(guide,'j',option.id)
+    expect(fixedParts(guide)).toEqual(plates)
+    expect(piece(guide,'j').pose.center).toEqual([.51,-.1,0])
+    expect(() => validateSourceGuide(guide)).not.toThrow()
+  })
+
+  it.each([
+    [guide => { piece(guide,'j').pose.center[0] += .2 }, 'ずれています'],
+    [guide => { piece(guide,'j').pose.axis = [0,0,1] }, '平行ではありません'],
+    [guide => { const angle = Math.PI/36, plate = piece(guide,'p2')
+      plate.pose.vertices = plate.pose.vertices.map(([x,y,z]) => [x, y*Math.cos(angle)-z*Math.sin(angle), y*Math.sin(angle)+z*Math.cos(angle)]) }, '5.0度 ちがいます'],
+  ])('names the geometry a reviewer has to fix %#', (corrupt, expected) => {
+    const guide = fixture()
+    corrupt(guide)
+    expect(jointOrientations(guide,'j').reason).toContain(expected)
   })
 
   it('explains unsupported pieces and joints with no connections', () => {
