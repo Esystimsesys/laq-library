@@ -28,7 +28,7 @@ function siteUrlPlugin(url: string): Plugin {
 export default defineConfig({
   base,
   server: {
-    allowedHosts: ['mba1223.tail81f690.ts.net'],
+    allowedHosts: ['mini1223.tail81f690.ts.net', 'mba1223.tail81f690.ts.net'],
   },
   plugins: [
     react(),
