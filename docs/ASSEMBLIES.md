@@ -7,22 +7,16 @@
 `gap-hands-4-3-core-3` のみで、9 個の塊、53 パーツ。塊を作る 9 手順と合体する 8 手順を
 混ぜた、17 手順の一本道として表示する。C1・C2 は各 8 パーツを一度に組む全体図にまとめる。
 
-ジャローダも `purimatu:jaroda` → `jaroda` に登録した。219パーツ、6塊、17手順。製作室での完成承認を反映したrevision 2。
-資料・生成器・検証範囲は [ジャローダの制作記録](JARODA-3D.md)。
+ジャローダも `purimatu:jaroda` → `jaroda` に登録した。219パーツ、6塊、17手順。revision 2。
 
-デスカーンは `purimatu:desukan` → `desukan` に登録した。192パーツ、6塊、15手順。製作室で54件のコメントを解決して完成確認したrevision 1。
-制作中の訂正と次回への改善点は [デスカーン制作の振り返り](DESUKAN-RETROSPECTIVE.md)。
+デスカーンは `purimatu:desukan` → `desukan` に登録した。192パーツ、6塊、15手順。revision 1。
 
 イワパレスは `purimatu:iwaparesu` → `iwaparesu` revision 2。248パーツ・8塊・18手順。
-[制作記録と振り返り](IWAPARESU-3D.md) に完成確認と手順統合を記録。
 
 ネギガナイトは `purimatu:negiganaito` → `negiganaito` revision 1。205ピース・5まとまり・13手順。
-43コメントと手動修正、ユーザーの形状・接続・手順の確認を反映した。
-[制作の振り返り](NEGIGANAITO-RETROSPECTIVE.md) に手順統合と柔軟性の表示近似を記録。
 
 オオスズメバチは `original:giant-hornet` → `giant-hornet` revision 1。68ピース・8まとまり・6表示手順。
-ミニシャフト／ミニホイールを含み、ユーザーが形状・接続・表示手順を確認済み。実物再組立は未確認。
-[制作記録](GIANT-HORNET-3D.md)と[振り返り](GIANT-HORNET-RETROSPECTIVE.md)を参照。
+ミニシャフト／ミニホイールを含む。実物再組立は未確認。
 
 ## 写真から新しい作品を作る
 
