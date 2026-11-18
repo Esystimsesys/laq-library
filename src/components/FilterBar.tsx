@@ -24,6 +24,8 @@ type Props = {
   hitCount: number
   /** しぼりこむ前の全体の件数。しぼりこんでいるときだけ「x / 全体」で出す */
   totalCount: number
+  /** どこの作品かの選択肢。自分で登録した作品が端末にあるときは そのぶんも入る */
+  sourceOptions: { value: string; label: string }[]
 }
 
 function toggle(list: string[], value: string): string[] {
@@ -32,7 +34,7 @@ function toggle(list: string[], value: string): string[] {
     : [...list, value]
 }
 
-export default function FilterBar({ filters, onChange, hitCount, totalCount }: Props) {
+export default function FilterBar({ filters, onChange, hitCount, totalCount, sourceOptions }: Props) {
   const [openCategories, setOpenCategories] = useState(false)
   const searchId = useId()
   const categoriesId = useId()
@@ -72,7 +74,13 @@ export default function FilterBar({ filters, onChange, hitCount, totalCount }: P
         </label>
       </div>
 
-      <AssemblyFilter value={filters.only3d} onChange={only3d => onChange({ ...filters, only3d })} />
+      <AssemblyFilter
+        value={filters.only3d}
+        onChange={only3d => onChange({ ...filters, only3d })}
+        sources={filters.sources}
+        sourceOptions={sourceOptions}
+        onSourcesChange={sources => onChange({ ...filters, sources })}
+      />
 
       {/*
         しぼりこみのまとまりは fieldset ではなく div + role="group" にしている。

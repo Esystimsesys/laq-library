@@ -223,3 +223,13 @@
 .categoryRowOpen > .chips {
   width: 100%;
 }
+
+/* 3D と どこの作品か の区切り。押せるものではないので細い縦線だけ */
+.chipDivider {
+  flex: none;
+  align-self: center;
+  width: 2px;
+  height: 28px;
+  border-radius: 1px;
+  background: var(--ink-faint);
+}
