@@ -13,7 +13,14 @@
  * 'my-booklet' だけは取り込みではなく、使う人が自分で登録したもの。
  * 端末の中にしかなく、リポジトリには入らない。
  */
-export type SourceId = 'laq-official' | 'purimatu' | 'original' | 'my-booklet'
+export type SourceId =
+  | 'laq-official'
+  | 'purimatu'
+  | 'laq-pokemon'
+  | 'warabar'
+  | 'chiiku365'
+  | 'original'
+  | 'my-booklet'
 
 export type Level = 'beginner' | 'intermediate' | 'advanced'
 

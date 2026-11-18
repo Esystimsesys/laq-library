@@ -36,7 +36,7 @@ if (!canonical) {
 }
 const siteUrl = canonical.endsWith('/') ? canonical : `${canonical}/`
 
-const sources = ['laq-official', 'purimatu', 'original'].map((name) =>
+const sources = ['laq-official', 'purimatu', 'laq-pokemon', 'warabar', 'chiiku365', 'original'].map((name) =>
   JSON.parse(readFileSync(join(ROOT, 'src/data/sources', `${name}.json`), 'utf8')),
 )
 
