@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useState } from 'react'
-import { models } from '../data'
+import { MY_BOOKLET_SOURCE, models, sourceChoices } from '../data'
 import { allModels, filterModels } from '../lib/filter'
 import { getBrowseState, setBrowseState } from '../lib/browseState'
 import { emptyFilters, isFiltering, type Filters } from '../lib/search'
@@ -22,6 +22,14 @@ export default function Browse() {
     // しぼりこみを変えたら、見ていた位置と開いている件数は引き継がない
     setBrowseState({ filters: next, shown: 0, scrollY: 0 })
   }
+
+  // 自分で登録した作品は、端末にあるときだけ選べるようにする（無いのに出すと押しても から になる）
+  const sourceOptions = useMemo(
+    () => state.booklets.length > 0
+      ? [{ value: MY_BOOKLET_SOURCE.source, label: MY_BOOKLET_SOURCE.shortLabel }, ...sourceChoices]
+      : sourceChoices,
+    [state.booklets.length],
+  )
 
   const hits = useMemo(
     () => filterModels(allModels(state), filters, state),
@@ -57,6 +65,7 @@ export default function Browse() {
         onChange={setFilters}
         hitCount={hits.length}
         totalCount={models.length + state.booklets.length}
+        sourceOptions={sourceOptions}
       />
 
       <ModelGrid

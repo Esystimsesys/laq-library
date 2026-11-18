@@ -1,5 +1,5 @@
 import { assemblyForModel } from '../assemblies/catalog'
-import { models } from '../data'
+import { models, sourceOf } from '../data'
 import type { Model } from '../data/types'
 import type { UserState } from '../store/types'
 import { toModel } from './myModels'
@@ -10,7 +10,13 @@ import { queryTerms, searchIndexOf, type Filters } from './search'
  * 1400 件ぶんを一文字打つたびに作り直すと、入力がもたつく。
  * 自分で登録した作品は数が少なく、書き換えも起きるのでその場で作る。
  */
-const searchIndex = new Map(models.map((m) => [m.id, searchIndexOf(m)]))
+const searchIndex = new Map(models.map((m) => [m.id, indexOf(m)]))
+
+/** カードに出る出典名と正式な呼び方でも引けるようにする（「わらばあ」「ぷりまつ」「こうしき」） */
+function indexOf(m: Model): string {
+  const { shortLabel, sourceLabel } = sourceOf(m)
+  return searchIndexOf(m, [shortLabel, sourceLabel])
+}
 
 /*
   冊子の Model 変換は、同じ booklets からは同じ配列を返す。
@@ -47,6 +53,7 @@ export function filterModels(
     if (filters.levels.length > 0) {
       if (!m.level || !filters.levels.includes(m.level)) return false
     }
+    if (filters.sources.length > 0 && !filters.sources.includes(m.source)) return false
     if (filters.categories.length > 0) {
       if (!m.categories.some((c) => filters.categories.includes(c))) return false
     }
@@ -64,7 +71,7 @@ export function filterModels(
         break
     }
     if (terms.length === 0) return true
-    const haystack = searchIndex.get(m.id) ?? searchIndexOf(m)
+    const haystack = searchIndex.get(m.id) ?? indexOf(m)
     return terms.every((t) => haystack.includes(t))
   })
 }

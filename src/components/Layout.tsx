@@ -20,6 +20,13 @@ export default function Layout() {
   return (
     <div className="app">
       <RouteChange />
+      {/*
+        iOS 26 の Safari は、ページを上の時計の帯の下まで描いてぼかす。
+        上端に固定した不透明の要素があると、その色で帯を塗りつぶすので、
+        スクロールした見出しやボタンがぼやけて時計に重ならない。
+        作品の詳細は上の「もどる」の帯が同じ役目をするので出さない。
+      */}
+      {!pathname.startsWith('/model/') && <div className={styles.topEdge} aria-hidden="true" />}
       {/* 保存できていないのに画面だけ増えていくと、あとで消えて驚くことになる */}
       {saveFailed && (
         <p className={styles.saveWarning} role="alert">

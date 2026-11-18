@@ -2,12 +2,17 @@ import { describe, expect, it } from 'vitest'
 import source from './sources/laq-official.json'
 import originalSource from './sources/original.json'
 import purimatuSource from './sources/purimatu.json'
+import laqPokemonSource from './sources/laq-pokemon.json'
+import warabarSource from './sources/warabar.json'
+import chiiku365Source from './sources/chiiku365.json'
 import { categories, models, modelById, sourceOf, sources } from './index'
 import type { SourceFile } from './types'
 
 const file = source as SourceFile
 const purimatu = purimatuSource as SourceFile
 const original = originalSource as SourceFile
+/** fetch-blogs.mjs で取り込む個人ブログ */
+const blogs = [laqPokemonSource, warabarSource, chiiku365Source] as SourceFile[]
 
 describe('取り込んだ作品データ', () => {
   it('公式ギャラリーの件数ぶんある', () => {
@@ -80,7 +85,12 @@ describe('取り込んだ作品データ', () => {
 
   it('ぷりまつラボも取り込めている', () => {
     expect(purimatu.models.length).toBeGreaterThan(1000)
-    expect(models.length).toBe(file.models.length + purimatu.models.length + original.models.length)
+    expect(models.length).toBe(
+      file.models.length +
+        purimatu.models.length +
+        original.models.length +
+        blogs.reduce((sum, b) => sum + b.models.length, 0),
+    )
     // 手順の写真は持たず、本家の記事へ送る方針
     expect(purimatu.models.every((m) => m.stepImages.length === 0)).toBe(true)
   })
@@ -110,6 +120,7 @@ describe('取り込んだ作品データ', () => {
       [file.source]: file.categoryOrder,
       [purimatu.source]: purimatu.categoryOrder,
       [original.source]: original.categoryOrder,
+      ...Object.fromEntries(blogs.map((b) => [b.source, b.categoryOrder])),
     }
     for (const m of models) {
       for (const c of m.categories) {
@@ -137,6 +148,23 @@ describe('取り込んだ作品データ', () => {
 
   it('id はソースをまたいで衝突しない', () => {
     const bySource = new Set(models.map((m) => m.id.split(':')[0]))
-    expect([...bySource].sort()).toEqual(['laq-official', 'original', 'purimatu'])
+    expect([...bySource].sort()).toEqual([
+      'chiiku365',
+      'laq-official',
+      'laq-pokemon',
+      'original',
+      'purimatu',
+      'warabar',
+    ])
+  })
+
+  it('個人ブログも取り込めていて、手順の写真は持たない', () => {
+    // 件数の下限は scripts/fetch-blogs.mjs の minCount とそろえる
+    const min: Record<string, number> = { 'laq-pokemon': 200, warabar: 25, chiiku365: 5 }
+    for (const b of blogs) {
+      expect(b.models.length, b.source).toBeGreaterThanOrEqual(min[b.source])
+      expect(b.models.every((m) => m.stepImages.length === 0 && m.pdfUrl === null), b.source).toBe(true)
+      expect(b.models.filter((m) => !m.thumbnail).length, b.source).toBeLessThan(b.models.length * 0.2)
+    }
   })
 })

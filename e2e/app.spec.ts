@@ -415,7 +415,7 @@ test('マイライブラリを「つくってない」「つくった」でし�
 
   // はずすのは作品のページから。ぜんぶ つくった状態で「つくってない」を見ると、
   // から の知らせから戻れる
-  await page.getByRole('radio', { name: 'ぜんぶ', exact: true }).click()
+  await page.getByRole('radiogroup', { name: 'つくったかどうかで しぼる' }).getByRole('radio', { name: 'ぜんぶ', exact: true }).click()
   await cards.filter({ hasText: notMade }).first().click()
   await page.getByRole('button', { name: 'おきにいり', exact: true }).click()
   await page.goto('./favorites')
@@ -460,6 +460,71 @@ test('作った記録をお気に入りへ統合し、件数・旧リンク・�
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('laq-library:v1')!))
   expect(saved.favorites).toEqual(['purimatu:metamon']);expect(Object.keys(saved.made)).toHaveLength(2)
   await page.screenshot({path:'test-results/favorites-unified-mobile.png'})
+})
+
+
+test('マイライブラリを なかま でしぼれる', async ({ page }) => {
+  await page.goto('./')
+  await page.evaluate(() => localStorage.setItem('laq-library:v1', JSON.stringify({
+    version: 1,
+    favorites: ['purimatu:metamon', 'laq-official:005171', 'laq-pokemon:35'],
+    made: { 'laq-official:005337': { madeAt: '2026-09-10' } },
+    booklets: [],
+  })))
+  await page.goto('./favorites')
+  const cards = page.locator('a[href*="/model/"]')
+  await expect(cards).toHaveCount(4)
+  const group = page.getByRole('radiogroup', { name: 'なかまで しぼる' })
+  // ある なかま だけを、件数つきで出す
+  await expect(group.getByRole('radio')).toHaveText(['ぜんぶ', 'ポケモン 2', 'うみのいきもの 1', 'たてもの・けしき 1'])
+  await group.getByRole('radio', { name: 'ポケモン 2' }).click()
+  await expect(cards).toHaveCount(2)
+  await expect(page).toHaveURL(/nakama=/)
+  // つくったかどうか と組み合わせる
+  await page.getByRole('radio', { name: 'つくった', exact: true }).click()
+  await expect(page.getByText('つくった きろくは まだ ありません')).toBeVisible()
+  await page.getByRole('button', { name: 'マイライブラリを ぜんぶ みる' }).click()
+  await expect(cards).toHaveCount(4)
+  await expect(group.getByRole('radio', { name: 'ぜんぶ' })).toBeChecked()
+  // 作品から戻っても しぼりこみが残る
+  await group.getByRole('radio', { name: 'うみのいきもの 1' }).click()
+  await cards.first().click()
+  await page.getByRole('button', { name: 'もどる', exact: true }).click()
+  await expect(group.getByRole('radio', { name: 'うみのいきもの 1' })).toBeChecked()
+  await expect(cards).toHaveCount(1)
+})
+
+
+test('さがす と マイライブラリを どこの さくひん でしぼれる', async ({ page }) => {
+  await page.goto('./')
+  const cards = page.locator('a[href*="/model/"]')
+  const group = page.getByRole('group', { name: 'つくりかたで しぼる' })
+  // カードの出典名と同じ言い方で、端末に登録が無ければ「じぶんの」は出さない
+  await expect(group.getByRole('button')).toHaveText(['3Dで つくれる', 'こうしき', 'ぷりまつ', 'ラキュポケ', 'わらばあ', '365ちいく', 'オリジナル'])
+  await group.getByRole('button', { name: 'わらばあ', exact: true }).click()
+  await expect(cards.first()).toContainText('わらばあ')
+  await expect(page.getByText(/^\d+ \/ \d+ こ$/)).toHaveText(/^33 \//)
+  await group.getByRole('button', { name: '365ちいく', exact: true }).click()
+  await expect(page.getByText(/^\d+ \/ \d+ こ$/)).toHaveText(/^42 \//)
+  await page.getByRole('button', { name: 'しぼりこみを ぜんぶ やめる' }).first().click()
+  await expect(group.getByRole('button', { name: 'わらばあ', exact: true })).toHaveAttribute('aria-pressed', 'false')
+  // 出どころの名前は検索でも引ける
+  await page.getByRole('searchbox').fill('わらばあ イーブイ')
+  await expect(cards).toHaveCount(1)
+  await expect(cards.first()).toContainText('イーブイ')
+
+  await page.evaluate(() => localStorage.setItem('laq-library:v1', JSON.stringify({
+    version: 1, favorites: ['purimatu:metamon', 'laq-official:005171', 'laq-pokemon:35'], made: {}, booklets: [],
+  })))
+  await page.goto('./favorites')
+  const mine = page.getByRole('radiogroup', { name: 'どこの さくひんかで しぼる' })
+  await expect(mine.getByRole('radio')).toHaveText(['ぜんぶ', 'ぷりまつ 1', 'こうしき 1', 'ラキュポケ 1'])
+  await mine.getByRole('radio', { name: 'ラキュポケ 1' }).click()
+  await expect(cards).toHaveCount(1)
+  await expect(cards.first()).toContainText('フシギダネ')
+  // なかま と組み合わせて 0 件になったら、組み合わせを変えるよう案内する
+  await page.getByRole('radiogroup', { name: 'なかまで しぼる' }).getByRole('radio', { name: /^うみのいきもの/ }).click()
+  await expect(page.getByText('あてはまる さくひんが ありません')).toBeVisible()
 })
 
 

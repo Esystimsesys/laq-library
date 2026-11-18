@@ -16,10 +16,13 @@ export function normalize(text: string): string {
     .replace(/[・\s&＿_、,。.]/g, '')
 }
 
-/** 検索対象の文字列をあらかじめ作っておく（毎回の入力で作り直さない）。 */
-export function searchIndexOf(model: Model): string {
+/**
+ * 検索対象の文字列をあらかじめ作っておく（毎回の入力で作り直さない）。
+ * extra には出どころの名前（「わらばあ」「こうしき」など）を渡し、名前でも引けるようにする。
+ */
+export function searchIndexOf(model: Model, extra: string[] = []): string {
   return normalize(
-    [model.title, model.description, ...model.categories].join(' '),
+    [model.title, model.description, ...model.categories, ...extra].join(' '),
   )
 }
 
@@ -33,6 +36,8 @@ export type Filters = {
   query: string
   levels: string[]
   categories: string[]
+  /** どこの作品か（SourceId）。空なら ぜんぶ */
+  sources: string[]
   /** 'all' | 'favorite' | 'made' | 'notMade' */
   status: 'all' | 'favorite' | 'made' | 'notMade'
 }
@@ -41,6 +46,7 @@ export const emptyFilters: Filters = {
   query: '',
   levels: [],
   categories: [],
+  sources: [],
   status: 'all',
   only3d: false,
 }
@@ -51,6 +57,7 @@ export function isFiltering(filters: Filters): boolean {
     filters.query.trim() !== '' ||
     filters.levels.length > 0 ||
     filters.categories.length > 0 ||
+    filters.sources.length > 0 ||
     filters.status !== 'all'
   )
 }

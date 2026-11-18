@@ -1,0 +1,151 @@
+{
+  "source": "chiiku365",
+  "sourceLabel": "365日の知育・学習プリント",
+  "shortLabel": "365ちいく",
+  "rightsHolder": "365日の知育・学習プリント",
+  "sourceLinkLabel": "365日の知育の ページ",
+  "sourceUrl": "https://365chiiku.com/",
+  "fetchedAt": "2026-11-17T23:29:17.348Z",
+  "categoryOrder": [
+    "ポケモン",
+    "どうぶつ",
+    "むし"
+  ],
+  "models": [
+    {
+      "id": "chiiku365:lion",
+      "source": "chiiku365",
+      "sourceUrl": "https://365chiiku.com/laq/lion",
+      "title": "ライオン",
+      "description": "動物 普通・立体モデル LaQ（ラキュー）で作った立体ライオンの完成写真をご紹介します！",
+      "level": "intermediate",
+      "categories": [
+        "どうぶつ"
+      ],
+      "thumbnail": "https://365chiiku.com/wp-content/uploads/14367-768x543.jpg",
+      "mainImage": "https://365chiiku.com/wp-content/uploads/14367-768x543.jpg",
+      "stepImages": [],
+      "pdfUrl": null
+    },
+    {
+      "id": "chiiku365:giant-asian-mantis",
+      "source": "chiiku365",
+      "sourceUrl": "https://365chiiku.com/laq/giant-asian-mantis",
+      "title": "オオカマキリ",
+      "description": "昆虫 普通・立体モデル LaQ（ラキュー）で作った立体オオカマキリの完成写真をご紹介します！",
+      "level": "intermediate",
+      "categories": [
+        "むし"
+      ],
+      "thumbnail": "https://365chiiku.com/wp-content/uploads/14060-768x543.jpg",
+      "mainImage": "https://365chiiku.com/wp-content/uploads/14060-768x543.jpg",
+      "stepImages": [],
+      "pdfUrl": null
+    },
+    {
+      "id": "chiiku365:yellow-banded-poison-dart-frog",
+      "source": "chiiku365",
+      "sourceUrl": "https://365chiiku.com/laq/yellow-banded-poison-dart-frog",
+      "title": "キオビヤドクガエル",
+      "description": "両生類 普通・立体モデル LaQ（ラキュー）で作った立体キオビヤドクガエルの完成写真をご紹介します！",
+      "level": "intermediate",
+      "categories": [
+        "どうぶつ"
+      ],
+      "thumbnail": "https://365chiiku.com/wp-content/uploads/14035-1-768x543.jpg",
+      "mainImage": "https://365chiiku.com/wp-content/uploads/14035-1-768x543.jpg",
+      "stepImages": [],
+      "pdfUrl": null
+    },
+    {
+      "id": "chiiku365:pill-bug",
+      "source": "chiiku365",
+      "sourceUrl": "https://365chiiku.com/laq/pill-bug",
+      "title": "ダンゴムシ",
+      "description": "昆虫 普通・立体モデル LaQ（ラキュー）で作った立体ダンゴムシの完成写真をご紹介します！",
+      "level": "intermediate",
+      "categories": [
+        "むし"
+      ],
+      "thumbnail": "https://365chiiku.com/wp-content/uploads/14027-768x543.jpg",
+      "mainImage": "https://365chiiku.com/wp-content/uploads/14027-768x543.jpg",
+      "stepImages": [],
+      "pdfUrl": null
+    },
+    {
+      "id": "chiiku365:ant",
+      "source": "chiiku365",
+      "sourceUrl": "https://365chiiku.com/laq/ant",
+      "title": "アリ",
+      "description": "昆虫 普通・立体モデル LaQ（ラキュー）で作った立体アリの完成写真をご紹介します！",
+      "level": "intermediate",
+      "categories": [
+        "むし"
+      ],
+      "thumbnail": "https://365chiiku.com/wp-content/uploads/13896-768x543.jpg",
+      "mainImage": "https://365chiiku.com/wp-content/uploads/13896-768x543.jpg",
+      "stepImages": [],
+      "pdfUrl": null
+    },
+    {
+      "id": "chiiku365:hornet",
+      "source": "chiiku365",
+      "sourceUrl": "https://365chiiku.com/laq/hornet",
+      "title": "スズメバチ",
+      "description": "昆虫 普通・立体モデル LaQ（ラキュー）で作った立体スズメバチの完成写真をご紹介します！",
+      "level": "intermediate",
+      "categories": [
+        "むし"
+      ],
+      "thumbnail": "https://365chiiku.com/wp-content/uploads/13888-768x543.jpg",
+      "mainImage": "https://365chiiku.com/wp-content/uploads/13888-768x543.jpg",
+      "stepImages": [],
+      "pdfUrl": null
+    },
+    {
+      "id": "chiiku365:stag-beetle",
+      "source": "chiiku365",
+      "sourceUrl": "https://365chiiku.com/laq/stag-beetle",
+      "title": "クワガタムシ",
+      "description": "昆虫 普通・立体モデル LaQ（ラキュー）で作った立体クワガタムシの完成写真をご紹介します！",
+      "level": "intermediate",
+      "categories": [
+        "むし"
+      ],
+      "thumbnail": "https://365chiiku.com/wp-content/uploads/13880-768x543.jpg",
+      "mainImage": "https://365chiiku.com/wp-content/uploads/13880-768x543.jpg",
+      "stepImages": [],
+      "pdfUrl": null
+    },
+    {
+      "id": "chiiku365:beetle",
+      "source": "chiiku365",
+      "sourceUrl": "https://365chiiku.com/laq/beetle",
+      "title": "カブトムシ",
+      "description": "昆虫 普通・立体モデル LaQ（ラキュー）で作った立体カブトムシの完成写真をご紹介します！",
+      "level": "intermediate",
+      "categories": [
+        "むし"
+      ],
+      "thumbnail": "https://365chiiku.com/wp-content/uploads/13866-768x543.jpg",
+      "mainImage": "https://365chiiku.com/wp-content/uploads/13866-768x543.jpg",
+      "stepImages": [],
+      "pdfUrl": null
+    },
+    {
+      "id": "chiiku365:pikachu",
+      "source": "chiiku365",
+      "sourceUrl": "https://365chiiku.com/laq/pikachu",
+      "title": "ピカチュウ",
+      "description": "ポケモン 普通・立体モデル LaQ（ラキュー）で作った立体ピカチュウの完成写真をご紹介します！",
+      "level": "intermediate",
+      "categories": [
+        "ポケモン"
+      ],
+      "thumbnail": "https://365chiiku.com/wp-content/uploads/13855-1-768x543.jpg",
+      "mainImage": "https://365chiiku.com/wp-content/uploads/13855-1-768x543.jpg",
+      "stepImages": [],
+      "pdfUrl": null
+    }
+  ]
+}

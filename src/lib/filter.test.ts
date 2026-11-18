@@ -171,3 +171,23 @@ it('3D対応は登録データで判定し、検索・完成記録の条件と�
   expect(filterModels([metamon,...sample], {...filters, status:'made'}, emptyState)).toEqual([])
   expect(ids(filterModels([metamon,...sample], {...filters, status:'made'}, {...emptyState, made:{[metamon.id]:{madeAt:'2026-01-01'}}}))).toEqual([metamon.id])
 })
+
+it('どこの作品かで しぼり、複数えらぶと どれかに当たるものを出す', () => {
+  const metamon = models.find(m => m.id === 'purimatu:metamon')!
+  const list = [metamon, ...sample]
+  expect(ids(filterModels(list, { ...emptyFilters, sources: ['purimatu'] }, emptyState))).toEqual([metamon.id])
+  expect(filterModels(list, { ...emptyFilters, sources: ['purimatu', 'laq-official'] }, emptyState)).toHaveLength(list.length)
+  expect(filterModels(list, { ...emptyFilters, sources: ['purimatu'], query: 'ねこ' }, emptyState)).toEqual([])
+})
+
+it('出どころの名前でも検索で引ける', () => {
+  const byQuery = (query: string) => filterModels(models, { ...emptyFilters, query }, emptyState)
+  const warabar = models.filter(m => m.source === 'warabar')
+  // カードの出典名でも、正式な呼び方でも、カタカナでも引ける
+  expect(ids(byQuery('わらばあ'))).toEqual(ids(warabar))
+  expect(ids(byQuery('ワラバア'))).toEqual(ids(warabar))
+  expect(byQuery('ぷりまつ').every(m => m.source === 'purimatu')).toBe(true)
+  expect(byQuery('こうしき').every(m => m.source === 'laq-official')).toBe(true)
+  // 作品名と組み合わせて絞れる
+  expect(byQuery('わらばあ イーブイ').map(m => m.id)).toEqual(['warabar:laq-eevee'])
+})

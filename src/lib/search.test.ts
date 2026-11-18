@@ -34,5 +34,6 @@ describe('isFiltering', () => {
     expect(isFiltering({ ...emptyFilters, levels: ['beginner'] })).toBe(true)
     expect(isFiltering({ ...emptyFilters, categories: ['どうぶつ'] })).toBe(true)
     expect(isFiltering({ ...emptyFilters, status: 'made' })).toBe(true)
+    expect(isFiltering({ ...emptyFilters, sources: ['purimatu'] })).toBe(true)
   })
 })

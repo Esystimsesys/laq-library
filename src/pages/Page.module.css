@@ -34,3 +34,16 @@
   font-size: 12px;
   color: var(--ink-soft);
 }
+
+/* チップの列に添える小さな見出し（「さがす」のしぼりこみと同じ見た目） */
+.group {
+  min-width: 0;
+}
+
+.legend {
+  padding: 0 0 6px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}

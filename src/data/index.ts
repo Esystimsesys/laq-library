@@ -1,12 +1,18 @@
+import chiiku365 from './sources/chiiku365.json'
 import laqOfficial from './sources/laq-official.json'
+import laqPokemon from './sources/laq-pokemon.json'
 import original from './sources/original.json'
 import purimatu from './sources/purimatu.json'
+import warabar from './sources/warabar.json'
 import type { Model, SourceFile, SourceId, SourceInfo } from './types'
 
 // ソースを足すときはここに import と配列への追加を書く
 const SOURCE_FILES: SourceFile[] = [
   laqOfficial as SourceFile,
   purimatu as SourceFile,
+  laqPokemon as SourceFile,
+  warabar as SourceFile,
+  chiiku365 as SourceFile,
   original as SourceFile,
 ]
 
@@ -90,6 +96,14 @@ export const LEVEL_LABELS = {
   intermediate: '中級',
   advanced: '上級',
 } as const
+
+/**
+ * 「どこの さくひん」で しぼるときの並び。カードの出典名（shortLabel）と同じ言い方にする。
+ * 自分で登録した作品は端末にあるときだけ出すので、ここには入れず画面側で足す。
+ */
+export const sourceChoices: { value: SourceId; label: string }[] = sources.map(
+  ({ source, shortLabel }) => ({ value: source, label: shortLabel }),
+)
 
 /** 子ども向けの言い換え。一覧のフィルタはこちらを使う。 */
 export const LEVEL_KANA = {
