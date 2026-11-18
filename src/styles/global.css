@@ -10,6 +10,11 @@ body,
   height: 100%;
 }
 
+/* 時計の帯やスクロールのはみ出しで見える下地。透明だと Safari は白で埋める */
+html {
+  background-color: var(--paper);
+}
+
 body {
   margin: 0;
   font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'ヒラギノ丸ゴ ProN',

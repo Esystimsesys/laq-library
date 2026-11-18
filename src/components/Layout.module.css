@@ -10,6 +10,19 @@
   border-bottom: var(--line-thin);
 }
 
+.topEdge {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 25;
+  /* Safari は時計の帯ぶんを 0 と返すことがあるので、帯の色を拾える高さは必ずとる。
+     ページの上の余白（14px）より低くして、開いたときの見出しには重ねない */
+  height: max(10px, env(safe-area-inset-top));
+  background-color: var(--paper);
+  pointer-events: none;
+}
+
 .main {
   flex: 1;
   display: flex;
