@@ -15,9 +15,12 @@ test('スマホの接続矢印は分解に追従し、接続点が近い向き�
   await expect(arrows).toHaveCount(0)
   await viewer.locator('#explode').fill('100')
   await viewer.locator('#explode').dispatchEvent('input')
+  // 初期表示は「まえ」（docs/ASSEMBLIES.md）。この手順は奥へ はなれるので、正面からは接続点が重なり矢印を出さない
+  await expect(arrows).toHaveCount(0)
+  await viewer.getByText('むきを かえる・すかして見る', { exact: true }).click()
+  await viewer.getByRole('button', { name: 'ななめ', exact: true }).click()
   await expect(arrows).toHaveCount(2)
   await expect(viewer.locator('#stage .connection-arrow text')).toHaveCount(0)
-  await viewer.getByText('むきを かえる・すかして見る', { exact: true }).click()
   await viewer.getByRole('button', { name: 'まえ', exact: true }).click()
   await expect(arrows).toHaveCount(0)
   await viewer.getByRole('button', { name: 'ななめ', exact: true }).click()

@@ -121,6 +121,9 @@ test('同じ番号の部品見本を同じ大きさにし、複数図の案内�
   const arrows=viewer.locator('#stage .connection-arrow')
   await expect(arrows).toHaveCount(0)
   await viewer.locator('#explode').fill('100');await viewer.locator('#explode').dispatchEvent('input')
+  // 初期表示の「まえ」では、奥へ はなれる接続の矢印は重なって出ない。全部の矢印は「ななめ」で数える
+  await viewer.getByText('むきを かえる・すかして見る', { exact: true }).click()
+  await viewer.getByRole('button', { name: 'ななめ', exact: true }).click()
   await expect(arrows).toHaveCount(variant.units.find((unit:{id:string})=>unit.id==='head').steps[0].actions.length)
 })
 

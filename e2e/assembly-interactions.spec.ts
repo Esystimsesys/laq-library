@@ -164,7 +164,8 @@ for(const width of [390,1240]) test(`分解スライダーを連続ドラッグ�
   await slider.fill('0');await slider.dispatchEvent('change')
   await frame.evaluate(()=>{
     const w=window as any;w.__createdDuringDrag=0
-    for(const key of ['plate','joint']){const original=w.LaQRealisticParts[key];w.LaQRealisticParts[key]=(...args:unknown[])=>{w.__createdDuringDrag++;return original(...args)}}
+    // 手順の見本画像は裏で順に作られるので数えない。見るのは画面の 3D の作り直しだけ
+    for(const key of ['plate','joint']){const original=w.LaQRealisticParts[key];w.LaQRealisticParts[key]=(...args:unknown[])=>{if(!new Error().stack?.includes('addThumbnailPiece'))w.__createdDuringDrag++;return original(...args)}}
   })
   const box=(await slider.boundingBox())!
   expect(box.height).toBeGreaterThanOrEqual(48);expect(box.width).toBeGreaterThanOrEqual(180)
