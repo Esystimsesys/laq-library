@@ -3,7 +3,7 @@ import { models } from '../data'
 import type { Model } from '../data/types'
 import { emptyState } from '../store/storage'
 import type { UserState } from '../store/types'
-import { allModels, filterModels } from './filter'
+import { allModels, filterModels, mixSources } from './filter'
 import { emptyFilters } from './search'
 
 const sample: Model[] = [
@@ -190,4 +190,18 @@ it('出どころの名前でも検索で引ける', () => {
   expect(byQuery('こうしき').every(m => m.source === 'laq-official')).toBe(true)
   // 作品名と組み合わせて絞れる
   expect(byQuery('わらばあ イーブイ').map(m => m.id)).toEqual(['warabar:laq-eevee'])
+})
+
+describe('サイトを混ぜて並べる', () => {
+  const item = (source: Model['source'], n: number): Model => ({ ...sample[0], id: `${source}:${n}`, source })
+
+  it('先頭の固定ぶんのあとは、サイトごとに 1 件ずつ交互に並べ、少ないサイトは出し切る', () => {
+    const list = [item('original', 1), item('purimatu', 1), item('purimatu', 2), item('purimatu', 3), item('warabar', 1)]
+    expect(mixSources(list).map((m) => m.id)).toEqual(['original:1', 'purimatu:1', 'warabar:1', 'purimatu:2', 'purimatu:3'])
+  })
+
+  it('ポケモンで絞ると、最初の 24 件に ポケモンのある全部のサイトが入る', () => {
+    const firstPage = filterModels(models, { ...emptyFilters, categories: ['ポケモン'] }, emptyState).slice(0, 24)
+    expect(new Set(firstPage.map((m) => m.source))).toEqual(new Set(['purimatu', 'laq-pokemon', 'warabar', 'chiiku365']))
+  })
 })

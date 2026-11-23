@@ -48,7 +48,7 @@ export function filterModels(
   // 検索語の分解は 1 回だけ。作品ごとの繰り返しを避ける。
   const terms = queryTerms(filters.query)
 
-  return list.filter((m) => {
+  const hits = list.filter((m) => {
     if (filters.only3d && !assemblyForModel(m.id)) return false
     if (filters.levels.length > 0) {
       if (!m.level || !filters.levels.includes(m.level)) return false
@@ -74,4 +74,37 @@ export function filterModels(
     const haystack = searchIndex.get(m.id) ?? indexOf(m)
     return terms.every((t) => haystack.includes(t))
   })
+  return mixSources(hits)
+}
+
+/** 混ぜずに先頭へ置くもの。制作者のオリジナルと、自分で登録した作品 */
+const PINNED_SOURCES = new Set<Model['source']>(['original', 'my-booklet'])
+
+/**
+ * しぼりこんだ結果を、サイトごとに 1 件ずつ順に取り出して混ぜる。
+ * 各サイトの中の順番と、サイトどうしの順番（一覧に出てくる順）は変えない。
+ *
+ * サイトごとにまとめて並べると、件数の多いぷりまつ（1,200 件あまり）が先に続き、
+ * ポケモンで絞ったときに ほかのサイトの作品が 1,200 件より後ろに沈む。
+ * 全体を先に混ぜてから絞ると、件数の少ないサイトの作品が絞り込みのあとで
+ * 後ろへずれるので、絞ったあとに混ぜる。
+ */
+export function mixSources(list: Model[]): Model[] {
+  const pinned: Model[] = []
+  const bySource = new Map<Model['source'], Model[]>()
+  for (const m of list) {
+    if (PINNED_SOURCES.has(m.source)) pinned.push(m)
+    else {
+      const group = bySource.get(m.source)
+      if (group) group.push(m)
+      else bySource.set(m.source, [m])
+    }
+  }
+  if (bySource.size < 2) return list
+  const groups = [...bySource.values()]
+  const out = [...pinned]
+  for (let i = 0; out.length < list.length; i++) {
+    for (const group of groups) if (i < group.length) out.push(group[i])
+  }
+  return out
 }
