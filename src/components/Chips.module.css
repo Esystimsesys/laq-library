@@ -59,6 +59,40 @@
   box-shadow: 2px 2px 0 var(--ink-faint);
 }
 
+/*
+  あてはまる数。名前と同じ字で並べると「ポケモン 2」が名前の一部に見えるので、
+  小さな丸に入れて名前と分ける。
+*/
+.count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  margin: 0 -6px 0 6px;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink-soft);
+  background: var(--paper-deep);
+  border-radius: 999px;
+}
+
+.on .count {
+  color: var(--ink);
+  background: var(--card);
+}
+
+/*
+  いまの条件では 1 つも無い選択肢。消すとチップの位置がずれるので、残したまま薄くする。
+  押せば から の知らせが出て、条件を戻せる。
+*/
+.none {
+  color: var(--ink-soft);
+  border-style: dashed;
+  border-color: var(--ink-faint);
+}
+
 /* 「ぜんぶ見る」のような、選ぶのではなく列の見せ方を変えるボタン */
 .moreChip {
   font-weight: 900;

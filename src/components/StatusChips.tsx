@@ -1,6 +1,11 @@
 import chips from './Chips.module.css'
 
-export type StatusOption<T extends string> = { value: T; label: string }
+export type StatusOption<T extends string> = {
+  value: T
+  label: string
+  /** あてはまる作品の数。名前とまぎれないよう、チップの中に小さな丸で添える */
+  count?: number
+}
 
 type Props<T extends string> = {
   /** 読み上げに出るグループの名前 */
@@ -43,7 +48,7 @@ export default function StatusChips<T extends string>({
           role="radio"
           aria-checked={value === option.value}
           tabIndex={value === option.value ? 0 : -1}
-          className={value === option.value ? `${chips.chip} ${chips.on}` : chips.chip}
+          className={value === option.value ? `${chips.chip} ${chips.on}` : option.count === 0 ? `${chips.chip} ${chips.none}` : chips.chip}
           onClick={() => onChange(option.value)}
           onKeyDown={(event) => {
             const direction =
@@ -58,6 +63,11 @@ export default function StatusChips<T extends string>({
           }}
         >
           {option.label}
+          {option.count !== undefined && (
+            <span className={chips.count}>
+              {' '}{option.count}<span className="visually-hidden">こ</span>
+            </span>
+          )}
         </button>
       ))}
     </div>

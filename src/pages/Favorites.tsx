@@ -24,7 +24,7 @@ function categoryOptions(list: { categories: string[] }[]): StatusOption<string>
   const count = new Map<string, number>()
   for (const m of list) for (const c of m.categories) count.set(c, (count.get(c) ?? 0) + 1)
   const ordered = [...CATEGORY_ORDER.filter((c) => count.has(c)), ...[...count.keys()].filter((c) => !CATEGORY_ORDER.includes(c))]
-  return [{ value: ALL, label: 'ぜんぶ' }, ...ordered.map((c) => ({ value: c, label: `${c} ${count.get(c)}` }))]
+  return [{ value: ALL, label: 'ぜんぶ' }, ...ordered.map((c) => ({ value: c, label: c, count: count.get(c) }))]
 }
 
 /**
@@ -38,8 +38,20 @@ function sourceOptions(list: Model[]): StatusOption<string>[] {
     entry.n += 1
     count.set(m.source, entry)
   }
-  return [{ value: ALL, label: 'ぜんぶ' }, ...[...count].map(([value, { label, n }]) => ({ value, label: `${label} ${n}` }))]
+  return [{ value: ALL, label: 'ぜんぶ' }, ...[...count].map(([value, { label, n }]) => ({ value, label, count: n }))]
 }
+
+/**
+ * 件数を、ほかの列で えらんでいる条件にあわせて数えなおす。
+ * 全体の数のままだと、「ポケモン」を選んでいるのに「こうしき 2」と出て、押すと から になる。
+ * 選択肢の顔ぶれと並びは変えない（押すたびにチップの位置が動かないように）。
+ */
+function recount(options: StatusOption<string>[], narrowed: Model[], match: (m: Model, value: string) => boolean): StatusOption<string>[] {
+  return options.map(o => o.value === ALL ? o : { ...o, count: narrowed.filter(m => match(m, o.value)).length })
+}
+
+const inCategory = (m: Model, category: string) => m.categories.includes(category)
+const fromSource = (m: Model, source: string) => m.source === source
 
 const STATUSES: StatusOption<Status>[] = [
   { value: 'all', label: 'ぜんぶ' },
@@ -66,10 +78,11 @@ export default function Favorites() {
   const requestedSource = params.get('source')
   const source = requestedSource && sourceChoices.some(o => o.value === requestedSource) ? requestedSource : ALL
   const madeCount = list.filter(m => Boolean(state.made[m.id])).length
-  const shown = list.filter(m =>
-    (status === 'all' || (status === 'made' ? Boolean(state.made[m.id]) : !state.made[m.id])) &&
-    (category === ALL || m.categories.includes(category)) &&
-    (source === ALL || m.source === source))
+  const byStatus = list.filter(m => status === 'all' || (status === 'made' ? Boolean(state.made[m.id]) : !state.made[m.id]))
+  const shown = byStatus.filter(m => (category === ALL || inCategory(m, category)) && (source === ALL || fromSource(m, source)))
+  // なかま の数は つくったかどうか・どこの さくひん で、どこの さくひん の数は つくったかどうか・なかま でしぼった中で数える
+  const categoryCounts = recount(categoryChoices, byStatus.filter(m => source === ALL || fromSource(m, source)), inCategory)
+  const sourceCounts = recount(sourceChoices, byStatus.filter(m => category === ALL || inCategory(m, category)), fromSource)
   const filtering = status !== 'all' || category !== ALL || source !== ALL
   const showAll = () => setParams({}, { replace: true })
 
@@ -83,10 +96,10 @@ export default function Favorites() {
       </FilterGroup>
       {/* なかまが 1 つしか無ければ、しぼっても同じ一覧になるので出さない */}
       {categoryChoices.length > 2 && <FilterGroup legend="なかま">
-        <StatusChips label="なかまで しぼる" options={categoryChoices} value={category} onChange={value => update('nakama', value === ALL ? null : value)} wrap />
+        <StatusChips label="なかまで しぼる" options={categoryCounts} value={category} onChange={value => update('nakama', value === ALL ? null : value)} wrap />
       </FilterGroup>}
       {sourceChoices.length > 2 && <FilterGroup legend="どこの さくひん">
-        <StatusChips label="どこの さくひんかで しぼる" options={sourceChoices} value={source} onChange={value => update('source', value === ALL ? null : value)} wrap />
+        <StatusChips label="どこの さくひんかで しぼる" options={sourceCounts} value={source} onChange={value => update('source', value === ALL ? null : value)} wrap />
       </FilterGroup>}
       <FilterResult hitCount={shown.length} totalCount={list.length} filtering={filtering} onReset={showAll} />
     </FilterPanel>}
