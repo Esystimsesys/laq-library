@@ -476,8 +476,8 @@ test('マイライブラリを なかま でしぼれる', async ({ page }) => {
   await expect(cards).toHaveCount(4)
   const group = page.getByRole('radiogroup', { name: 'なかまで しぼる' })
   // ある なかま だけを、件数つきで出す
-  await expect(group.getByRole('radio')).toHaveText(['ぜんぶ', 'ポケモン 2', 'うみのいきもの 1', 'たてもの・けしき 1'])
-  await group.getByRole('radio', { name: 'ポケモン 2' }).click()
+  await expect(group.getByRole('radio')).toHaveText(['ぜんぶ', 'ポケモン 2こ', 'うみのいきもの 1こ', 'たてもの・けしき 1こ'])
+  await group.getByRole('radio', { name: 'ポケモン 2 こ' }).click()
   await expect(cards).toHaveCount(2)
   await expect(page).toHaveURL(/nakama=/)
   // つくったかどうか と組み合わせる
@@ -487,10 +487,10 @@ test('マイライブラリを なかま でしぼれる', async ({ page }) => {
   await expect(cards).toHaveCount(4)
   await expect(group.getByRole('radio', { name: 'ぜんぶ' })).toBeChecked()
   // 作品から戻っても しぼりこみが残る
-  await group.getByRole('radio', { name: 'うみのいきもの 1' }).click()
+  await group.getByRole('radio', { name: 'うみのいきもの 1 こ' }).click()
   await cards.first().click()
   await page.getByRole('button', { name: 'もどる', exact: true }).click()
-  await expect(group.getByRole('radio', { name: 'うみのいきもの 1' })).toBeChecked()
+  await expect(group.getByRole('radio', { name: 'うみのいきもの 1 こ' })).toBeChecked()
   await expect(cards).toHaveCount(1)
 })
 
@@ -518,9 +518,11 @@ test('さがす と マイライブラリを どこの さくひん でしぼれ
   })))
   await page.goto('./favorites')
   const mine = page.getByRole('radiogroup', { name: 'どこの さくひんかで しぼる' })
-  await expect(mine.getByRole('radio')).toHaveText(['ぜんぶ', 'ぷりまつ 1', 'こうしき 1', 'ラキュポケ 1'])
-  await mine.getByRole('radio', { name: 'ラキュポケ 1' }).click()
+  await expect(mine.getByRole('radio')).toHaveText(['ぜんぶ', 'ぷりまつ 1こ', 'こうしき 1こ', 'ラキュポケ 1こ'])
+  await mine.getByRole('radio', { name: 'ラキュポケ 1 こ' }).click()
   await expect(cards).toHaveCount(1)
+  // なかま の数は、えらんだ どこの さくひん の中で数えなおす
+  await expect(page.getByRole('radiogroup', { name: 'なかまで しぼる' }).getByRole('radio')).toHaveText(['ぜんぶ', 'ポケモン 1こ', 'うみのいきもの 0こ'])
   await expect(cards.first()).toContainText('フシギダネ')
   // なかま と組み合わせて 0 件になったら、組み合わせを変えるよう案内する
   await page.getByRole('radiogroup', { name: 'なかまで しぼる' }).getByRole('radio', { name: /^うみのいきもの/ }).click()

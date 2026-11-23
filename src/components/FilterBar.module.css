@@ -1,19 +1,4 @@
-/*
-  たての間隔は、チップが折り返したときの行間（7px）に近いほうへそろえる。
-  検索・むずかしさ・なかま・きろく はどれも「しぼりこみ」の一部で、
-  ここだけ大きく空けると、展開して行が増えたときに間隔が二種類あるように見える。
-*/
-.bar {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-s);
-  padding: var(--gap-m);
-  background: var(--card);
-  border: var(--line);
-  border-radius: var(--radius-l);
-  box-shadow: var(--shadow);
-}
-
+/* 「さがす」だけにある しぼりこみ（検索窓・むずかしさの色・なかまの展開）。共通の見た目は FilterPanel / Chips */
 .searchRow {
   display: flex;
 }
@@ -79,127 +64,15 @@
   border-radius: 999px;
 }
 
-.group {
-  /* 既定の最小幅が、横長のチップ列を画面外へ押し広げるのを防ぐ */
-  min-width: 0;
-}
-
-.legend {
-  padding: 0 0 6px;
-  font-size: 12px;
-  font-weight: 900;
-  /* 行の高さは書体まかせにしない。書体の縦メトリクスで見出しの位置が動く */
-  line-height: 1.4;
-  color: var(--ink-soft);
-}
-
-/*
-  チップは指で押せる高さ（44px）にしてあるので、折り返すと絞り込みだけで
-  画面が埋まり、肝心の作品が下に押し出される。ふだんは横スクロールの 1 行にして、
-  作品カードが最初の画面に入るようにする。
-*/
-.chips {
-  min-width: 0;
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 7px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  /* 影が切れないように、はみ出しぶんの余白をとる */
-  padding: 2px 2px 4px;
-  margin: -2px -2px -4px;
-}
-
-.chips::-webkit-scrollbar {
-  display: none;
-}
-
-/* 「ぜんぶ見る」を押したときは、折り返して一望できるようにする */
-.chipsOpen {
-  flex-wrap: wrap;
-  overflow-x: visible;
-}
-
-.chip,
-.moreChip {
-  flex: none;
-}
-
-.chip {
-  /* 子どもの指で押せるように、見た目より高さを確保する */
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 7px 15px;
-  font-size: 14px;
-  font-weight: 700;
-  background: var(--paper);
-  border: var(--line-thin);
-  border-radius: 999px;
-}
-
-.chip:active {
-  transform: translate(1px, 1px);
-}
-
-/* えらんでいるものは、色をつけて影を出す */
-.on {
-  color: var(--card);
-  background: var(--ink);
-  box-shadow: 2px 2px 0 var(--ink-faint);
-}
-
-.beginner.on {
+/* えらんだ むずかしさ は、カードの むずかしさ と同じ色にする */
+.beginner[aria-pressed='true'] {
   background: var(--level-beginner);
 }
-.intermediate.on {
+.intermediate[aria-pressed='true'] {
   background: var(--level-intermediate);
 }
-.advanced.on {
+.advanced[aria-pressed='true'] {
   background: var(--level-advanced);
-}
-
-.moreChip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 7px 15px;
-  font-size: 14px;
-  font-weight: 900;
-  color: var(--blue);
-  background: transparent;
-  border: 2px dashed var(--ink-faint);
-  border-radius: 999px;
-}
-
-.resultRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--gap-s);
-  padding-top: 2px;
-  border-top: 2px dotted var(--ink-faint);
-}
-
-.count {
-  font-size: 13px;
-  color: var(--ink-soft);
-}
-
-.count strong {
-  font-size: 20px;
-  color: var(--ink);
-}
-
-.reset {
-  min-height: 44px;
-  padding: 8px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  background: var(--paper-deep);
-  border: var(--line-thin);
-  border-radius: 999px;
 }
 
 .categoryRow {
@@ -208,28 +81,14 @@
   gap: 10px;
 }
 
-.categoryRow > .chips {
+.categoryChips {
   flex: 1;
-}
-
-.hint {
-  margin-left: 12px;
 }
 
 .categoryRowOpen {
   flex-direction: column;
 }
 
-.categoryRowOpen > .chips {
+.categoryRowOpen > .categoryChips {
   width: 100%;
-}
-
-/* 3D と どこの作品か の区切り。押せるものではないので細い縦線だけ */
-.chipDivider {
-  flex: none;
-  align-self: center;
-  width: 2px;
-  height: 28px;
-  border-radius: 1px;
-  background: var(--ink-faint);
 }
