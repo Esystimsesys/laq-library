@@ -1,0 +1,78 @@
+/*
+  しぼりこみのチップ。「さがす」と「マイライブラリ」の両方、
+  複数選べるもの（ToggleChip）と 1 つだけ選ぶもの（StatusChips）の両方で同じ見た目にする。
+*/
+
+/*
+  チップは指で押せる高さ（44px）にしてあるので、折り返すと絞り込みだけで
+  画面が埋まり、肝心の作品が下に押し出される。ふだんは横スクロールの 1 行にして、
+  作品カードが最初の画面に入るようにする。
+*/
+.chips {
+  min-width: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* 影が切れないように、はみ出しぶんの余白をとる */
+  padding: 2px 2px 4px;
+  margin: -2px -2px -4px;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+/* 折り返して一望できるようにする。はみ出さないのでスクロールも要らない */
+.wrap {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+
+.chip,
+.moreChip {
+  flex: none;
+  /* 子どもの指で押せるように、見た目より高さを確保する */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 7px 15px;
+  font-size: 14px;
+  border-radius: 999px;
+}
+
+.chip {
+  font-weight: 700;
+  background: var(--paper);
+  border: var(--line-thin);
+}
+
+.chip:active {
+  transform: translate(1px, 1px);
+}
+
+/* えらんでいるものは、色をつけて影を出す */
+.on {
+  color: var(--card);
+  background: var(--ink);
+  box-shadow: 2px 2px 0 var(--ink-faint);
+}
+
+/* 「ぜんぶ見る」のような、選ぶのではなく列の見せ方を変えるボタン */
+.moreChip {
+  font-weight: 900;
+  color: var(--blue);
+  background: transparent;
+  border: 2px dashed var(--ink-faint);
+}
+
+/* 種類のちがうチップの区切り。押せるものではないので細い縦線だけ */
+.divider {
+  flex: none;
+  align-self: center;
+  width: 2px;
+  height: 28px;
+  border-radius: 1px;
+  background: var(--ink-faint);
+}

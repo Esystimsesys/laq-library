@@ -1,4 +1,6 @@
-import styles from './FilterBar.module.css'
+import { FilterGroup } from './FilterPanel'
+import ToggleChip from './ToggleChip'
+import chips from './Chips.module.css'
 
 type Props = {
   value: boolean
@@ -14,25 +16,20 @@ type Props = {
  * 別の列にすると、スマホで開いたときに 1 まいめの作品が画面の下へ押し出される。
  */
 export default function AssemblyFilter({ value, onChange, sources, sourceOptions, onSourcesChange }: Props) {
-  return <div className={styles.group} role="group" aria-label="つくりかたで しぼる">
-    <p className={styles.legend}>つくりかた・どこの さくひん<span className={styles.hint}>よこに うごかせるよ →</span></p>
-    <div className={styles.chips}>
-      <button type="button" aria-pressed={value} className={`${styles.chip} ${value ? styles.on : ''}`} onClick={() => onChange(!value)}>
-        3Dで つくれる
-      </button>
-      <span className={styles.chipDivider} aria-hidden="true" />
+  return <FilterGroup legend="つくりかた・どこの さくひん" hint="よこに うごかせるよ →" name="つくりかたで しぼる">
+    <div className={chips.chips}>
+      <ToggleChip pressed={value} onToggle={() => onChange(!value)}>3Dで つくれる</ToggleChip>
+      <span className={chips.divider} aria-hidden="true" />
       {sourceOptions.map(option => {
         const on = sources.includes(option.value)
-        return <button
+        return <ToggleChip
           key={option.value}
-          type="button"
-          aria-pressed={on}
-          className={`${styles.chip} ${on ? styles.on : ''}`}
-          onClick={() => onSourcesChange(on ? sources.filter(s => s !== option.value) : [...sources, option.value])}
+          pressed={on}
+          onToggle={() => onSourcesChange(on ? sources.filter(s => s !== option.value) : [...sources, option.value])}
         >
           {option.label}
-        </button>
+        </ToggleChip>
       })}
     </div>
-  </div>
+  </FilterGroup>
 }

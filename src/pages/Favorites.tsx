@@ -1,4 +1,4 @@
-import { useId, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { categories as CATEGORY_ORDER, sourceOf } from '../data'
 import type { Model } from '../data/types'
@@ -6,6 +6,7 @@ import { collectionModels } from '../lib/collection'
 import { useLookup } from '../lib/lookup'
 import { useApp } from '../store/useApp'
 import EmptyState from '../components/EmptyState'
+import { FilterGroup, FilterPanel, FilterResult } from '../components/FilterPanel'
 import ModelGrid from '../components/ModelGrid'
 import PageHeader from '../components/PageHeader'
 import StatusChips, { type StatusOption } from '../components/StatusChips'
@@ -61,44 +62,40 @@ export default function Favorites() {
   // ★を外して その なかま が 1 件も無くなったときは、ぜんぶ に戻して から の画面を出さない
   const requested = params.get('nakama')
   const category = requested && categoryChoices.some(o => o.value === requested) ? requested : ALL
-  const statusLabelId = useId()
-  const categoryLabelId = useId()
   const sourceChoices = useMemo(() => sourceOptions(list), [list])
   const requestedSource = params.get('source')
   const source = requestedSource && sourceChoices.some(o => o.value === requestedSource) ? requestedSource : ALL
-  const sourceLabelId = useId()
   const madeCount = list.filter(m => Boolean(state.made[m.id])).length
   const shown = list.filter(m =>
     (status === 'all' || (status === 'made' ? Boolean(state.made[m.id]) : !state.made[m.id])) &&
     (category === ALL || m.categories.includes(category)) &&
     (source === ALL || m.source === source))
+  const filtering = status !== 'all' || category !== ALL || source !== ALL
+  const showAll = () => setParams({}, { replace: true })
 
   return <div className={page.page}>
     <PageHeader title="マイライブラリ" sub={`つくった ${madeCount} こ`} />
     <p className={page.note}>おきにいりと つくった さくひんが、ここに ならぶよ。</p>
-    {list.length > 0 && <>
+    {list.length > 0 && <FilterPanel>
       {/* 「ぜんぶ」が 2 列に並ぶので、どちらの列かを見出しで分ける */}
-      <div className={page.group} role="group" aria-labelledby={statusLabelId}>
-        <p className={page.legend} id={statusLabelId}>つくったかどうか</p>
+      <FilterGroup legend="つくったかどうか">
         <StatusChips label="つくったかどうかで しぼる" options={STATUSES} value={status} onChange={value => update('status', value === 'all' ? null : value)} />
-      </div>
+      </FilterGroup>
       {/* なかまが 1 つしか無ければ、しぼっても同じ一覧になるので出さない */}
-      {categoryChoices.length > 2 && <div className={page.group} role="group" aria-labelledby={categoryLabelId}>
-        <p className={page.legend} id={categoryLabelId}>なかま</p>
+      {categoryChoices.length > 2 && <FilterGroup legend="なかま">
         <StatusChips label="なかまで しぼる" options={categoryChoices} value={category} onChange={value => update('nakama', value === ALL ? null : value)} wrap />
-      </div>}
-      {sourceChoices.length > 2 && <div className={page.group} role="group" aria-labelledby={sourceLabelId}>
-        <p className={page.legend} id={sourceLabelId}>どこの さくひん</p>
+      </FilterGroup>}
+      {sourceChoices.length > 2 && <FilterGroup legend="どこの さくひん">
         <StatusChips label="どこの さくひんかで しぼる" options={sourceChoices} value={source} onChange={value => update('source', value === ALL ? null : value)} wrap />
-      </div>}
-      <p className={page.note}>{shown.length} / {list.length} こ</p>
-    </>}
+      </FilterGroup>}
+      <FilterResult hitCount={shown.length} totalCount={list.length} filtering={filtering} onReset={showAll} />
+    </FilterPanel>}
     <ModelGrid models={shown} favoriteButton={false} paged={false} empty={list.length === 0 ?
       <EmptyState title="まだ さくひんが ありません" hint="きになる さくひんに ★ をつけたり、「つくった！」を きろくすると、ここに たまります。" action={<Link to="/" className={page.linkButton}>さくひんを さがす</Link>} /> :
       <EmptyState
         title={status === 'notMade' ? 'ここにある さくひんは ぜんぶ つくったね！' : status === 'made' ? 'つくった きろくは まだ ありません' : 'あてはまる さくひんが ありません'}
         hint={status === 'notMade' ? 'あたらしい さくひんを さがしてみよう。' : status === 'made' ? 'つくれたら、さくひんの ページで「つくった！」を おしてね。' : 'なかまと どこの さくひんの くみあわせを かえてみてね。'}
-        action={<button type="button" className={page.linkButton} onClick={() => setParams({}, { replace: true })}>マイライブラリを ぜんぶ みる</button>}
+        action={<button type="button" className={page.linkButton} onClick={showAll}>マイライブラリを ぜんぶ みる</button>}
       />
     } />
   </div>

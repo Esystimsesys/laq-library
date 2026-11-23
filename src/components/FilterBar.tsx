@@ -5,6 +5,9 @@ import type { Level } from '../data/types'
 import { emptyFilters, isFiltering, type Filters } from '../lib/search'
 import StatusChips, { type StatusOption } from './StatusChips'
 import { CloseIcon, SearchIcon } from './icons'
+import { FilterGroup, FilterPanel, FilterResult } from './FilterPanel'
+import ToggleChip from './ToggleChip'
+import chips from './Chips.module.css'
 import styles from './FilterBar.module.css'
 
 const LEVELS: Level[] = ['beginner', 'intermediate', 'advanced']
@@ -38,12 +41,9 @@ export default function FilterBar({ filters, onChange, hitCount, totalCount, sou
   const [openCategories, setOpenCategories] = useState(false)
   const searchId = useId()
   const categoriesId = useId()
-  const levelLabelId = useId()
-  const categoryLabelId = useId()
-  const recordLabelId = useId()
 
   return (
-    <div className={styles.bar}>
+    <FilterPanel>
       <div className={styles.searchRow}>
         <label className={styles.search} htmlFor={searchId}>
           <span className={styles.searchIcon}>
@@ -82,54 +82,35 @@ export default function FilterBar({ filters, onChange, hitCount, totalCount, sou
         onSourcesChange={sources => onChange({ ...filters, sources })}
       />
 
-      {/*
-        しぼりこみのまとまりは fieldset ではなく div + role="group" にしている。
-        読み上げでの伝わり方は同じだが、legend は行の高さの決まり方が
-        ブラウザごとに違い、iPad の Safari で 2 つめ以降の見出しだけが
-        24px 下がる（＝グループの間だけ広く見える）ことがあった。
-      */}
-      <div className={styles.group} role="group" aria-labelledby={levelLabelId}>
-        <p className={styles.legend} id={levelLabelId}>むずかしさ</p>
-        <div className={styles.chips}>
+      <FilterGroup legend="むずかしさ">
+        <div className={chips.chips}>
           {LEVELS.map((level) => (
-            <button
+            <ToggleChip
               key={level}
-              type="button"
-              aria-pressed={filters.levels.includes(level)}
-              className={`${styles.chip} ${styles[level]} ${
-                filters.levels.includes(level) ? styles.on : ''
-              }`}
-              onClick={() =>
+              pressed={filters.levels.includes(level)}
+              className={styles[level]}
+              onToggle={() =>
                 onChange({ ...filters, levels: toggle(filters.levels, level) })
               }
             >
               {LEVEL_KANA[level]}
-            </button>
+            </ToggleChip>
           ))}
         </div>
-      </div>
+      </FilterGroup>
 
-      <div className={styles.group} role="group" aria-labelledby={categoryLabelId}>
-        <p className={styles.legend} id={categoryLabelId}>
-          なかま{!openCategories && <span className={styles.hint}>よこに うごかせるよ →</span>}
-        </p>
+      <FilterGroup legend="なかま" hint={!openCategories && 'よこに うごかせるよ →'}>
         {/* 展開ボタンが画面外に隠れると見つけられないので、スクロールする列の外に置く */}
         <div className={`${styles.categoryRow} ${openCategories ? styles.categoryRowOpen : ''}`}>
           <div
             id={categoriesId}
-            className={
-              openCategories ? `${styles.chips} ${styles.chipsOpen}` : styles.chips
-            }
+            className={`${chips.chips} ${styles.categoryChips} ${openCategories ? chips.wrap : ''}`}
           >
             {ALL_CATEGORIES.map((category) => (
-              <button
+              <ToggleChip
                 key={category}
-                type="button"
-                aria-pressed={filters.categories.includes(category)}
-                className={`${styles.chip} ${
-                  filters.categories.includes(category) ? styles.on : ''
-                }`}
-                onClick={() =>
+                pressed={filters.categories.includes(category)}
+                onToggle={() =>
                   onChange({
                     ...filters,
                     categories: toggle(filters.categories, category),
@@ -137,12 +118,12 @@ export default function FilterBar({ filters, onChange, hitCount, totalCount, sou
                 }
               >
                 {category}
-              </button>
+              </ToggleChip>
             ))}
           </div>
           <button
             type="button"
-            className={styles.moreChip}
+            className={chips.moreChip}
             aria-controls={categoriesId}
             aria-expanded={openCategories}
             onClick={() => setOpenCategories((v) => !v)}
@@ -150,10 +131,9 @@ export default function FilterBar({ filters, onChange, hitCount, totalCount, sou
             {openCategories ? '1れつに する' : 'ぜんぶ見る'}
           </button>
         </div>
-      </div>
+      </FilterGroup>
 
-      <div className={styles.group} role="group" aria-labelledby={recordLabelId}>
-        <p className={styles.legend} id={recordLabelId}>じぶんの きろく</p>
+      <FilterGroup legend="じぶんの きろく">
         {/* ここだけは 1 つしか選べないので、押しボタンではなくラジオとして伝える */}
         <StatusChips
           label="じぶんの きろく"
@@ -162,24 +142,14 @@ export default function FilterBar({ filters, onChange, hitCount, totalCount, sou
           onChange={(status) => onChange({ ...filters, status })}
           wrap
         />
-      </div>
+      </FilterGroup>
 
-      <div className={styles.resultRow}>
-        {/* しぼりこんでいないときに「1472 / 1472」と出しても同じ数のくり返しになる */}
-        <p className={styles.count}>
-          <strong>{hitCount}</strong>
-          {isFiltering(filters) && ` / ${totalCount}`} こ
-        </p>
-        {isFiltering(filters) && (
-          <button
-            type="button"
-            className={styles.reset}
-            onClick={() => onChange(emptyFilters)}
-          >
-            しぼりこみを ぜんぶ やめる
-          </button>
-        )}
-      </div>
-    </div>
+      <FilterResult
+        hitCount={hitCount}
+        totalCount={totalCount}
+        filtering={isFiltering(filters)}
+        onReset={() => onChange(emptyFilters)}
+      />
+    </FilterPanel>
   )
 }

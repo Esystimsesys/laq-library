@@ -1,4 +1,4 @@
-import styles from './StatusChips.module.css'
+import chips from './Chips.module.css'
 
 export type StatusOption<T extends string> = { value: T; label: string }
 
@@ -11,7 +11,7 @@ type Props<T extends string> = {
   /**
    * 1 行に収まらないとき、横スクロールではなく折り返す。
    * スクロールできることに気づけないまま、右端の選択肢を
-   * 見落とす画面（チップが 4 つある「さがす」）で使う。
+   * 見落とす列（「さがす」の きろく、マイライブラリの なかま など）で使う。
    */
   wrap?: boolean
 }
@@ -32,7 +32,7 @@ export default function StatusChips<T extends string>({
 }: Props<T>) {
   return (
     <div
-      className={wrap ? `${styles.chips} ${styles.wrap}` : styles.chips}
+      className={wrap ? `${chips.chips} ${chips.wrap}` : chips.chips}
       role="radiogroup"
       aria-label={label}
     >
@@ -43,7 +43,7 @@ export default function StatusChips<T extends string>({
           role="radio"
           aria-checked={value === option.value}
           tabIndex={value === option.value ? 0 : -1}
-          className={`${styles.chip} ${value === option.value ? styles.on : ''}`}
+          className={value === option.value ? `${chips.chip} ${chips.on}` : chips.chip}
           onClick={() => onChange(option.value)}
           onKeyDown={(event) => {
             const direction =
